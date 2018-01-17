@@ -11,7 +11,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 -- NOTE: Ubuntu Budgie Remix (xenial)
    I'm slowly checking scripts under Ubuntu Budgie.
    
- - Applications under "Application Software" installation section does not work properly in Ubuntu Budgie.
+ - Applications under "Application Software" installation section (see screenshot #2 below) do not install properly in Ubuntu Budgie.
    Mostly, there are issues with installations in adding/removing repositories based on what's added to
    /etc/apt/sources.list and /etc/apt/sources.list.d/ by some applications.
 
