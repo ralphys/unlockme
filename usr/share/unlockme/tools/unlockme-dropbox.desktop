@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=UnlockMe Dropbox Autostart
+Comment=Updates Dropbox autostart configuration after logon
+Type=Application
+Exec="/usr/share/unlockme/tools/unlockme-dropbox.sh"
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=30

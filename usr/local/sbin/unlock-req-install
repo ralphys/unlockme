@@ -1,0 +1,67 @@
+#!/bin/bash
+# Name: Install yad package script
+# About yad: Yet Another Dialog - dialogs for shell
+# https://www.ubuntuupdates.org/package/webupd8/xenial/main/base/yad
+
+# Copyright 2017 © Ralphy Rhdez <rafaelrhd3z@gmail.com>
+# Website - https://unlockforus.com
+# Dated - 18th April, 2017
+
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License with your
+# system, in /usr/share/common-licenses/GPL-2.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+_APPNAME="UnlockMe"
+_APPICON="/usr/share/unlockme/icons/ui/run.png"
+LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+
+# Check Internet connection
+if eval "curl -sk google.com" >> /dev/null 2>&1; then
+    :; 	# Internet connection check passed
+else 	# Prompt ERROR internet connection check failed and exit
+	zenity --info --width=320 --height=120 --ok-label="Close" --title="	Aborted" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n\nRequirements cannot be installed.\n\nPlease check your Internet connection and try again."
+    log_install "the computer is not connected to the internet - yad install aborted."
+exit 0
+fi
+
+if [ $EUID -ne 0 ]; then
+  pkexec $0; exit 0
+case $? in
+	0) exit 0 ;;
+   	1) : ;;
+  esac
+fi
+
+# Kill off any package managers that may be running
+if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
+if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
+if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
+
+
+
+if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep webupd8)" ]; then
+      add-apt-repository ppa:nilarimogard/webupd8 -y 2>/dev/null
+else :
+fi
+
+if [[ "$LLD" =~ "Lite" ]]; then
+if [ ! -f /etc/apt/preferences ]; then touch /etc/apt/preferences; fi
+printf 'Package: yad
+Pin: release n=xenial
+Pin-Priority: 501' > /etc/apt/preferences && sleep 1
+fi
+
+apt-get update | zenity  --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="260" --height="80" --title="$_APPNAME - Updating software sources" \
+                         --text="⚫ Updating software sources..." 2>/dev/null
+apt-get install yad apt-transport-https autoconf automake pkg-config libgtk-3-dev git -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+                 zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="400" --height="60" --title="$_APPNAME - Installing requirements" \
+                  		 	--text="⚫ Installing requirements..." 2>/dev/null

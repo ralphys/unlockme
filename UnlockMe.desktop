@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=UnlockMe
+Comment=UnlockForUs
+Exec=/usr/local/sbin/unlockme-main
+Icon=unlockme
+Terminal=false
+Type=Application

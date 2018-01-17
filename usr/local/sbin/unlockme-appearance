@@ -1,0 +1,814 @@
+#! /bin/bash
+#--------------------------------------------------------------------------------------------------------
+# Name: UnlockMe
+# Architecture: all
+# Author: Ralphy
+# Website: https://unlockforus.com
+# Credits: Misko_2083, Jerry Bezencon, gerito1, Johnathan "ShaggyTwoDope" Jenkins, erikdubois
+#--------------------------------------------------------------------------------------------------------
+
+# Ensure multi-language support
+export LANG=C
+# variables
+_APPNAME="Appearance"
+_APPICON="/usr/share/unlockme/icons/ui/themes.png"
+
+# check Architecture 64-bit 32-bit
+ARCH=$(uname -i)
+
+# check Desktop Environment
+# variable Linux Mint Desktop Environment 
+LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
+
+# variable Linux Lite Desktop Environment
+LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+
+# Check Cinnamon version
+if [[ "$LMDENV" =~ "Cinnamon" ]]; then CINVER=$(cinnamon --version | awk '{print $2}' | cut -c -3); fi
+
+_DSESSION=$(cat /tmp/UnlockDS)
+
+# variable all accounts > 1000
+_ALLUSERS=$(cat /etc/passwd | grep "/bin/bash" | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
+
+# Kill off any running package managers
+if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi 			# synaptic
+if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi 	# gdebi (Package Installer)
+if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi 	# mintUpdate
+
+# default RUN dialog text
+echo "# loading..."
+
+
+check_inst() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while installing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME installation failed." && sleep 1; continue
+  fi
+}
+check_remv() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while removing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME uninstallation failed." && sleep 1; continue
+  fi
+}
+
+check_download() {
+  if [[ "${PIPESTATUS[0]}" -ne "0" ]]; then
+    zenity --error --width="240" --height="90" --title="  $_APPNAME - Error" \
+           --text="\nAn error occurred while processing $_FNAME download." 2>/dev/null
+    continue
+  fi
+}
+
+update_sources() {
+  apt-get update 2>&1 | tee "$LOGFILE" | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | yad --progress --pulsate --width="450" --on-top --center \
+   --skip-taskbar --undecorated --no-buttons --auto-close --text-align=center --text="\n\n<span font='Sans 12'> Updating cache. Please wait...</span>\n"
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+      zenity --error --width="300" --height="90" --title="  $_APPNAME - Error" \
+             --text="\n<b>Updating sources has failed</b>\n\nRefer to /var/log/unlockme.log for more information." 2>/dev/null
+      lslog "ERROR: Updating sources has failed."
+      continue
+    else
+ 	   lslog "INFO: Software sources were updated."
+  fi
+}
+
+show_progress() {
+	stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+}
+
+
+# function install needed packages
+install_deps(){
+apt-get install autoconf automake pkg-config libgtk-3-dev git -y
+}
+
+# function install cinnamon theme based on version - for current user
+theme_version_install_user() {
+for i in "$CINVER"; do cp -rf $_TMPDIR/Cinnamon\ $i/* "$_USRTHEMEDIR"
+	# create list for removal
+	ls -l $_TMPDIR/Cinnamon\ $i/ | egrep '^d' | awk '{print $9}' > "$_LGFILE"
+	# add full path to the list
+	sed -i 's#^#'"$_USRTHEMEDIR/"'#' "$_LGFILE"
+done 
+}
+
+# function install cinnamon theme based on version - for all user
+theme_version_install_global() {
+for i in $CINVER; do cp -rf $_TMPDIR/Cinnamon\ $i/* "/usr/share/themes"
+	# create list for removal
+	ls -l $_TMPDIR/Cinnamon\ $i/ | egrep '^d' | awk '{print $9}' > "$_LGFILE"
+	# add full path to the list
+	sed -i 's#^#/usr/share/themes/#' "$_LGFILE"
+done
+}
+
+# Mint-Y Colora Desktop Theme Collection
+MTYCOLORA() {
+	
+	_TMPDIR="/tmp/Mint-Y-Colora-Theme-Collection"
+	_LGFILE="/usr/share/unlockme/set/MTYCOLORA"
+
+# if not installed, then task = install
+if [ ! -f "/usr/share/unlockme/set/MTYCOLORA" ]; then
+	echo "#⚫ Downloading Mint-Y-Colora Theme Collection..." && sleep 1 && check_online 
+
+	# if temp directory exists, remove it
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR"
+
+	echo "#⚫ Preparing for installation..."
+
+	# if missing, install git
+	if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ]; then apt-get install git -y; fi
+
+	# download theme collection from github into temp dir
+	git clone https://github.com/erikdubois/Mint-Y-Colora-Theme-Collection "$_TMPDIR"
+
+	# cleanup downloaded files
+	find "$_TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+
+	# prompt user for installation preferences 
+	zenity --question --width=240 --height="120" --title="Themes Installation" --cancel-label="For All Users" --ok-label="For Me Only" \
+           --text="\nWould you like to install the themes for all users or just for your account?" 2>/dev/null
+    
+    # install for current user
+    if [ "$?" -eq "0" ]; then
+    
+    	echo "#⚫ Installing themes for current user only..." && sleep 1
+
+    	# if folder doesn't exist, create it
+    	_USRTHEMEDIR="/home/$_SOFTUSR/.themes"
+    	[ -d "$_USRTHEMEDIR" ] && mkdir -p "$_USRTHEMEDIR" && theme_version_install_user
+    	chown -R "$_SOFTUSR":"$_SOFTUSR" "$_USRTHEMEDIR"
+    else
+    	# install for all users
+    	theme_version_install_global
+    fi
+    # remove temp files
+	rm -rf "$_TMPDIR"
+	echo "#✔ Installation completed." && sleep 1
+else
+	# if already installed, then task = remove 
+	echo "#⚫ Removing Mint-Y-Colora Theme Collection..." && sleep 1
+
+	# delete folders logged during installation and delete the log file 
+	_REMFDS=$(cat "${_LGFILE}")
+	for folders in $_REMFDS; do rm -rf $folders; done  
+	echo "#✔ Removal completed." && rm -f "$_LGFILE" && sleep 1
+fi
+}
+
+# Arc Desktop Theme
+ARCTH() {
+
+# temp dir variables
+_TMPDIR="/tmp/arc-theme"
+_FFTMP="/tmp/arc-firefox-theme"
+
+# if not installed, then task = install
+if [ ! -d  "/usr/share/themes/Arc" ]; then
+	echo "#⚫ Preparing for installation..." && sleep 1 && check_online
+
+	# if temp directories exist, remove them
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR" ; [ -d "$_FFTMP" ] && rm -rf "$_FFTMP" && install_deps
+
+	# download theme from github
+	echo "#⚫ Downloading from github..." && sleep 1
+	git clone https://github.com/horst3180/arc-theme --depth 1 "$_TMPDIR" 2>&1 | show_progress && cd "$_TMPDIR" 
+
+	# install theme
+	./autogen.sh --prefix=/usr
+	echo "#⚫ Installing Arc Theme..." && sleep 1
+	make install 2>&1 | show_progress && rm -rf "$_TMPDIR"
+
+	# if Firefox browser is installed, then also install browser theme
+	if [ ! -z  "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
+		echo "#⚫ Installing Arc Theme for Firefox..." && sleep 1
+
+		# download from github
+		cd /tmp && git clone https://github.com/horst3180/arc-firefox-theme --depth 1 "$_FFTMP" 2>&1 | show_progress && cd "$_FFTMP"
+
+		# install Firefox browser theme
+		./autogen.sh --prefix=/usr
+		make install && rm -rf "$_FFTMP"
+	fi
+	echo "#✔ Installation completed." && sleep 1
+else
+	# if already installed, then task = remove
+	echo "#⚫ Removing Arc Theme..." 
+	rm -rf /usr/share/themes/{Arc,Arc-Darker,Arc-Dark}
+	# remove firefox browser theme
+	rm -rf /usr/lib/firefox/browser/extensions/{03cb16aa-4675-11e5-b233-213b1d5d46b0} 
+	rm -rf /usr/lib/firefox/browser/extensions/{8a01dfcc-450f-11e5-909b-fb581d5d46b0}
+	rm -rf /usr/lib/firefox/browser/extensions/{52c2877e-44e1-11e5-8874-a62d1d5d46B0} && sleep 1
+	echo "#✔ Removal completed." && sleep 1
+fi
+}
+
+ARCCOLORA() {
+	
+	_TMPDIR="/tmp/Arc-Theme-Colora-Collection"
+	_LGFILE="/usr/share/unlockme/set/ARCCOLORA"
+
+if [ ! -f "/usr/share/unlockme/set/ARCCOLORA" ]; then
+	echo "#⚫ Downloading Arc-Theme-Colora Collection..." && sleep 1 && check_online 
+
+	# if temp directory exists, remove it
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR"
+
+	echo "#⚫ Preparing for installation..."
+
+	# if missing, install git
+	if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ]; then apt-get install git -y; fi
+
+	# download theme collection from github into temp dir
+	git clone https://github.com/erikdubois/Arc-Theme-Colora-Collection "$_TMPDIR"
+
+	# cleanup downloaded files
+	find "$_TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+
+	# prompt user for installation preferences 
+	zenity --question --width=240 --height="120" --title="Themes Installation" --cancel-label="For All Users" --ok-label="For Me Only" \
+           --text="\nWould you like to install the themes for all users or just for your account?" 2>/dev/null
+    
+    # for current user
+    if [ "$?" -eq "0" ]; then
+    
+    	echo "#⚫ Installing themes for current user only..." && sleep 1
+
+    	# if folder doesn't exist, create it
+    	_USRTHEMEDIR="/home/$_SOFTUSR/.themes"
+    	[ -d "$_USRTHEMEDIR" ] && mkdir -p "$_USRTHEMEDIR" && theme_version_install_user
+    	chown -R "$_SOFTUSR":"$_SOFTUSR" "$_USRTHEMEDIR"
+    else
+    	# install for all users
+    	theme_version_install_global
+    fi
+	rm -rf "$_TMPDIR"
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Arc-Theme-Colora Collection..." && sleep 1
+	_REMFDS=$(cat "${_LGFILE}")
+	for folders in $_REMFDS; do rm -rf $folders; done  
+	echo "#✔ Removal completed." && rm -f "$_LGFILE" && sleep 1
+fi
+}
+
+BREEZECT() {
+_LGFILE="/usr/share/unlockme/set/BREEZECT"
+_CURDIR="/usr/share/icons"
+_CPNAME="breeze-cursors"
+_DLF="/tmp/breeze-cursors.7z"
+
+if [ ! -f "$_LGFILE" ]; then
+	if [ -f "/usr/share/unlockme/set/BREEZELHCT" ]; then 
+		echo "#⚫ Conflict found..." && sleep .5
+		zenity --question --width="300" --title="Conflicting Cursor Pack" \
+			   --text="Another Breeze pack is already installed. It will be removed before installing this pack.\n\nWould you like to continue?"
+		if [ "$?" -ne "0" ]; then continue; else 
+			echo "#⚫ Removing Breeze Cursors..." && sleep 1
+			_REMOCT=$(cat "/usr/share/unlockme/set/BREEZELHCT")
+			for folders in $_REMOCT; do rm -rf $folders; done
+			rm -f /usr/share/unlockme/set/BREEZELHCT
+		fi
+	fi
+	[ ! -f "$_DLF" ] && echo "#⚫ Downloading Breeze Cursors..." & sleep .5 && check_online && wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF" 2>&1 | show_progress
+	echo "#⚫ Installing Breeze Cursors..." & sleep 1
+		cd /tmp && 7z x $_CPNAME.7z | show_progress
+		cp -rf /tmp/$_CPNAME/* "$_CURDIR"
+		# create list for removal
+		ls -l /tmp/$_CPNAME/ | egrep '^d' | awk '{print $9}' > "$_LGFILE"
+		# add full path to the list
+		sed -i 's#^#'"$_CURDIR/"'#' "$_LGFILE" && rm -rf /tmp/$_CPNAME
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Breeze Cursors..." && sleep 1
+	_REMFDS=$(cat "${_LGFILE}")
+	for folders in $_REMFDS; do rm -rf $folders; done 
+	echo "#✔ Removal completed." && rm -f "$_LGFILE" && sleep 1
+fi
+}
+
+BREEZELHCT() {
+_LGFILE="/usr/share/unlockme/set/BREEZELHCT"
+_CURDIR="/usr/share/icons"
+_CPNAME2="breeze-left-handed-cursors"
+_DLF="/tmp/$_CPNAME2.7z"
+
+if [ ! -f "$_LGFILE" ]; then
+	if [ -f "/usr/share/unlockme/set/BREEZECT" ]; then 
+		echo "#⚫ Conflict found..." && sleep .5
+		zenity --question --width="300" --title="Conflicting Cursor Pack" \
+			   --text="Another Breeze pack is already installed. It will be removed before installing this pack.\n\nWould you like to continue?"
+		if [ "$?" -ne "0" ]; then continue; else 
+			echo "#⚫ Removing Breeze Cursors..." && sleep 1
+			_REMOCT=$(cat "/usr/share/unlockme/set/BREEZECT")
+			for folders in $_REMOCT; do rm -rf $folders; done
+			rm -f /usr/share/unlockme/set/BREEZECT
+		fi
+	fi
+	[ ! -f "$_DLF" ] && echo "#⚫ Downloading Breeze Left Handed Cursors..." && sleep .5 && check_online && wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME2.7z -O "$_DLF" 2>&1 | show_progress
+			echo "#⚫ Installing Breeze Cursors..." & sleep 1
+			cd /tmp && 7z x $_CPNAME2.7z | show_progress
+			cp -rf /tmp/$_CPNAME2/* "$_CURDIR"
+			# create list for removal
+			ls -l /tmp/$_CPNAME2/ | egrep '^d' | awk '{print $9}' > "$_LGFILE"
+			# add full path to the list
+			sed -i 's#^#'"$_CURDIR/"'#' "$_LGFILE" && rm -rf /tmp/$_CPNAME2
+			echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Breeze Left Handed Cursors..." && sleep 1
+	_REMFDS=$(cat "${_LGFILE}")
+	for folders in $_REMFDS; do rm -rf $folders; done  
+	echo "#✔ Removal completed." && rm -f "$_LGFILE" && sleep 1
+fi
+}
+
+CAPITAINECT() {
+_LGFILE="/usr/share/unlockme/set/CAPITAINECT"
+_CURDIR="/usr/share/icons"
+_CPNAME="capitaine-cursors"
+_DLF="/tmp/capitaine-cursors.7z"
+
+if [ ! -f "$_LGFILE" ]; then
+	[ ! -f "$_DLF" ] && echo "#⚫ Downloading Capitaine Cursors..." && sleep .5 && check_online && wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF"
+	echo "#⚫ Installing Phoethon Capitaine..." & sleep 1
+	cd /tmp && 7z x $_CPNAME.7z -o/usr/share/icons ; echo "Installed" > "$_LGFILE"
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Capitaine Cursors..." && sleep 1
+	rm -rf "$_CURDIR/$_CPNAME" && rm -f "$_LGFILE"
+	echo "#✔ Removal completed."  && sleep 1
+fi
+}
+
+VERTEXTH() {
+_FFDEF=$(ls /home/$_SOFTUSR/.mozilla/firefox/ | grep '.default')
+if [ ! -d  "/usr/share/themes/Vertex" ] || [ ! -d  "/usr/share/themes/Vertex-Dark" ] || [ ! -d  "/usr/share/themes/Vertex-Light" ] ; then
+	echo "#⚫ Preparing..." && sleep 1 && check_online
+	[ -d "/tmp/vertex-theme" ] && rm -rf /tmp/vertex-theme
+	rm -rf /usr/share/themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
+	for i in "$_ALLUSERS"; do
+		rm -rf /home/"$i"/.local/share/themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
+		rm -rf /home/"$i"/.themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
+	done
+	install_deps
+	echo "#⚫ Downloading from github..." && sleep 1
+	git clone https://github.com/horst3180/vertex-theme --depth 1  /tmp/vertex-theme && cd /tmp/vertex-theme
+	echo "#⚫ Compiling Vertex theme..." && sleep 1
+	./autogen.sh --prefix=/usr
+	echo "#⚫ Installing Vertex Theme..." && sleep 1
+	make install 
+	# install vertex theme for plank
+	if [ ! -z  "$(dpkg -l | grep -E '^ii' | grep '\splank\s')" ]; then
+		echo "#⚫ Adding Vertex theme to Plank..." && sleep 1
+		cp -rf /tmp/vertex-theme/extra/Vertex-Plank /usr/share/plank/themes
+	fi
+	# install vertex theme for Firefox
+	if [ ! -z  "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
+		echo "#⚫ Adding Vertex theme to Firefox..." && sleep 1
+		cp -rf /tmp/vertex-theme/extra/Firefox/* "/home/$_SOFTUSR/.mozilla/firefox/$_FFDEF"
+		chown "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/{Vertex,Vertex-Dark,Vertex-Light}
+	fi
+	#&& rm -rf /tmp/vertex-theme
+echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Removing Vertex Theme..." && sleep 1 && rm -rf /usr/share/themes/{Vertex,Vertex-Dark,Vertex-Light}
+  echo "#⚫ Removing Plank theme..." && sleep 1 && rm -rf /usr/share/plank/themes/Vertex-Plank
+  echo "#⚫ Removing Firefox theme..." && sleep 1 && rm -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/{Vertex,Vertex-Dark,Vertex-Light}
+  rm -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/chrome && rm -rf /usr/share/unlockme/set/VERTEXFFTH
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# Vertex theme for Firefox
+VERTEXFFTH() {
+_LGFILE="/usr/share/unlockme/set/VERTEXFFTH"
+_FFDEF=$(ls /home/$_SOFTUSR/.mozilla/firefox/ | grep '.default')
+echo "#⚫ Set Vertex Theme for Firefox..."
+
+while (true); do
+FL1="FALSE" ; FL2="FALSE" ; FL3="FALSE" ; FL4="FALSE"
+
+if [ -f "$_LGFILE" ]; then
+	OPTS=$(cat "$_LGFILE")
+	if [[ "$OPTS" =~ "vdef" ]]; then FL1="TRUE"; fi ; if [[ "$OPTS" =~ "vdark" ]]; then FL2="TRUE"; fi 
+	if [[ "$OPTS" =~ "vlight" ]]; then FL3="TRUE"; fi ; if [[ "$OPTS" =~ "disable" ]]; then FL4="TRUE"; fi 
+else
+	FL4="TRUE"
+fi
+
+OPT=$(yad --list --radiolist --fixed --on-top --dclick-action= --no-selection --borders=8 --width=370 --height=210 --text-align=center --button=gtk-close:1 --button=gtk-apply:0 --no-headers \
+--window-icon="$_APPICON" --title=" Vertex for Firefox" --text="<span font='Sans 11'>\nVertex Theme selector for Firefox</span>\n" \
+--column= --column="selector" --column=" " --column=Description --hide-column="2" --print-column="2" \
+$FL1 "vdef" "Vertex" "Use the default Vertex theme for Firefox" \
+$FL2 "vdark" "Vertex-Dark   " "Use the Dark Vertex theme for Firefox" \
+$FL3 "vlight" "Vertex-Light" "Use the Light Vertex theme for Firefox" \
+$FL4 "disable" "Disable" "Disable Vertex theme for Firefox")
+
+if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then exit 0 ; fi
+
+if [[ "$OPT" =~ "vdef" ]]; then 
+	cp -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/Vertex/chrome /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF && echo "vdef" > "$_LGFILE"
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/chrome
+elif [[ "$OPT" =~ "vdark" ]]; then
+	cp -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/Vertex-Dark/chrome /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF && echo "vdark" > "$_LGFILE"
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/chrome
+elif [[ "$OPT" =~ "vlight" ]]; then
+	cp -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/Vertex-Light/chrome /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF && echo "vlight" > "$_LGFILE"
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/chrome
+elif [[ "$OPT" =~ "disable" ]]; then
+	rm -rf /home/$_SOFTUSR/.mozilla/firefox/$_FFDEF/chrome && echo "disable" > "$_LGFILE"
+else
+	zenity --info --width="240" --height="60" --title="Vertex for Firefox" --text="\nNo theme specified. No changes made."
+	continue
+fi
+zenity --info --width="300" --height="80" --title="Vertex for Firefox" --text="\nChanges have been applied.\nPlease restart Firefox for changes to take effect." 2>/dev/null
+	return
+done
+}
+
+ARCIT() {
+_TMPDIR="/tmp/arc-icon-theme"
+if [ ! -d  "/usr/share/icons/Arc" ]; then
+	echo "#⚫ Downloading & Installing Arc Icon Theme..." && sleep 1 && check_online
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR"
+	if [ ! -d "/usr/share/icons/Moka" ]; then
+		echo "#⚫ Installing dependencies..." && sleep 1
+		MOKAIT
+	fi
+	git clone https://github.com/horst3180/arc-icon-theme --depth 1 "$_TMPDIR" && cd "$_TMPDIR"
+	./autogen.sh --prefix=/usr && make install
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Arc Icon Theme..." && sleep 1 ; rm -rf /usr/share/icons/Arc
+	echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+FLATRIT() {
+
+_FNAME="Flat Remix"
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'flat-remix-icons')" ]; then
+	echo "#⚫ Downloading & installing $_FNAME Icon Theme..." && sleep 1 && check_online
+	echo "#⚫ Adding PPA..." && sleep 1 ; add-apt-repository ppa:noobslab/icons -y
+	echo "#⚫ Updating the cache..." && sleep 1 ; apt-get update
+	echo "#⚫ Installing $_FNAME..." && apt-get install flat-remix-icons -y
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing $_FNAME Icon Theme..." && apt-get remove flat-remix-icons -y
+	echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+MOKAIT() {
+if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'moka-icon-theme')" ]; then
+  echo "#⚫ Downloading & Installing Moka Icon Theme..." && sleep 1 && check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep moka)" ]; then
+    	echo "#⚫ Adding PPA..." & add-apt-repository ppa:moka/daily -y 2>&1 | show_progress
+    	echo "#⚫ Updating the cache..." & update_sources
+    fi
+  echo "#⚫ Downloading & Installing Moka Icon Theme..." & sleep 1 ; apt-get install moka-icon-theme faba-icon-theme faba-mono-icons -y 2>&1 | show_progress
+  echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Moka Icon Theme..." & sleep 1
+	if [ -d  "/usr/share/icons/Arc" ]; then
+  		zenity --question --width="340" --height="220" --title="Arc Icon Theme found" --text="Arc icon theme doesn't provide application icons, it needs another icon theme to inherit them.\n
+By default Arc theme will look for the Moka icon theme to get the missing icons. If Moka is not installed it will use the Gnome icon theme as fallback.\n
+Are you sure you want to remove Moka Icon Theme?" 2>/dev/null
+		if [ "$?" -ne "0" ]; then
+			echo "#⚫ Aborting..." & sleep 1 && break
+		else :
+		fi
+  	fi
+apt-get remove moka-icon-theme faba-icon-theme faba-mono-icons -y 2>&1 | show_progress
+echo "#⚫ Removing PPA..." & apt-add-repository -r ppa:moka/daily -y 2>&1 | show_progress
+echo "#⚫ Updating the cache..." & update_sources
+echo "#✔ Uninstallation completed." && sleep 1	
+fi
+}
+
+PHOETONCT() {
+_LGFILE="/usr/share/unlockme/set/PHOETONCT"
+_CURDIR="/usr/share/icons"
+_CPNAME="Phoeton"
+_DLF="/tmp/Phoeton.7z"
+
+if [ ! -f "$_LGFILE" ]; then
+	[ ! -f "$_DLF" ] && echo "#⚫ Downloading Phoeton Cursors..." && sleep .5 && check_online && wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF" 2>&1 | show_progress
+	echo "#⚫ Installing Phoethon Cursors..." & sleep 1
+	cd /tmp && 7z x $_CPNAME.7z -o/usr/share/icons ; echo "Installed" > "$_LGFILE"
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Phoethon Cursors..." && sleep 1
+	rm -rf "$_CURDIR/$_CPNAME" && rm -f "$_LGFILE"
+	echo "#✔ Removal completed."  && sleep 1
+fi
+}
+
+PAPIRUSIT() {
+
+if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'papirus-icon-theme')" ]; then
+  echo "#⚫ Downloading & Installing Papirus Icon Theme..." && sleep 1 && check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep papirus)" ]; then
+    	echo "#⚫ Adding PPA..." & add-apt-repository ppa:papirus/papirus -y 2>&1 | show_progress
+    fi
+  echo "#⚫ Updating the cache..." & update_sources  
+  echo "#⚫ Downloading & Installing Papirus Icon Theme..." & apt-get install papirus-icon-theme -y | show_progress
+  echo "#✔ Installation completed." & sleep 1
+else
+  echo "#⚫ Removing Papirus Icon Theme..." & apt-get remove papirus-icon-theme -y | show_progress
+  echo "#⚫ Removing PPA..." & apt-add-repository -r ppa:papirus/papirus -y | show_progress
+  echo "#⚫ Updating the cache..." & update_sources
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+SARDI() {
+
+	_TMPDIR="/tmp/sardi"
+	_LGFILE="/usr/share/unlockme/set/SARDI"
+
+if [ ! -f "/usr/share/unlockme/set/SARDI" ]; then
+	echo "#⚫ Downloading Sardi icons..." && sleep 1 && check_online 
+
+	# if temp directory exists, remove it
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR" ; [ -f "/tmp/sardi.tar.gz" ] && rm -f "/tmp/sardi.tar.gz"
+	
+	wget -O /tmp/sardi.tar.gz "https://sourceforge.net/projects/sardi/files/latest/download?source=files" 
+	mkdir /tmp/sardi && tar -zxf /tmp/sardi.tar.gz -C /tmp/sardi && rm /tmp/sardi.tar.gz
+
+	# prompt user for installation preferences 
+	zenity --question --width=280 --height="120" --title="Icons Installation" --cancel-label="For All Users" --ok-label="For Me Only" \
+           --text="\nWould you like to install the icons for all users or just for your account?" 2>/dev/null
+    
+    # for current user
+    if [ "$?" -eq "0" ]; then
+    
+    	echo "#⚫ Installing Sardi icons for current user..." && sleep 1
+
+    	# if folder doesn't exist, create it
+    	_USRICONSDIR="/home/$_SOFTUSR/.icons"
+    	echo "$_USRICONSDIR"
+    	[ ! -d "$_USRICONSDIR" ] && mkdir -p "$_USRICONSDIR" 
+		cp -rf /tmp/sardi/* "$_USRICONSDIR" && chown -R "$_SOFTUSR":"$_SOFTUSR" "$_USRICONSDIR"
+    	ls -l "$_TMPDIR" | egrep '^d' | awk '{print $9}' > "$_LGFILE" && sed -i 's#^#'"$_USRICONSDIR"'/#' "$_LGFILE"
+    else
+    	# install for all users
+    	echo "#⚫ Installing Sardi icons..." && sleep 1
+    	cp -rf /tmp/sardi/* "/usr/share/icons"
+    	ls -l "$_TMPDIR" | egrep '^d' | awk '{print $9}' > "$_LGFILE" && sed -i 's#^#/usr/share/icons/#' "$_LGFILE"
+    fi
+	rm -rf "$_TMPDIR"
+	echo "#✔ Installation completed." && sleep 1
+else
+	echo "#⚫ Removing Sardi icons..." && sleep 1 
+	_REMFDS=$(cat "${_LGFILE}") ; for folders in $_REMFDS; do rm -rf $folders; done
+	echo "#✔ Removal completed." && rm -f "$_LGFILE" && sleep 1
+fi
+}
+
+# Check internet access
+check_online() {
+  if eval "curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
+    zenity --info --width="390" --ok-label="Got it!" --title=" $_APPNAME - No Internet access" \
+            --text="\n<b>Your computer does not seem to be connected to the Internet</b> \n \nYou need to be connected to the Internet to download and install packages." 2>/dev/null
+    continue
+  fi
+}
+
+# Set app icon variable
+_APPICONS="/usr/share/unlockme/icons/ui"
+
+ARRAYS() {
+# Invoke arrays
+
+ARRAYA=() 
+# DESKTOP THEMES
+echo "$selection" | grep "ARCTH" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('ARCTH'); fi
+
+echo "$selection" | grep "MTYCOLORA" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('MTYCOLORA'); fi
+
+echo "$selection" | grep "ARCCOLORA" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('ARCCOLORA'); fi
+
+echo "$selection" | grep "VERTEXTH" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('VERTEXTH'); fi
+######## Firefox Vertex Theme #####
+echo "$selection" | grep "VERTEXFFTH" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('VERTEXFFTH'); fi
+
+# ICON THEMES
+echo "$selection" | grep "ARCIT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('ARCIT'); fi
+
+echo "$selection" | grep "FLATRIT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('FLATRIT'); fi
+
+echo "$selection" | grep "MOKAIT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('MOKAIT'); fi
+
+echo "$selection" | grep "PAPIRUSIT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('PAPIRUSIT'); fi
+
+echo "$selection" | grep "SARDI" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('SARDI'); fi
+
+# CURSORS THEME 
+echo "$selection" | grep "BREEZECT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('BREEZECT'); fi
+
+echo "$selection" | grep "BREEZELHCT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('BREEZELHCT'); fi
+
+echo "$selection" | grep "PHOETONCT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('PHOETONCT'); fi
+
+echo "$selection" | grep "CAPITAINECT" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CAPITAINECT'); fi	
+}
+
+RUN() {
+# Check if ARRAYA is empty. If empty, skip the execution
+if [ ${#ARRAYA[@]} -ne 0 ]; then
+    x=0
+    for k in "${!ARRAYA[@]}"; do  x=$(( $x + 1 )); done  # Get the total number of selected items in array A
+    TOTAL_LINES=$x
+    printf '%s \n' "${ARRAYA[@]}"|
+    while read  line; do
+      $line     # Execute functions one at a time
+      if [ $? = 1 ]; then
+        zenity --error --title="UnlockMe" --text="\nThere was an error while executing:\n ${line}" 2>/dev/null
+        exit 1
+      fi
+      let i++
+        (( PERCENTAGE = 100 \* ${i} / ${TOTAL_LINES} ))
+        echo "$PERCENTAGE"
+        if [ "$PERCENTAGE" == "100" ]; then
+          echo "# Done"
+          sleep 1
+        fi
+    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill --skip-taskbar --width="340" --height="110" --center --text="\n<span font='Sans 13'>UnlockMe</span>"
+fi
+}
+
+# Execute checks
+CHECK() {
+
+# Arc Desktop Theme
+if [[ $_DSESSION != 'budgie-desktop' ]]; then
+	if [ ! -d  "/usr/share/themes/Arc" ]; then
+     	 _arcth=("$_APPICONS/theme.png" "ARCTH" "Arc Theme" "Desktop Theme" "Not Installed" "Arc Theme (Arc, Arc-Dark, Arc-Darker)")
+	else _arcth=("$_APPICONS/theme.png" "ARCTH" "Arc Theme" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Arc Theme (Arc, Arc-Dark, Arc-Darker)")
+	fi
+else
+	_arcth=()
+fi
+
+# Mint-Y-Colora-Theme-Collection
+if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+	if [ ! -f "/usr/share/unlockme/set/MTYCOLORA" ]; then
+     	 _mtycolora=("$_APPICONS/theme.png" "MTYCOLORA" "Mint-Y-Colora Collection" "Desktop Theme" "Not Installed" "Mint-Y-Colora Theme Collection")
+	else _mtycolora=("$_APPICONS/theme.png" "MTYCOLORA" "Mint-Y-Colora Collection" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Mint-Y-Colora Theme Collection")
+	fi
+else _mtycolora=()
+fi
+
+# Arc-Theme-Colora-Collection
+if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+	if [ ! -f "/usr/share/unlockme/set/ARCCOLORA" ]; then
+     	 _arccolora=("$_APPICONS/theme.png" "ARCCOLORA" "Arc Colora Collection" "Desktop Theme" "Not Installed" "Arc Theme Colora Collection")
+	else _arccolora=("$_APPICONS/theme.png" "ARCCOLORA" "Arc Colora Collection" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Arc Theme Colora Collection")
+	fi
+else _arccolora=()
+fi
+
+# check for vertex-theme
+if [ ! -d  "/usr/share/themes/Vertex" ] || [ ! -d  "/usr/share/themes/Vertex-Dark" ] || [ ! -d  "/usr/share/themes/Vertex-Light" ] ; then
+     _vertexth=("$_APPICONS/theme.png" "VERTEXTH" "Vertex Theme" "Desktop Theme" "Not Installed" "Vertext Desktop Theme")
+else _vertexth=("$_APPICONS/theme.png" "VERTEXTH" "Vertex Theme" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Vertext Desktop Theme")
+fi
+
+# check vertex-theme for Firefox
+if [ -d  "/usr/share/themes/Vertex" ] || [ -d  "/usr/share/themes/Vertex-Dark" ] || [ -d  "/usr/share/themes/Vertex-Light" ]; then
+     _vertexffth=("/usr/share/unlockme/icons/software/firefox.png" "VERTEXFFTH" "Firefox Vertex Theme" "Browser Theme" "<span foreground='chocolate'>Options Available</span>" "Set Vertext Theme for Firefox browser")
+else _vertexffth=()
+fi
+
+# check for papirus-icon-theme
+if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'papirus-icon-theme')" ]; then
+     _papirusit=("$_APPICONS/icon.png" "PAPIRUSIT" "Papirus" "Icon Theme" "Not Installed" "Papirus, Papirus Dark, Papirus Light, ePapirus")
+else _papirusit=("$_APPICONS/icon.png" "PAPIRUSIT" "Papirus" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Papirus, Papirus Dark, Papirus Light, ePapirus")
+fi
+
+# check for arc icon theme
+if [[ $_DSESSION != 'budgie-desktop' ]]; then
+	if [ ! -d  "/usr/share/icons/Arc" ]; then
+     _arcit=("$_APPICONS/icon.png" "ARCIT" "Arc" "Icon Theme" "Not Installed" "Arc icon theme and dependencies")
+	else _arcit=("$_APPICONS/icon.png" "ARCIT" "Arc" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Arc icon theme and dependencies")
+	fi
+else
+	 _arcit=()
+fi
+
+# check for flat-remix ixon theme
+if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'flat-remix-icons')" ]; then
+     _flatrit=("$_APPICONS/icon.png" "FLATRIT" "Flat Remix" "Icon Theme" "Not Installed" "Simple icon theme inspired on material design")
+else _flatrit=("$_APPICONS/icon.png" "FLATRIT" "Flat Remix" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Simple icon theme inspired on material design")
+fi
+
+
+# check for moka-icon-theme
+if [[ $_DSESSION != 'budgie-desktop' ]]; then
+	if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'moka-icon-theme')" ]; then
+     _mokait=("$_APPICONS/icon.png" "MOKAIT" "Moka" "Icon Theme" "Not Installed" "Moka icon theme and dependencies (Faba, Faba-Mono)")
+	else _mokait=("$_APPICONS/icon.png" "MOKAIT" "Moka" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Moka icon theme and dependencies (Faba, Faba-Mono)")
+	fi
+else
+	 _mokait=()
+fi
+
+# sardi icons
+if [ ! -f "/usr/share/unlockme/set/SARDI" ]; then
+     	 _sardi=("$_APPICONS/icon.png" "SARDI" "Sardi" "Icon Theme" "Not Installed" "20+ Sardi icon sets in multiple colors")
+	else _sardi=("$_APPICONS/icon.png" "SARDI" "Sardi" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "20+ Sardi icon sets in multiple colors")
+fi
+
+# check for catfish
+if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'catfish')" ]; then
+     _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "Not Installed" "A handy lightweight interface file searching tool for linux")
+else _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "<span foreground='green'>Installed - Select to Remove</span>" "A handy lightweight interface file searching tool for linux")
+fi
+
+# check for breeze-cursors
+if [[ $_DSESSION != 'budgie-desktop' ]]; then
+	if [ ! -f "/usr/share/unlockme/set/BREEZECT" ]; then
+     _breezect=("$_APPICONS/cursor.png" "BREEZECT" "Breeze" "Cursor Pack" "Not Installed" "Amber, Blue, Contrast, Hacked, Obsidian, Purple, Red, Snow...")
+	else _breezect=("$_APPICONS/cursor.png" "BREEZECT" "Breeze" "Cursor Pack" "<span foreground='green'>Installed - Select to Remove</span>" "Amber, Blue, Contrast, Hacked, Obsidian, Purple, Red, Snow... ")
+	fi
+else
+	 _breezect=()
+fi
+
+# check for breeze-left-handed-cursors
+if [ ! -f "/usr/share/unlockme/set/BREEZELHCT" ]; then
+     _breezelhct=("$_APPICONS/cursor.png" "BREEZELHCT" "Breeze Left Handed" "Cursor Pack" "Not Installed" "Amber, Blue, Contrast, Hacked, Obsidian, Purple, Red, Snow...")
+else _breezelhct=("$_APPICONS/cursor.png" "BREEZELHCT" "Breeze Left Handed" "Cursor Pack" "<span foreground='green'>Installed - Select to Remove</span>" "Amber, Blue, Contrast, Hacked, Obsidian, Purple, Red, Snow... ")
+fi
+
+# check for phoeton-cursors
+if [ ! -f "/usr/share/unlockme/set/PHOETONCT" ]; then
+     _phoetonct=("$_APPICONS/cursor.png" "PHOETONCT" "Phoeton" "Cursor Theme" "Not Installed" "A modification of Oxy Neon; modern, yet minimal")
+else _phoetonct=("$_APPICONS/cursor.png" "PHOETONCT" "Phoeton" "Cursor Theme" "<span foreground='green'>Installed - Select to Remove</span>" "A modification of Oxy Neon; modern, yet minimal")
+fi
+
+# check for capitaine-cursors
+if [ ! -f "/usr/share/unlockme/set/CAPITAINECT" ]; then
+     _capitainect=("$_APPICONS/cursor.png" "CAPITAINECT" "Capitaine" "Cursor Theme" "Not Installed" "Cursor theme inspired by macOS and based on KDE Breeze")
+else _capitainect=("$_APPICONS/cursor.png" "CAPITAINECT" "Capitaine" "Cursor Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Cursor theme inspired by macOS and based on KDE Breeze")
+fi
+}     
+
+# Main loop
+while (true); do
+_SOFTUSR=$(cat /tmp/unlockusr)
+# first run the checks
+CHECK
+# Main dialog
+selection=$(yad --list --multiple --dclick-action= --width=830 --height=620 --window-icon="$_APPICON" --image="$_APPICON" --image-on-top --button="gtk-close:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
+                --borders="8" --search-column="3" --column=" :IMG" --column="SELECTION" --column="Name" --column="Category" \
+                --column="Status" --column="Description" --hide-column="2" --print-column=2 \
+                --text="<span font='Sans 9'>\nSelect the set(s) you wish to download and install, then click the Begin button. 
+Sort by clicking on the columns header.
+\n  <span font='Sans bold 9'>CTRL</span> - allows you to click and select multiple sets not necessarily next to each other.
+  <span font='Sans bold 9'>Shift</span> - allows you to select a group of sets that are contiguous. All sets in between are then selected.\n</span>" \
+ "${_arcth[@]}" \
+"${_arccolora[@]}" \
+"${_mtycolora[@]}" \
+"${_vertexth[@]}" \
+"${_vertexffth[@]}" \
+"${_arcit[@]}" \
+"${_flatrit[@]}" \
+"${_mokait[@]}" \
+"${_papirusit[@]}" \
+"${_sardi[@]}" \
+"${_breezect[@]}" \
+"${_breezelhct[@]}" \
+"${_capitainect[@]}" \
+"${_phoetonct[@]}")
+
+if [ "${PIPESTATUS[0]}" -ne "0" ]; then exit 0 ; fi # If Quit or (X) is clicked then exit
+
+echo "$selection" | grep '[a-zA-Z0-9]' # Check if anything is selected
+if [ "${PIPESTATUS[1]}" -ne "0" ]; then
+  zenity --info --ok-label="Go Back" --width="260" --height="80" --title=" $_APPNAME" \
+         --text="\n<b>No options were selected for execution</b> \n\nPlease try again selecting a at least one option." 2>/dev/null; continue
+fi
+
+ARRAYS # Separate selected items into arrays A and B
+RUN
+done
+exit 0

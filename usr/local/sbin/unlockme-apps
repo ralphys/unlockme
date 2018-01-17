@@ -1,0 +1,1201 @@
+#! /bin/bash
+#--------------------------------------------------------------------------------------------------------
+# Name: UnlockMe
+# Architecture: all
+# Author: Ralphy
+# Website: https://unlockforus.com
+# Credits: Misko_2083, Jerry Bezencon, gerito1, Johnathan "ShaggyTwoDope" Jenkins, erikdubois
+#--------------------------------------------------------------------------------------------------------
+
+# Ensure multi-language support
+export LANG=C
+# variables
+_APPNAME="Application Software"
+_APPICON="/usr/share/unlockme/icons/ui/software.png"
+
+# check architecture
+ARCH=$(uname -i)
+
+# check Edition
+# variable Linux Mint Desktop Environment
+LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
+
+# variable Linux Lite Desktop Environment
+LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+
+# variable Ubuntu-Bugdie Desktop Environment
+UBDENV=$(cat /tmp/UnlockDS)
+
+# desktop users
+_ALLUSERS=$(cat /etc/passwd | grep "/bin/bash" | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
+
+# Kill off any package managers that may be running
+if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
+if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
+if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
+
+# Set up log facilities
+# Example output: [02/06/15 20:03:12] message input
+LOGFILE="/var/log/unlockme.log"
+lslog() {
+    message="$@"
+    echo '['$(date +%D\ %H:%M:%S)']'"$message" >> "$LOGFILE"
+}
+
+# Log last activities to retrieve errors
+TMP_LOG="/tmp/unlockme.log"
+
+echo "# ready..." 
+
+check_inst() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while installing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME installation failed." && sleep 1; continue
+  fi
+}
+check_remv() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while removing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME uninstallation failed." && sleep 1; continue
+  fi
+}
+
+check_download() {
+  if [[ "${PIPESTATUS[0]}" -ne "0" ]]; then
+    zenity --error --width="240" --height="90" --title="  $_APPNAME - Error" \
+           --text="\nAn error occurred while processing $_FNAME download." 2>/dev/null
+    continue
+  fi
+}
+
+update_sources() {
+  apt-get update 2>&1 | tee "$LOGFILE" | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | yad --progress --pulsate --width="650" --on-top \
+   --skip-taskbar --undecorated --no-buttons --auto-close --text-align=center --text="\n\n\n<span font='Sans 12'> Updating cache. Please wait...</span>\n"
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+      zenity --error --width="300" --height="90" --title="  $_APPNAME - Error" \
+             --text="\n<b>Updating sources has failed</b>\n\nRefer to /var/log/unlockme.log for more information." 2>/dev/null
+      lslog "ERROR: Updating sources has failed."
+      continue
+    else
+     lslog "INFO: Software sources were updated."
+  fi
+}
+
+show_progress() {
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+}
+
+# App Atom install / remove
+ATOM() {
+
+  # variables
+  _FNAME="Atom"
+  _TMPVer="/tmp/atom.txt"
+  atompkg="/tmp/atom-amd64.deb" 
+
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'atom\s')" ]; then check_online # check internet connection
+    # find latest stable release
+    echo "#⚫ Querying Github website..." && sleep 1
+    echo "#⚫ Finding latest release..." && sleep 1 ; echo "#⚫ Downloading Atom..."
+
+    # find release version on github
+    cd /tmp && curl https://github.com/atom/atom/releases/latest > "$_TMPVer"    
+
+    # get latest release version 
+    _ATOMVer=$(grep 'tag' "$_TMPVer" | cut -dv -f2 | cut -d\" -f1)
+
+    # conform url download with release version
+    _DLURL="https://atom-installer.github.com/v$_ATOMVer/atom-amd64.deb"
+
+    echo "#⚫ Downloading from Github..." && cd /tmp && /usr/local/sbin/get_download "$_DLURL"
+    echo "#⚫ Installing $_FNAME..." && dpkg -i "$atompkg" | show_progress ; check_inst
+    echo "#✔ Installation completed." && sleep 1
+    rm -f "$_TMPVer"
+  else
+    echo "#⚫ Terminating any $_FNAME instances..."
+    if [ -n "$(pgrep atom)" ]; then killall -9 atom; fi ; sleep 2
+    echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; apt-get remove atom -y | show_progress ; check_remv
+    echo "#✔ Uninstallation completed." && sleep 1
+  fi
+}
+
+# install / remove caja-dropbox
+CAJA-DROPBOX() {
+
+# variables
+_FNAME="caja-dropbox"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'caja-dropbox\s')" ]; then
+  echo "# Downloading & installing caja-dropbox..."; check_online ; apt install caja-dropbox -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling caja-dropbox..." && apt remove caja-dropbox -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# App catfish install / remove
+CATFISH() {
+
+# variables
+_FNAME="Catfish"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'catfish\s')" ]; then check_online
+  echo "# Downloading & installing $_FNAME..." && apt-get install catfish | show_progress -y ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
+  if [ ! -z "$(pgrep catfish)" ]; then killall -9 catfish ; fi 
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove catfish -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# install / remove clementine
+CLEMENTINE() {
+
+# variables
+_FNAME="Clementine"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'clementine\s')" ]; then
+  echo "# Downloading & installing $_FNAME..."; check_online; apt-get install clementine -y ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep clementine)" ]; then killall -9 clementine; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove clementine -y ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# App google chrome install / remove 
+CHROMEWB() {
+
+# variables
+_FNAME="Google Chrome"
+gcpkg="/tmp/google-chrome-stable_current_amd64.deb"
+_SOURCELIST="/etc/apt/sources.list.d/google-chrome.list"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'google-chrome-stable\s')" ]; then
+  # check internet connection
+  echo "#⚫ Querying Google servers..." && sleep 1 ; check_online 
+  echo "#⚫ Downloading $_FNAME..."
+  cd /tmp && /usr/local/sbin/get_download https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+  echo "#⚫ Installing Google Chrome..." && sleep 1 ; dpkg -i "$gcpkg" | show_progress ; check_inst 
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." 
+  if [ -n "$(pgrep chrome)" ]; then killall -9 chrome; fi ; sleep 2
+    echo "#⚫ Uninstalling $_FNAME..." && apt-get remove google-chrome-stable -y | show_progress ; check_remv
+    echo "#⚫ Removing keys..." && sleep 1
+    [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
+    _RMGPGKEY=$(wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
+    _RMGPGKEY2=$(wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key adv | head -n4 | tail -n1 | cut -d\/ -f2 | awk '{print $1}')
+    apt-key del "$_RMGPGKEY" ; apt-key del "$_RMGPGKEY2"
+    echo "#⚫ Removing $_FNAME cache..."
+    for i in $_ALLUSERS; do
+      rm -rf "/home/$i/.cache/google-chrome/"
+      rm -rf "/home/$i/Desktop/google-chrome.desktop"
+    done && sleep 2
+    echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# App chromium install / remove 
+CHROMIUMWB() {
+
+# variables
+_FNAME="Chromium"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'chromium-browser\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..." && sleep 1
+  check_online ; apt-get install chromium-browser -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."
+  if [ -n "$(pgrep chromium-browser)" ]; then killall -9 chromium-browser; fi && sleep 1
+  echo "#⚫ Uninstalling Chromium..."
+  apt-get remove chromium-browser -y | show_progress ; check_remv
+  echo "#⚫ Removing $_FNAME cache..."
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/chromium/"
+    rm -f "/home/$i/Desktop/chromium-browser.desktop"
+  done && sleep 1
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# install / remove conky manager
+CONKYMGR() {
+
+# variables
+_FNAME="Conky Manager"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'conky-manager\s')" ]; then
+  echo "#⚫ Downloading $_FNAME..." & sleep 1 ; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep teejee2008)" ]; then
+      echo "#⚫ Adding PPA..." && sleep 1
+      apt-add-repository ppa:teejee2008/ppa -y 
+      echo "#⚫ Updating the cache..." && sleep 1 ; update_sources
+      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt install conky-manager -y | show_progress ; check_inst
+    else
+      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt install conky-manager -y | show_progress ; check_inst
+    fi
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep '\p7zip-full\s')" ]; then ZIPPERS; fi
+  7z d /usr/share/conky-manager/themepacks/default-themes-2.1.cmtp.7z .conky/{"Conky MIUI",Gotham,"Conky Seamod","Green Apple Desktop",TeejeeTech}
+  echo "#⚫ Adding widgets..." && sleep 1
+  wget https://unlockforus.com/repository/downloads/conky/unlockme.7z -O /tmp/unlockme.7z
+  [ -d "/home/$_SOFTUSR/.conky" ] && mkdir -p /home/$_SOFTUSR/.conky 
+  7z x /tmp/unlockme.7z -o/home/$_SOFTUSR/.conky/ && rm -f /tmp/unlockme.7z && chown -R "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.conky
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep conky-manager)" ] || [ -n "$(pgrep conky)" ]; then killall -9 conky-manager conky; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt remove conky-manager -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# install / remove d-conf
+DCONF() {
+
+# variables
+_FNAME="dconf Editor"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'dconf-editor\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..."; check_online ; apt install dconf-editor dconf-cli -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep dconf-editor)" ]; then killall -9 dconf-editor; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove dconf-editor dconf-cli -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+
+DELUGEAPP() {
+
+# variables
+_FNAME="Deluge"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'deluge\s')" ]; then
+  echo "# Downloading & installing $_FNAME..."; check_online
+  apt-get install deluge -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
+  if [ -n "$(pgrep deluge-gtk)" ]; then killall -9 deluge-gtk; fi
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove deluge -y | show_progress ; check_remv
+  for i in $_ALLUSERS; do rm -f "/home/$i/Desktop/deluge.desktop"; done
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# App dropbox install / remove
+DROPBX() {
+
+# variables
+_FNAME="Dropbox"
+
+  inst_ext() {
+    zenity --question --width=280 --height="120" --title="Extension available" --text="\nWould you also like to install the dropbox \nextension for your file manager?" 2>/dev/null
+    if [ "$?" -eq "0" ]; then
+      if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+        echo "# Installing integration for Nemo..."; apt-get install nemo-dropbox -y | show_progress
+      elif [[ "$LMDENV" =~ "MATE" ]]; then
+        echo "# Installing integration for Caja..."; apt-get install caja-dropbox -y | show_progress
+      elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then
+        echo "# Installing integration for Thunar..."; apt-get install python-gpgme -y | show_progress ; locale-gen ; apt-get install thunar-dropbox-plugin -y | show_progress
+      else :
+      fi
+    fi
+  }
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
+  echo "#⚫ Querying dropbox servers..." && sleep 1 ; check_online 
+  echo "#⚫ Adding PPA..." && sleep 1
+  if [[ "$UBDENV" = "budgie-desktop" ]]; then add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"; fi
+  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"; fi
+  apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
+  echo "#⚫ Updating the cache..." && update_sources
+  echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
+  rm -f /etc/apt/sources.list.d/dropbox.list
+  if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then inst_ext; fi
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." ; if [ -n "$(pgrep dropbox)" ]; then killall -9 dropbox; fi && sleep 1
+  echo "#⚫ Removing key..." && sleep 1
+  apt-key del 5044912E
+  echo "#⚫ Uninstalling dropbox..." && sleep1 ; apt-get remove dropbox python-gpgme -y | show_progress
+  if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove nemo-dropbox -y | show_progress; fi
+  if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove caja-dropbox -y | show_progress; fi
+  if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then apt-get remove thunar-dropbox-plugin -y | show_progress; fi
+  if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove nautilus-dropbox -y | show_progress; fi
+  [ -f "/etc/apt/sources.list.d/dropbox.list" ] && rm -f /etc/apt/sources.list.d/dropbox.list
+  [ -f "/etc/apt/sources.list.d/dropbox.list.save" ] && rm -f /etc/apt/sources.list.d/dropbox.list.save
+  sed -i '/dropbox.com/d' /etc/apt/sources.list ; sed -i '/dropbox.com/d' /etc/apt/sources.list.d/additional-repositories.list
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+EVOLUTIONAPP() {
+
+# variables
+_FNAME="Evolution"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'evolution-common\s')" ]; then
+  echo "# Downloading & installing $_FNAME..."; check_online ; apt-get install evolution evolution-common evolution-ews evolution-plugins -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep evolution)" ]; then killall -9 evolution; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove evolution evolution-common evolution-ews evolution-plugins -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+FILEZILLA() {
+
+# variables
+_FNAME="Filezilla"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'filezilla\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..."; check_online ; apt-get install filezilla -y | show_progress ; check_inst
+  echo "#⚫ Downloading $_FNAME themes..." && sleep 1
+  wget https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-faenza.zip -O /tmp/lite-faenza.zip
+  wget https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-x.zip -O /tmp/lite-x.zip
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'unzip\s')" ]; then apt-get install unzip -y; fi
+  unzip /tmp/lite-faenza.zip -d /usr/share/filezilla/resources/ && rm -f /tmp/lite-faenza.zip
+  unzip /tmp/lite-x.zip -d /usr/share/filezilla/resources/ && rm -f /tmp/lite-x.zip
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep filezilla)" ]; then killall -9 filezilla; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove filezilla -y | show_progress ; check_remv
+  for i in "$_ALLUSERS"; do rm -f "/home/$i/Desktop/filezilla.desktop"; done
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+FIREFOXWB() {
+
+# variables
+_FNAME="Firefox"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..." ; check_online
+  apt-get install firefox -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."
+  if [ ! -z "$(pgrep firefox)" ]; then killall -9 firefox; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..."
+  apt-get remove firefox -y | show_progress ; check_remv
+  echo "#⚫ Removing $_FNAME cache..." && sleep 1
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/mozilla/firefox/"
+    rm -f "/home/$i/Desktop/firefox.desktop"
+  done 
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+GEARY() {
+
+# variables
+_FNAME="Geary"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'geary\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..." & sleep 1 ; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep geary-team)" ]; then
+      echo "#⚫ Adding PPA..." && sleep 1
+      add-apt-repository ppa:geary-team/releases -y 
+      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt-get install geary -y | show_progress ; check_inst
+    else
+      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt-get install geary -y | show_progress ; check_inst
+    fi
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep geary)" ]; then killall -9 geary; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove geary -y | show_progress ; check_remv
+  echo "#⚫ Purging PPA..." && ppa-purge ppa:geary-team/releases
+  rm -f /etc/apt/sources.list.d/geary-team-releases-xenial.list
+  apt-key del 7A51D6F2
+  for i in $_ALLUSERS; do rm -f "/home/$i/Desktop/geary.desktop"; done 
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+HARDINFO() {
+
+# variables
+_FNAME="Hardinfo"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'hardinfo\s')" ]; then
+  echo "# Downloading & Installing $_FNAME..."; check_online ; apt-get install hardinfo -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep hardinfo)" ]; then killall -9 hardinfo; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove hardinfo -y | show_progress ; check_remv
+  for i in $_ALLUSERS; do rm -f "/home/$i/Desktop/hardinfo.desktop"; done
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+MIDORIWB() {
+
+# variables
+_FNAME="Midori"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'midori\s')" ]; then
+  echo "#⚫ Downloading & Installing $_FNAME..." & sleep 1 ; check_online
+  apt-get install midori -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep midori)" ]; then killall -9 midori; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove midori -y | show_progress ; check_remv
+  echo "#⚫ Removing $_FNAME cache..."
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/midori/"
+    rm -f "/home/$i/Desktop/midori.desktop"
+    rm -f "/home/$i/Desktop/midori-private.desktop"
+  done && sleep 1
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+NEMO-COMPARE() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-compare\s')" ]; then
+  echo "# Downloading & Installing nemo-compare..."; check_online ; apt-get install nemo-compare -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling nemo-compare..." && apt-get remove nemo-compare -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+NEMO-DROPBOX() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-dropbox\s')" ]; then
+  echo "# Downloading & Installing nemo-dropbox..."; check_online ; apt-get install nemo-dropbox -y | show_progress ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling nemo-dropbox..." && apt-get remove nemo-dropbox -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+NEXTCLOUDCL() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nextcloud-client\s')" ]; then
+  echo "# Downloading Nextcloud Client..."; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep nextcloud-devs)" ]; then
+      echo "#⚫ Adding PPA..." && sleep 1
+      add-apt-repository ppa:nextcloud-devs/client -y && update_sources
+    fi
+    echo "#⚫ Installing Nextcloud Client..."
+    apt-get install nextcloud-client -y | show_progress ; check_inst
+    echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any Nextcloud Client instances..."; if [ ! -z "$(pgrep nextcloud)" ]; then killall -9 nextcloud; fi && sleep 1
+  echo "#⚫ Uninstalling Nextcloud Client..." && apt-get remove nextcloud-client -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# App Opera browser install / remove
+OPERAWB() {
+
+# variables
+_FNAME="Opera"
+_SOURCELIST="/etc/apt/sources.list.d/opera-stable.list"
+
+  upd_sed() {
+    sed -i '/operacdn.com/d' /etc/apt/sources.list.d/additional-repositories.list
+    sed -i 's/https\:\/\/deb.opera.com/http\:\/\/deb.operacdn.com/' "$_SOURCELIST" && apt-get update
+    sed -i '/operacdn.com/d' /etc/apt/sources.list
+  }
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s')" ]; then
+  echo "#⚫ Downloading & Installing $_FNAME..." & sleep 1 ; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep opera-stable)" ]; then
+      echo "#⚫ Adding PPA..." && sleep 1
+      add-apt-repository 'deb http://deb.operacdn.com/opera-stable/ stable non-free' -y
+      wget -qO- https://deb.operacdn.com/archive.key | sudo apt-key add -
+      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Installing $_FNAME..." && sleep 1 ; DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
+      upd_sed
+    else
+      echo "#⚫ Installing $_FNAME..." && DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
+      upd_sed
+    fi
+  if [[ "$LMDENV" =~ "MATE" ]]; then killall mate-panel; fi && sleep .5
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." ; if [ ! -z "$(pgrep opera)" ]; then killall -9 opera; fi && sleep 1
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove opera-stable -y | show_progress ; check_remv
+  echo "#⚫ Removing repository & key..." && sleep 1
+  [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
+    _RMGPGKEY=$(wget -qO - https://deb.operacdn.com/archive.key | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
+    apt-key del "$_RMGPGKEY"
+    sed -i '/operacdn.com/d' /etc/apt/sources.list
+  echo "#⚫ Removing $_FNAME cache..."
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/opera/Cache/"
+    rm -rf "/home/$i/Desktop/opera.desktop"
+  done && sleep 1
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+PLANK() {
+  plank_themes() {
+    # if folder exists, delete it
+    [ -d /tmp/Plank-Themes ] && rm -rf /tmp/Plank-Themes
+    # download themes from github
+    echo "#⚫ Downloading plank themes..." && sleep 1
+    git clone https://github.com/erikdubois/Plank-Themes /tmp/Plank-Themes
+    #remove extra files
+    echo "#⚫ Processing download..." && sleep 1
+    find /tmp/Plank-Themes -maxdepth 1 -type f -exec rm -rf '{}' \;
+
+    zenity --question --width=240 --height="120" --title="Plank Themes" --cancel-label="For All Users" --ok-label="For Me Only" \
+           --text="\nWould you like to install Plank themes for all users or just for your account?" 2>/dev/null
+    if [ "$?" -eq "0" ]; then
+      echo "#⚫ Installing themes for current user only..." && sleep 1
+      # if folder doesn't exist, create it
+      PTDIR="/home/$_SOFTUSR/.local/share/plank/themes"
+      [ -d "$PTDIR" ] && mkdir -p "$PTDIR" 
+      # copy themes
+      cp -rf /tmp/Plank-Themes/* "$PTDIR" && chown -R "$_SOFTUSR":"$_SOFTUSR" "$PTDIR"
+    else
+      echo "#⚫ Installing themes for all users..." && sleep 1
+      cp -rf /tmp/Plank-Themes/* /usr/share/plank/themes
+    fi
+  # cleanup tmp
+  rm -rf /tmp/Plank-Themes
+}
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\splank\s')" ]; then
+  echo "#⚫ Downloading & Installing Plank..." && sleep 1 ; check_online ; apt-get install plank -y
+  plank_themes
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any Plank instances..."; if [ ! -z "$(pgrep plank)" ]; then killall -9 plank; fi && sleep 1
+  echo "#⚫ Uninstalling Plank..." && apt-get remove plank -y 
+  echo "#⚫ Removing Plank themes..." && sleep 1
+  rm -rf /home/$_SOFTUSR/.local/share/plank/themes/* && rm -rf /usr/share/plank/themes/*
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+SCREENFETCH() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'screenfetch\s')" ]; then
+  echo "#⚫ Downloading & Installing screenfetch..." && sleep 1 ; check_online ; apt-get install screenfetch -y
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling screenfetch..." && sleep 1 && apt-get remove screenfetch -y
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+SEAMONKEYWB() {
+_FNAME="SeaMonkey"
+_SMVERFL="/tmp/seamonkey-project.txt"
+_SMKDIR="/usr/local/seamonkey"
+
+if [ ! -d "$_SMKDIR" ]; then echo "#⚫ Downloading SeaMonkey..." ; check_online
+  # find latest stable release
+  echo "#⚫ Querying SeaMonkey website..." && sleep 1 ; check_online # check internet connection
+  echo "#⚫ Finding latest release..." && sleep 1 ; echo "#⚫ Downloading SeaMonkey..."
+  cd /tmp && curl https://www.seamonkey-project.org/releases/ > "$_SMVERFL"
+  _SMVER=$(grep -F '<b>SeaMonkey' "$_SMVERFL" | awk '{print $2}' | cut -d\< -f1)
+  
+  # Download x64 from Mozilla 
+  _DLURL64="http://download.cdn.mozilla.net/pub/seamonkey/releases/$_SMVER/contrib/seamonkey-$_SMVER.en-US.linux-x86_64.tar.bz2"
+  # Download x32 from Mozilla 
+  _DLURL32="http://download.cdn.mozilla.net/pub/seamonkey/releases/$_SMVER/linux-i686/en-US/seamonkey-$_SMVER.tar.bz2"
+
+  echo "$ARCH" | egrep "x86_64"
+  if [ $? = 0 ]; then /usr/local/sbin/get_download "$_DLURL64"
+  else /usr/local/sbin/get_download "$_DLURL32"
+  fi
+  echo "#⚫ Processing download..." && sleep 1 ; tar xvjf seamonkey*.bz2 | show_progress ; check_download 
+  echo "#⚫ Completing $_FNAME installation..." ; mv -if seamonkey "$_SMKDIR" && sleep 1.5
+  echo "#⚫ Creating program menu shortcut..." && sleep 1
+  printf '[Desktop Entry]
+Version=1.0
+Name=SeaMonkey
+Comment=All-in-One Internet Application Suite
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml_xml;image/webp;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;
+Exec=/usr/local/seamonkey/seamonkey
+Path=/usr/local/seamonkey
+Icon=/usr/local/seamonkey/chrome/icons/default/default48.png
+Terminal=false
+StartupNotify=false' > /usr/share/applications/seamonkey.desktop
+  rm -f "$_SMVERFL"
+  echo "#✔ Installation completed." && sleep 1
+else
+  # remove seamonkey browser
+  echo "#⚫ Terminating any $_FNAME instances..." ; if [ -n "$(pgrep seamonkey)" ]; then killall -9 seamonkey; fi && sleep 2
+  echo "#⚫ Uninstalling $_FNAME..." &&  rm -rf "$_SMKDIR" && rm -f /usr/share/applications/seamonkey.desktop
+  echo "#⚫ Removing $_FNAME cache..."
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/mozilla/seamonkey/"
+    rm -rf "/home/$i/Desktop/seamonkey.desktop"
+  done && sleep 2
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+SKYPEMS() {
+
+echo "#⚫ Preparing..."
+
+# variables
+_FNAME="Skype"
+skpkg="/tmp/skypeforlinux-64.deb"
+_DLURL="https://repo.skype.com/latest/skypeforlinux-64.deb"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'skypeforlinux\s')" ]; then
+  check_online && echo "#⚫ Downloading $_FNAME..." && cd /tmp && /usr/local/sbin/get_download "$_DLURL"
+  echo "#⚫ Installing $_FNAME..." && dpkg -i "$skpkg" ; check_inst
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
+  if [ ! -z "$(pgrep skypeforlinux)" ]; then killall -9 skypeforlinux; fi
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove skypeforlinux -y ; check_remv
+  for i in $_ALLUSERS; do rm -rf "/home/$i/Desktop/skypeforlinux.desktop"; done && sleep 1
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+SUBLIMEAPP() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]; then
+  echo "#⚫ Downloading & Installing Sublime Text..." & sleep 1 ; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep sublime-text)" ]; then
+      echo "#⚫ Adding PPA..." && sleep 1
+      wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | apt-key add -
+      echo "deb https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list
+      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Installing Sublime Text..." && sleep 1 ; apt-get install sublime-text -y | show_progress
+    else
+      echo "#⚫ Installing Sublime Text..." && apt-get install sublime-text -y | show_progress
+    fi
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating Sublime Text instances..."; if [ ! -z "$(pgrep sublime_text)" ]; then killall -9 sublime_text; fi && sleep 1
+  echo "#⚫ Uninstalling Sublime Text..." && apt-get remove sublime-text -y | show_progress
+  echo "#⚫ Removing repository and key..." && sleep 1
+  [ -f "/etc/apt/sources.list.d/sublime-text.list" ] && rm -f /etc/apt/sources.list.d/sublime-text.list
+  [ -f "/etc/apt/sources.list.d/sublime-text.list.save" ] && rm -f /etc/apt/sources.list.d/sublime-text.list.save
+  _RMGPGKEY=$(wget -qO- https://download.sublimetext.com/sublimehq-pub.gpg | apt-key adv | awk '{print $2}' | tail -n2 | head -n1 | cut -d\/ -f2)
+  apt-key del "$_RMGPGKEY"
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+THUNAR-DROPBOX() {
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'thunar-dropbox-plugin')" ]; then
+  echo "# Downloading & Installing thunar-dropbox..."; check_online ; apt-get install thunar-dropbox-plugin -y | show_progress
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling thunar-dropbox..." && apt-get remove thunar-dropbox-plugin -y | show_progress
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+VIVALDIWB() {
+
+# variables
+_FNAME="Vivaldi"
+_SOURCELIST="/etc/apt/sources.list.d/vivaldi.list"
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
+  echo "#⚫ Downloading & installing $_FNAME..." & sleep 1 ; check_online
+    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep vivaldi)" ]; then
+      echo "#⚫ Adding repository and keys..." && sleep 1
+      add-apt-repository 'deb http://repo.vivaldi.com/archive/deb/ stable main' -y
+      wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key add -
+      echo "#⚫ Updating the cache..." & update_sources
+      echo "#⚫ Installing $_FNAME..." && apt-get install vivaldi-stable -y | show_progress ; check_inst
+    else
+      echo "#⚫ Installing $_FNAME..." && apt-get install vivaldi-stable -y | show_progress ; check_inst
+    fi
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Terminating any $_FNAME instances..." ; if [ ! -z "$(pgrep vivaldi-bin)" ]; then killall -9 vivaldi-bin; fi && sleep 2
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove vivaldi-stable -y | show_progress ; check_remv
+  echo "#⚫ Removing repository and keys..." && sleep 1
+  [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
+  sed -i '/repo.vivaldi.com/d' /etc/apt/sources.list.d/additional-repositories.list
+  _RMGPGKEY=$(wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key adv | awk '{print $2}' | tail -n2 | head -n1 | cut -d\/ -f2)
+  apt-key del "$_RMGPGKEY"
+  apt-key del 7B8B44A1
+  echo "#⚫ Removing $_FNAME  cache..."
+  for i in $_ALLUSERS; do 
+    rm -rf "/home/$i/.cache/vivaldi/"
+    rm -f "/home/$i/Desktop/vivaldi-stable.desktop"
+  done && sleep 2
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+WATERFOXWB() {
+
+_FNAME="Waterfox"
+_WFVERFL="/tmp/waterfox-project.txt"
+_WFDIR="/usr/lib/waterfox"
+
+# if waterfox is not installed then install
+if [ ! -d "$_WFDIR" ]; then echo "#⚫ Downloading Waterfox..." ; check_online # check internet connection before download
+  # find latest stable release
+  echo "#⚫ Querying Waterfox website..." && sleep 1 ; check_online # check internet connection
+  echo "#⚫ Finding latest release..."
+  cd /tmp && curl https://www.waterfoxproject.org/downloads > "$_WFVERFL"
+  _WFVER=$(grep -F 'linux64/installer/waterfox' "$_WFVERFL" | awk '{print $2}' | cut -d\" -f2) && sleep .5
+  _WFVERHTTP=$(echo $_WFVER | sed 's/https/http/')
+  /usr/local/sbin/get_download "$_WFVERHTTP"
+
+  echo "#⚫ Processing download..." && sleep 1 && tar xvjf waterfox*.bz2 | show_progress ; check_download 
+  echo "#⚫ Completing $_FNAME installation..." ; mv -if waterfox "$_WFDIR" && sleep 1
+  echo "#⚫ Creating program menu shortcut..." && sleep 1
+  printf '[Desktop Entry]
+Version=1.0
+Name=Waterfox
+Comment=The free, open and private browser
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;x-scheme-handler/chrome;video/webm;application/x-xpinstall;
+Exec=/usr/lib/waterfox/waterfox
+Path=/usr/lib/waterfox
+Icon=/usr/lib/waterfox/browser/icons/mozicon128.png
+Terminal=false
+Actions=new-window;new-private-window;
+StartupNotify=true
+
+[Desktop Action new-window]
+Name=Open a New Window
+Exec=/usr/lib/waterfox/waterfox -new-window
+
+[Desktop Action new-private-window]
+Name=Open a New Private Window
+Exec=/usr/lib/waterfox/waterfox -private-window' > /usr/share/applications/waterfox.desktop
+  rm -f "$_WFVERFL"
+  echo "#✔ Installation completed." && sleep 1
+else
+  # remove waterfox browser
+  echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep waterfox)" ]; then killall -9 waterfox; fi && sleep 2
+  echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; rm -rf "$_WFDIR" && rm -f /usr/share/applications/waterfox.desktop
+  echo "#⚫ Removing $_FNAME cache..."
+  for i in $_ALLUSERS; do
+    rm -rf "/home/$i/.cache/waterfox/"
+    rm -rf "/home/$i/Desktop/waterfox.desktop"
+  done && sleep 2
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+ZIPPERS() {
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'p7zip-rar\s')" ]; then
+  echo "#⚫ Downloading & Installing data compressors..." && sleep 1 ; check_online 
+  apt-get install p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress
+  echo "#✔ Installation completed." && sleep 1
+else
+  echo "#⚫ Uninstalling data compressors..." && sleep 1
+  apt-get remove p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress
+  echo "#✔ Uninstallation completed." && sleep 1
+fi
+}
+
+# Check internet access
+check_online() {
+  if eval "curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
+    zenity --info --width="390" --ok-label="Got it!" --title=" $_APPNAME - No Internet access" \
+            --text="\n<b>Your computer does not seem to be connected to the Internet</b> \n \nYou need to be connected to the Internet to download and install applications." 2>/dev/null
+    continue
+  fi
+}
+
+# Set app icon variable
+_APPICONS="/usr/share/unlockme/icons/software"
+
+ARRAYS() {
+# Invoke arrays
+ARRAYA=()  
+echo "$selection" | grep "ATOM" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('ATOM'); fi
+
+echo "$selection" | grep "CAJA-DROPBOX" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CAJA-DROPBOX'); fi
+
+echo "$selection" | grep "CATFISH" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CATFISH'); fi
+
+echo "$selection" | grep "CLEMENTINE" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CLEMENTINE'); fi
+
+echo "$selection" | grep "CONKYMGR" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CONKYMGR'); fi
+
+echo "$selection" | grep "CHROMEWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CHROMEWB'); fi
+
+echo "$selection" | grep "CHROMIUMWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('CHROMIUMWB'); fi
+
+echo "$selection" | grep "DCONF" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('DCONF'); fi
+
+echo "$selection" | grep "DELUGEAPP" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('DELUGEAPP'); fi
+
+echo "$selection" | grep "DROPBX" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('DROPBX'); fi
+
+echo "$selection" | grep "EVOLUTIONAPP" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('EVOLUTIONAPP'); fi
+
+echo "$selection" | grep "FILEZILLA" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('FILEZILLA'); fi
+
+echo "$selection" | grep "FIREFOXWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('FIREFOXWB'); fi
+
+echo "$selection" | grep "GEARY" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('GEARY'); fi
+
+echo "$selection" | grep "HARDINFO" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('HARDINFO'); fi
+
+echo "$selection" | grep "MIDORIWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('MIDORIWB'); fi
+
+echo "$selection" | grep "NEMO-COMPARE" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('NEMO-COMPARE'); fi
+
+echo "$selection" | grep "NEMO-DROPBOX" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('NEMO-DROPBOX'); fi
+
+echo "$selection" | grep "NEXTCLOUDCL" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('NEXTCLOUDCL'); fi
+
+echo "$selection" | grep "OPERAWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('OPERAWB'); fi
+
+echo "$selection" | grep "PLANK" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('PLANK'); fi
+
+echo "$selection" | grep "SCREENFETCH" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('SCREENFETCH'); fi
+
+echo "$selection" | grep "SEAMONKEYWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('SEAMONKEYWB'); fi
+
+echo "$selection" | grep "SKYPEMS" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('SKYPEMS'); fi
+
+echo "$selection" | grep "SUBLIMEAPP" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('SUBLIMEAPP'); fi
+
+echo "$selection" | grep "THUNAR-DROPBOX" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('THUNAR-DROPBOX'); fi
+
+echo "$selection" | grep "VIVALDIWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('VIVALDIWB'); fi
+
+echo "$selection" | grep "WATERFOXWB" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('WATERFOXWB'); fi
+
+echo "$selection" | grep "ZIPPERS" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('ZIPPERS'); fi
+}
+
+RUN() {
+# Check if ARRAYA is empty. If empty, skip the execution
+if [ ${#ARRAYA[@]} -ne 0 ]; then
+    x=0
+    for k in "${!ARRAYA[@]}"; do  x=$(( $x + 1 )); done  # Get the total number of selected items in array A
+    TOTAL_LINES=$x
+    printf '%s \n' "${ARRAYA[@]}"|
+    while read  line; do
+      $line     # Execute functions one at a time
+      if [ $? = 1 ]; then
+        zenity --error --title="UnlockMe" --text="\nThere was an error while executing:\n ${line}" 2>/dev/null
+        exit 1
+      fi
+      let i++
+        (( PERCENTAGE = 100 \* ${i} / ${TOTAL_LINES} ))
+        echo "$PERCENTAGE"
+        if [ "$PERCENTAGE" == "100" ]; then
+          echo "# Done"
+          sleep 1
+        fi
+    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill --skip-taskbar --width="340" --height="110" --center --text="\n<span font='Sans 13'>UnlockMe</span>"
+fi
+}
+
+# Execute checks
+CHECK() {
+
+# check for atom app
+echo "$ARCH" | egrep "x86_64" ; if [ $? = 0 ]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'atom\s')" ]; then
+       _atom=("$_APPICONS/atom.png" "ATOM" "Atom" "Text Editor" "No" "A hackable text editor for the 21st Century")
+  else _atom=("$_APPICONS/atom.png" "ATOM" "Atom" "Text Editor" "Select to Remove" "A hackable text editor for the 21st Century")
+  fi
+else _atom=()
+fi
+
+# check for caja-dropbox
+if [[ "$LMDENV" =~ "MATE" ]]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _cajadropbox=(); else
+    if [ -z "$(dpkg -l | grep -E '^ii' | grep 'caja-dropbox\s')" ]; then
+         _cajadropbox=("$_APPICONS/extension.png" "CAJA-DROPBOX" "caja-dropbox" "Extension" "No" "Context-menu items from dropbox for Caja")
+    else _cajadropbox=("$_APPICONS/extension.png" "CAJA-DROPBOX" "caja-dropbox" "Extension" "Select to Remove" "Context-menu items from dropbox for Caja")
+    fi
+  fi
+else _cajadropbox=()
+fi
+
+# check for catfish
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'catfish')" ]; then
+     _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "No" "A handy lightweight interface file searching tool for linux")
+else _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "Select to Remove" "A handy lightweight interface file searching tool for linux")
+fi
+
+# check for clementine
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'clementine\s')" ]; then
+     _clementine=("$_APPICONS/clementine.png" "CLEMENTINE" "Clementine" "Multimedia" "No" "Modern music player and library organizer")
+else _clementine=("$_APPICONS/clementine.png" "CLEMENTINE" "Clementine" "Multimedia" "Select to Remove" "Modern music player and library organizer")
+fi
+
+# check for chrome web browser app
+echo "$ARCH" | egrep "x86_64" ; if [ $? = 0 ]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'google-chrome-stable\s')" ]; then
+       _chromewb=("$_APPICONS/google-chrome.png" "GOOGLECHROMEWB" "Google Chrome" "Web Browser" "No" "A fast, secure, and free web browser, built for the modern web")
+  else _chromewb=("$_APPICONS/google-chrome.png" "GOOGLECHROMEWB" "Google Chrome" "Web Browser" "Select to Remove" "A fast, secure, and free web browser, built for the modern web")
+  fi
+else _chromewb=()
+fi
+
+# check for chromium web browser
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'chromium-browser\s')" ]; then
+     _chromiumwb=("$_APPICONS/chromium.png" "CHROMIUMWB" "Chromium" "Web Browser" "No" "A fast, secure, stable and open-source browser for the modern web")
+else _chromiumwb=("$_APPICONS/chromium.png" "CHROMIUMWB" "Chromium" "Web Browser" "Select to Remove" "A fast, secure, stable and open-source browser for the modern web")
+fi
+
+# check for dconf-editor
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'dconf-editor\s')" ]; then
+     _dconf=("$_APPICONS/dconf-editor.png" "DCONF" "Dconf Editor" "Utility" "No" "Simple configuration storage system editor")
+else _dconf=("$_APPICONS/dconf-editor.png" "DCONF" "Dconf Editor" "Utility" "Select to Remove" "Simple configuration storage system editor")
+fi
+
+# check for conky-manager
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'conky-manager\s')" ]; then
+     _conkymgr=("$_APPICONS/conky-manager.png" "CONKYMGR" "Conky Manager" "Utility" "No" "Graphical front-end for managing Conky config files")
+else _conkymgr=("$_APPICONS/conky-manager.png" "CONKYMGR" "Conky Manager" "Utility" "Select to Remove" "Graphical front-end for managing Conky config files")
+fi
+
+# check for deluge
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'deluge\s')" ]; then
+     _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "No" "Cloud synchronization engine")
+else _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "Select to Remove" "Cloud synchronization engine")
+fi
+
+# check for dropbox
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
+     _dropbox=("$_APPICONS/dropbox.png" "DROPBX" "Dropbox" "Sync Tool" "No" "Cloud synchronization engine")
+else _dropbox=("$_APPICONS/dropbox.png" "DROPBX" "Dropbox" "Sync Tool" "Select to Remove" "Cloud synchronization engine")
+fi
+
+# check for evolution
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'evolution-common\s')" ]; then
+     _evolutionapp=("$_APPICONS/evolution.png" "EVOLUTIONAPP" "Evolution" "Email client" "No" "Provides integrated mail, calendaring and address book functionality")
+else _evolutionapp=("$_APPICONS/evolution.png" "EVOLUTIONAPP" "Evolution" "Email client" "Select to Remove" "Provides integrated mail, calendaring and address book functionality")
+fi
+
+# check for filezilla
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'filezilla\s')" ]; then
+     _filezilla=("$_APPICONS/filezilla.png" "FILEZILLA" "Filezilla" "FTP Client" "No" "Full-featured graphical FTP/FTPS/SFTP client")
+else _filezilla=("$_APPICONS/filezilla.png" "FILEZILLA" "Filezilla" "FTP Client" "Select to Remove" "Full-featured graphical FTP/FTPS/SFTP client")
+fi
+
+# check for firefox web browser
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
+     _firefoxwb=("$_APPICONS/firefox.png" "FIREFOXWB" "Firefox" "Web Browser" "No" "People-first open-source web browser by the Mozilla Foundation")
+else _firefoxwb=("$_APPICONS/firefox.png" "FIREFOXWB" "Firefox" "Web Browser" "Select to Remove" "People-first open-source web browser by the Mozilla Foundation")
+fi
+
+# check for geary
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'geary\s')" ]; then
+     _geary=("$_APPICONS/evolution.png" "GEARY" "Geary" "Email client" "No" "Find, read and send email with a straightforward, modern interface")
+else _geary=("$_APPICONS/evolution.png" "GEARY" "Geary" "Email client" "Select to Remove" "Find, read and send email with a straightforward, modern interface")
+fi
+
+# check for hardinfo
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'hardinfo\s')" ]; then
+     _hardinfo=("$_APPICONS/hardinfo.png" "HARDINFO" "Hardinfo" "Utility" "No" "System information and benchmark tool")
+else _hardinfo=("$_APPICONS/hardinfo.png" "HARDINFO" "Hardinfo" "Utility" "Select to Remove" "System information and benchmark tool")
+fi
+
+# check for midori browser
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'midori\s')" ]; then
+     _midoriwb=("$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "No" "A lightweight, fast, and free web browser")
+else _midoriwb=("$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "Select to Remove" "A lightweight, fast, and free web browser")
+fi
+
+# check for nemo-compare
+if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-compare\s')" ]; then
+     _nemocompare=("$_APPICONS/extension.png" "NEMO-COMPARE" "nemo-compare" "Extension" "No" "Allows files comparison from the context menu")
+  else _nemocompare=("$_APPICONS/extension.png" "NEMO-COMPARE" "nemo-compare" "Extension" "Select to Remove" "Allows files comparison from the context menu")
+  fi
+else _nemocompare=()
+fi
+
+# check for nemo-dropbox
+if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _nemodropbox=(); else
+    if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-dropbox\s')" ]; then
+         _nemodropbox=("$_APPICONS/extension.png" "NEMO-DROPBOX" "nemo-dropbox" "Extension" "No" "Context-menu items from dropbox for Nemo")
+    else _nemodropbox=("$_APPICONS/extension.png" "NEMO-DROPBOX" "nemo-dropbox" "Extension" "Select to Remove" "Context-menu items from dropbox for Nemo")
+    fi
+  fi
+else _nemodropbox=()
+fi
+
+# check for Nextcloud Client
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'nextcloud-client\s')" ]; then
+     _nextcloudcl=("$_APPICONS/nextcloud.png" "NEXTCLOUDCL" "Nextcloud Client" "Sync Tool" "No" "Keep files synchronized between a Nextcloud server and your desktop")
+else _nextcloudcl=("$_APPICONS/nextcloud.png" "NEXTCLOUDCL" "Nextcloud Client" "Sync Tool" "Select to Remove" "Keep files synchronized between a Nextcloud server and your desktop")
+fi
+
+# check for Opera browser
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s')" ]; then
+     _operawb=("$_APPICONS/opera.png" "OPERAWB" "Opera" "Web Browser" "No" "Fast, secure, easy-to-use (built-in ad blocker, battery saver, free VPN)")
+else _operawb=("$_APPICONS/opera.png" "OPERAWB" "Opera" "Web Browser" "Select to Remove" "Fast, secure, easy-to-use (built-in ad blocker, battery saver, free VPN)")
+fi
+
+# check for plank
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'plank\s')" ]; then
+     _plank=("$_APPICONS/plank.png" "PLANK" "Plank" "Dock" "No" "Elegant, simple, clean dock")
+else _plank=("$_APPICONS/plank.png" "PLANK" "Plank" "Dock" "Select to Remove" "Elegant, simple, clean dock")
+fi
+
+# check for screenfetch
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'screenfetch\s')" ]; then
+     _screenfetch=("$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "No" "Bash Screenshot Information Tool")
+else _screenfetch=("$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "Select to Remove" "Bash Screenshot Information Tool")
+fi
+
+# check for seamonkey web browser
+if [ ! -d  "/usr/local/seamonkey" ]; then
+     _seamonkeywb=("$_APPICONS/seamonkey.png" "SEAMONKEYWB" "SeaMonkey" "Web Browser" "No" "All-in-One Internet Application Suite")
+else _seamonkeywb=("$_APPICONS/seamonkey.png" "SEAMONKEYWB" "SeaMonkey" "Web Browser" "Select to Remove" "All-in-One Internet Application Suite")
+fi
+
+# check for skypeforlinux
+echo "$ARCH" | egrep "x86_64" ; if [ $? = 0 ]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'skypeforlinux\s')" ]; then
+       _skypems=("$_APPICONS/skype.png" "SKYPEMS" "Skype" "Chat" "No" "Instant messaging App. Text message and video chat services")
+  else _skypems=("$_APPICONS/skype.png" "SKYPEMS" "Skype" "Chat" "Select to Remove" "Instant messaging App. Text message and video chat services")
+  fi
+else  _skypems=()
+fi
+
+# check for sublime-text
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]; then
+       _sublimeapp=("$_APPICONS/sublime_text.png" "SUBLIMEAPP" "Sublime Text" "Text Editor" "No" "A sophisticated text editor for code, markup and prose")
+  else _sublimeapp=("$_APPICONS/sublime_text.png" "SUBLIMEAPP" "Sublime Text" "Text Editor" "Select to Remove" "A sophisticated text editor for code, markup and prose")
+fi
+
+# check for thunar-dropbox-plugin
+if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then
+  if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _thunardropbox=(); else
+    if [ -z "$(dpkg -l | grep -E '^ii' | grep 'thunar-dropbox-plugin')" ]; then 
+         _thunardropbox=("$_APPICONS/extension.png" "THUNAR-DROPBOX" "thunar-dropbox" "Extension" "No" "Context-menu items from dropbox for Thunar")
+    else _thunardropbox=("$_APPICONS/extension.png" "THUNAR-DROPBOX" "thunar-dropbox" "Extension" "Select to Remove" "Context-menu items from dropbox for Thunar")
+    fi
+  fi
+else _thunardropbox=()
+fi
+
+# check for vivaldi web browser
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
+     _vivaldiwb=("$_APPICONS/vivaldi.png" "VIVALDIWB" "Vivaldi" "Web Browser" "No" "A free, ultra-fast web browser highly customizable")
+else _vivaldiwb=("$_APPICONS/vivaldi.png" "VIVALDIWB" "Vivaldi" "Web Browser" "Select to Remove" "A free, ultra-fast web browser highly customizable")
+fi
+
+# check for waterfox web browser
+echo "$ARCH" | egrep "x86_64" ; if [ $? = 0 ]; then
+  if [ ! -d  "/usr/lib/waterfox" ]; then
+       _waterfoxwb=("$_APPICONS/waterfox.png" "WATERFOXWB" "Waterfox" "Web Browser" "No" "Waterfox - The free, open and private Web browser")
+  else _waterfoxwb=("$_APPICONS/waterfox.png" "WATERFOXWB" "Waterfox" "Web Browser" "Select to Remove" "Waterfox - The free, open and private Web browser")
+  fi
+else _waterfoxwb=()
+fi
+
+# check for zippers apps
+if [ -z "$(dpkg -l | grep -E '^ii' | grep 'p7zip-rar\s')" ]; then
+     _zippers=("$_APPICONS/compress.png" "ZIPPERS" "Data Compressors" "Utility" "No" "Installs most common data compressors (Recommended)")
+else _zippers=("$_APPICONS/compress.png" "ZIPPERS" "Data Compressors" "Utility" "Select to Remove" "Installs most common data compressors (Recommended)")
+fi 
+}  
+
+# Main loop
+while (true); do
+_SOFTUSR=$(cat /tmp/unlockusr)
+
+# first run the checks
+CHECK
+
+# Main dialog
+selection=$(zenity --list --imagelist --multiple --width="814" --height="620" --column=" " --window-icon="$_APPICON" --cancel-label="Close" --ok-label="Begin" --title=" $_APPNAME" \
+                    --column="SELECTION" --column="Name" --column="Category" \
+                   --column="Installed" --column="Description" --hide-column="2" --print-column=2 \
+                   --text="<span font='Sans 9'>\nSelect the applications you wish to install or remove, then click the Begin button. 
+Sort by clicking on the columns header.
+\n  <span font='Sans bold 9'>CTRL</span> - allows you to click and select multiple tasks not necessarily next to each other.
+  <span font='Sans bold 9'>Shift</span> - allows you to select a group of tasks that are contiguous. All tasks in between are then selected.\n</span>" \
+"${_atom[@]}" \
+"${_cajadropbox[@]}" \
+"${_catfish[@]}" \
+"${_chromiumwb[@]}" \
+"${_clementine[@]}" \
+"${_conkymgr[@]}" \
+"${_chromewb[@]}" \
+"${_zippers[@]}" \
+"${_dconf[@]}" \
+"${_delugeapp[@]}" \
+"${_dropbox[@]}" \
+"${_evolutionapp[@]}" \
+"${_filezilla[@]}" \
+"${_firefoxwb[@]}" \
+"${_geary[@]}" \
+"${_hardinfo[@]}" \
+"${_midoriwb[@]}" \
+"${_nemocompare[@]}" \
+"${_nemodropbox[@]}" \
+"${_nextcloudcl[@]}" \
+"${_operawb[@]}" \
+"${_plank[@]}" \
+"${_screenfetch[@]}" \
+"${_seamonkeywb[@]}" \
+"${_skypems[@]}" \
+"${_sublimeapp[@]}" \
+"${_thunardropbox[@]}" \
+"${_vivaldiwb[@]}" \
+"${_waterfoxwb[@]}" 2>/dev/null)
+
+if [ "${PIPESTATUS[0]}" -ne "0" ]; then exit 0 ; fi # If Quit or (X) is clicked then exit
+
+echo "$selection" | grep '[a-zA-Z0-9]' # Check if anything is selected
+if [ "${PIPESTATUS[1]}" -ne "0" ]; then
+  zenity --info --ok-label="Go Back" --width="260" --height="80" --title=" $_APPNAME" \
+         --text="\n<b>No tasks were selected for execution</b> \n\nPlease try again selecting a at least one task." 2>/dev/null; continue
+fi
+
+# Separate selected items into arrays A and B
+ARRAYS 
+RUN
+done
+exit 0
+
+
