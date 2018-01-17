@@ -1,6 +1,25 @@
 # UnlockMe
 Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and Linux Lite
 
+## Supports
+
+⚫ Linux Mint Cinnamon 18.x (xenial)
+⚫ Linux Mint MATE 18.x (xenial)
+⚫ Linux Mint Xfce 18.x (xenial)
+⚫ Linux Lite 3.x (xenial)
+
+!! Ubuntu Budgie Remix (xenial)
+ - Applications under "Application Software" installation section does not work properly in Ubuntu Budgie.
+   Mostly, there are issues with installations in adding/removing repositories based on what's added to
+   /etc/apt/sources.list and /etc/apt/sources.list.d/ by some applications.
+
+   IF YOU ARE NOT WILLING TO REPORT AN ISSUE OR WORK YOUR WAY AROUND TO FIX ISSUES, DO NOT INSTALL IN UBUNTU BUDGIE
+   THESE SCRIPTS WERE ORIGINALLY PUT TOGETHER TO RUN IN LINUX MINT.
+
+   With that said, I will keep on adding and updating the scripts to work on Ubuntu Budgie as time allows.
+   This note will be removed once all scripts are properly tested in Ubuntu Budgie. 
+
+
 ![](https://i.imgur.com/pg69J8n.png)
 
 ![](https://i.imgur.com/0BP6DL1.png)
