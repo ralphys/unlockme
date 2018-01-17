@@ -101,13 +101,14 @@ ATOM() {
   _TMPVer="/tmp/atom.txt"
   atompkg="/tmp/atom-amd64.deb" 
 
+  # if atom is not installed; install it
   if [ -z "$(dpkg -l | grep -E '^ii' | grep 'atom\s')" ]; then check_online # check internet connection
+
     # find latest stable release
-    echo "#⚫ Querying Github website..." && sleep 1
-    echo "#⚫ Finding latest release..." && sleep 1 ; echo "#⚫ Downloading Atom..."
+    echo "#⚫ Querying Github website..." && sleep 1 ; echo "#⚫ Finding latest release..." && sleep .5
 
     # find release version on github
-    cd /tmp && curl https://github.com/atom/atom/releases/latest > "$_TMPVer"    
+    cd /tmp && curl https://github.com/atom/atom/releases/latest > "$_TMPVer"
 
     # get latest release version 
     _ATOMVer=$(grep 'tag' "$_TMPVer" | cut -dv -f2 | cut -d\" -f1)
@@ -115,14 +116,18 @@ ATOM() {
     # conform url download with release version
     _DLURL="https://atom-installer.github.com/v$_ATOMVer/atom-amd64.deb"
 
+    # download atom
     echo "#⚫ Downloading from Github..." && cd /tmp && /usr/local/sbin/get_download "$_DLURL"
+
+    # install atom .deb
     echo "#⚫ Installing $_FNAME..." && dpkg -i "$atompkg" | show_progress ; check_inst
-    echo "#✔ Installation completed." && sleep 1
-    rm -f "$_TMPVer"
+    rm -f "$_TMPVer" ; echo "#✔ Installation completed." && sleep 1
+  
+  # uninstall atom 
   else
     echo "#⚫ Terminating any $_FNAME instances..."
     if [ -n "$(pgrep atom)" ]; then killall -9 atom; fi ; sleep 2
-    echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; apt-get remove atom -y | show_progress ; check_remv
+    echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; apt-get remove --purge atom -y | show_progress ; check_remv
     echo "#✔ Uninstallation completed." && sleep 1
   fi
 }
@@ -180,30 +185,43 @@ CHROMEWB() {
 
 # variables
 _FNAME="Google Chrome"
-gcpkg="/tmp/google-chrome-stable_current_amd64.deb"
+_GCPKG="/tmp/google-chrome-stable_current_amd64.deb"
 _SOURCELIST="/etc/apt/sources.list.d/google-chrome.list"
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'google-chrome-stable\s')" ]; then
   # check internet connection
   echo "#⚫ Querying Google servers..." && sleep 1 ; check_online 
+
+  # download google chrome
   echo "#⚫ Downloading $_FNAME..."
   cd /tmp && /usr/local/sbin/get_download https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-  echo "#⚫ Installing Google Chrome..." && sleep 1 ; dpkg -i "$gcpkg" | show_progress ; check_inst 
+
+  # install google chrome .deb
+  echo "#⚫ Installing Google Chrome..." && sleep 1 ; dpkg -i "$_GCPKG" | show_progress ; check_inst 
   echo "#✔ Installation completed." && sleep 1
+
+# uninstall google chrome
 else
   echo "#⚫ Terminating any $_FNAME instances..." 
   if [ -n "$(pgrep chrome)" ]; then killall -9 chrome; fi ; sleep 2
-    echo "#⚫ Uninstalling $_FNAME..." && apt-get remove google-chrome-stable -y | show_progress ; check_remv
+
+    # remove google chrome
+    echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; apt-get remove --purge google-chrome-stable -y | show_progress ; check_remv
+
+    # remove repo and keys
     echo "#⚫ Removing keys..." && sleep 1
-    [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
+    [ -f "$_SOURCELIST" ] || [ -f "${_SOURCELIST}.save" ] && rm -f "$_SOURCELIST" "${_SOURCELIST}.save"
     _RMGPGKEY=$(wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
     _RMGPGKEY2=$(wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key adv | head -n4 | tail -n1 | cut -d\/ -f2 | awk '{print $1}')
     apt-key del "$_RMGPGKEY" ; apt-key del "$_RMGPGKEY2"
+
+    # remove google chrome cache folder from all users accounts
     echo "#⚫ Removing $_FNAME cache..."
     for i in $_ALLUSERS; do
       rm -rf "/home/$i/.cache/google-chrome/"
       rm -rf "/home/$i/Desktop/google-chrome.desktop"
     done && sleep 2
+
     echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -215,49 +233,88 @@ CHROMIUMWB() {
 _FNAME="Chromium"
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'chromium-browser\s')" ]; then
-  echo "#⚫ Downloading & installing $_FNAME..." && sleep 1
-  check_online ; apt-get install chromium-browser -y | show_progress ; check_inst
+
+  # check internet connection
+  echo "#⚫ Downloading & installing $_FNAME..." && sleep 1; check_online
+
+  # install chromium
+  apt-get install chromium-browser -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
+
+# uninstall chromium
 else
   echo "#⚫ Terminating any $_FNAME instances..."
   if [ -n "$(pgrep chromium-browser)" ]; then killall -9 chromium-browser; fi && sleep 1
-  echo "#⚫ Uninstalling Chromium..."
-  apt-get remove chromium-browser -y | show_progress ; check_remv
+
+  # remove chromium
+  echo "#⚫ Uninstalling Chromium..." && sleep 1
+  apt-get remove --purge chromium-browser -y | show_progress ; check_remv
+
+  # remove chromium cache folder from all users accounts
   echo "#⚫ Removing $_FNAME cache..."
   for i in $_ALLUSERS; do
     rm -rf "/home/$i/.cache/chromium/"
     rm -f "/home/$i/Desktop/chromium-browser.desktop"
   done && sleep 1
+
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
 
-# install / remove conky manager
+# App conky manager - install / remove 
 CONKYMGR() {
 
 # variables
 _FNAME="Conky Manager"
+_SOURCELIST="/etc/apt/sources.list.d/teejee2008*.list"
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'conky-manager\s')" ]; then
+  # check internet connection
   echo "#⚫ Downloading $_FNAME..." & sleep 1 ; check_online
-    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep teejee2008)" ]; then
-      echo "#⚫ Adding PPA..." && sleep 1
-      apt-add-repository ppa:teejee2008/ppa -y 
+
+    # if PPA is not installed; add it
+    if [ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep teejee2008)" ]; then
+
+      # add PPA
+      echo "#⚫ Adding PPA..." && sleep 1 ; apt-add-repository ppa:teejee2008/ppa -y 
+
+      # update cache after adding PPA
       echo "#⚫ Updating the cache..." && sleep 1 ; update_sources
-      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt install conky-manager -y | show_progress ; check_inst
+
+      # install conky manager
+      echo "#⚫ Installing $_FNAME..." && sleep 1 ; apt-get install conky-manager -y | show_progress ; check_inst
+
+    # if ppa exists, just install conky manager
     else
-      echo "#⚫ Installing $_FNAME..." && sleep 1 && apt install conky-manager -y | show_progress ; check_inst
+      echo "#⚫ Installing $_FNAME..." && sleep 1 ; apt-get install conky-manager -y | show_progress ; check_inst
     fi
+
+  # check if ZIPPERS are installed; if not add them now
   if [ -z "$(dpkg -l | grep -E '^ii' | grep '\p7zip-full\s')" ]; then ZIPPERS; fi
+
+  # remove default widgets
   7z d /usr/share/conky-manager/themepacks/default-themes-2.1.cmtp.7z .conky/{"Conky MIUI",Gotham,"Conky Seamod","Green Apple Desktop",TeejeeTech}
+
+  # add UnlockForUs widgets
   echo "#⚫ Adding widgets..." && sleep 1
   wget https://unlockforus.com/repository/downloads/conky/unlockme.7z -O /tmp/unlockme.7z
-  [ -d "/home/$_SOFTUSR/.conky" ] && mkdir -p /home/$_SOFTUSR/.conky 
+
+  # if conky directory does not exist; create it
+  [ ! -d "/home/$_SOFTUSR/.conky" ] && mkdir -p /home/$_SOFTUSR/.conky
+
+  # copy UnlockForUs widgets to .conky directory
   7z x /tmp/unlockme.7z -o/home/$_SOFTUSR/.conky/ && rm -f /tmp/unlockme.7z && chown -R "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/.conky
+
   echo "#✔ Installation completed." && sleep 1
+
+# uninstall conky manager
 else
-  echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep conky-manager)" ] || [ -n "$(pgrep conky)" ]; then killall -9 conky-manager conky; fi && sleep 1
-  echo "#⚫ Uninstalling $_FNAME..." && apt remove conky-manager -y | show_progress ; check_remv
+  echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
+  if [ -n "$(pgrep conky-manager)" ] || [ -n "$(pgrep conky)" ]; then killall -9 conky-manager conky; fi && sleep 1
+
+  # remove conky manager
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge conky-manager -y | show_progress ; check_remv
+  rm -rf /home/$_SOFTUSR/.conky
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1317,5 +1374,3 @@ ARRAYS
 RUN
 done
 exit 0
-
-
