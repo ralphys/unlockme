@@ -504,41 +504,71 @@ OPERAWB() {
 # variables
 _FNAME="Opera"
 _SOURCELIST="/etc/apt/sources.list.d/opera-stable.list"
+_SOURCELISTLM="/etc/apt/sources.list.d/additional-repositories.list"
+_SOURCELISTUB="/etc/apt/sources.list"
 
-  upd_sed() {
-    sed -i '/operacdn.com/d' /etc/apt/sources.list.d/additional-repositories.list
-    sed -i 's/https\:\/\/deb.opera.com/http\:\/\/deb.operacdn.com/' "$_SOURCELIST" && apt-get update
-    sed -i '/operacdn.com/d' /etc/apt/sources.list
+  rm_duplicate_repo() {
+      # repo duplicate removal | Linux Mint specific
+      [ -f "$_SOURCELISTLM" ] && sed -i '/operacdn.com/d' "$_SOURCELISTLM"
+
+      # repo duplicate removal | ubuntu specific
+      [ -f "$_SOURCELISTUB" ] && sed -i '/operacdn.com/d' "$_SOURCELISTUB"
   }
 
+  # use http instead of https in repo list
+  repo_http() {
+    sed -i 's/https/http/' "/etc/apt/sources.list.d/opera-stable.list"
+  }
+
+# if opera-stable is not installed; install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s')" ]; then
   echo "#⚫ Downloading & Installing $_FNAME..." & sleep 1 ; check_online
-    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep opera-stable)" ]; then
+
+    # if repo and keys are not installed; install them
+    if [ -z "$(grep ^ "$_SOURCELISTUB" /etc/apt/sources.list.d/* | grep opera-stable)" ]; then
       echo "#⚫ Adding PPA..." && sleep 1
+
+      # add PPA
       add-apt-repository 'deb http://deb.operacdn.com/opera-stable/ stable non-free' -y
       wget -qO- https://deb.operacdn.com/archive.key | sudo apt-key add -
+
+      # update sources after installing PPA and key
       echo "#⚫ Updating the cache..." && update_sources
+
+      # install opera browser
       echo "#⚫ Installing $_FNAME..." && sleep 1 ; DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
-      upd_sed
+      rm_duplicate_repo ; repo_http
+
+    # if opera browser repo and key were previously installed, just install opera
     else
       echo "#⚫ Installing $_FNAME..." && DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
-      upd_sed
+      rm_duplicate_repo ; repo_http
     fi
+
+  # linuxmint MATE specific | restart mate-panel to show Opera in Menu without logout or reboot
   if [[ "$LMDENV" =~ "MATE" ]]; then killall mate-panel; fi && sleep .5
+
   echo "#✔ Installation completed." && sleep 1
+
+# remove opera browser
 else
   echo "#⚫ Terminating any $_FNAME instances..." ; if [ ! -z "$(pgrep opera)" ]; then killall -9 opera; fi && sleep 1
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove opera-stable -y | show_progress ; check_remv
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge opera-stable -y | show_progress ; check_remv
+
+  # remove repo and keys
   echo "#⚫ Removing repository & key..." && sleep 1
   [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
-    _RMGPGKEY=$(wget -qO - https://deb.operacdn.com/archive.key | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
-    apt-key del "$_RMGPGKEY"
-    sed -i '/operacdn.com/d' /etc/apt/sources.list
+  _RMGPGKEY=$(wget -qO - https://deb.operacdn.com/archive.key | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
+  apt-key del "$_RMGPGKEY"
+  rm_duplicate_repo
+
+  # remove cache folder from all users accounts
   echo "#⚫ Removing $_FNAME cache..."
   for i in $_ALLUSERS; do
     rm -rf "/home/$i/.cache/opera/Cache/"
     rm -rf "/home/$i/Desktop/opera.desktop"
   done && sleep 1
+
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -701,6 +731,7 @@ else
 fi
 }
 
+# App vivaldi - install / remove
 VIVALDIWB() {
 
 # variables
@@ -711,10 +742,10 @@ _SOURCELISTUB="/etc/apt/sources.list"
 
   rm_duplicate_repo() {
       # repo duplicate removal | Linux Mint specific
-      [ -f "$_SOURCELISTLM" ] && sed -i '/repo.vivaldi.com/d' "$_SOURCELISTLM"
+      [ -f "$_SOURCELISTLM" ] && sed -i '/vivaldi.com/d' "$_SOURCELISTLM"
 
       # repo duplicate removal | ubuntu specific
-      [ -f "$_SOURCELISTUB" ] && sed -i '/repo.vivaldi.com/d' "$_SOURCELISTUB"
+      [ -f "$_SOURCELISTUB" ] && sed -i '/vivaldi.com/d' "$_SOURCELISTUB"
   }
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
