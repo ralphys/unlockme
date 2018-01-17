@@ -15,7 +15,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
    Mostly, there are issues with installations in adding/removing repositories based on what's added to
    /etc/apt/sources.list and /etc/apt/sources.list.d/ by some applications.
 
-   IF YOU ARE NOT WILLING TO REPORT AN ISSUE OR WORK YOUR WAY AROUND TO FIX ISSUES, DO NOT INSTALL IN UBUNTU BUDGIE
+   IF YOU ARE NOT WILLING TO REPORT AN ISSUE OR WORK YOUR WAY AROUND TO FIX ISSUES, DO NOT INSTALL IN UBUNTU BUDGIE.
    THESE SCRIPTS WERE ORIGINALLY PUT TOGETHER TO RUN IN LINUX MINT.
 
    With that said, I will keep on adding and updating the scripts to work on Ubuntu Budgie as time allows.
