@@ -21,7 +21,7 @@ ARCH=$(uname -i)
 LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
 
 # variable Linux Lite Desktop Environment
-LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+LLDENV=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
 
 # variable Ubuntu-Bugdie Desktop Environment
 UBDENV=$(cat /tmp/UnlockDS)
@@ -68,6 +68,18 @@ check_download() {
   fi
 }
 
+rm_duplicate_repo() {
+    # repo duplicate removal | Linux Mint specific
+    [ -f "$_SOURCELISTLM" ] && sed -i '/'"$_RM_DUPLICATE"'/d' "$_SOURCELISTLM"
+
+    # repo duplicate removal | ubuntu specific
+    [ -f "$_SOURCELISTUB" ] && sed -i '/'"$_RM_DUPLICATE"'/d' "$_SOURCELISTUB"
+}
+
+show_progress() {
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+}
+
 update_sources() {
   apt-get update 2>&1 | tee "$LOGFILE" | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | yad --progress --pulsate --width="650" --on-top \
    --skip-taskbar --undecorated --no-buttons --auto-close --text-align=center --text="\n\n\n<span font='Sans 12'> Updating cache. Please wait...</span>\n"
@@ -79,10 +91,6 @@ update_sources() {
     else
      lslog "INFO: Software sources were updated."
   fi
-}
-
-show_progress() {
-  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
 # App Atom install / remove
@@ -294,7 +302,12 @@ DROPBX() {
 
 # variables
 _FNAME="Dropbox"
+_SOURCELIST="/etc/apt/sources.list.d/dropbox.list"
+_SOURCELISTLM="/etc/apt/sources.list.d/additional-repositories.list"
+_SOURCELISTUB="/etc/apt/sources.list"
+_RM_DUPLICATE="dropbox.com"
 
+  # function install file manager extension
   inst_ext() {
     zenity --question --width=280 --height="120" --title="Extension available" --text="\nWould you also like to install the dropbox \nextension for your file manager?" 2>/dev/null
     if [ "$?" -eq "0" ]; then
@@ -302,36 +315,77 @@ _FNAME="Dropbox"
         echo "# Installing integration for Nemo..."; apt-get install nemo-dropbox -y | show_progress
       elif [[ "$LMDENV" =~ "MATE" ]]; then
         echo "# Installing integration for Caja..."; apt-get install caja-dropbox -y | show_progress
-      elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then
+      elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
         echo "# Installing integration for Thunar..."; apt-get install python-gpgme -y | show_progress ; locale-gen ; apt-get install thunar-dropbox-plugin -y | show_progress
       else :
       fi
     fi
   }
 
+# if dropbox is not installed; install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
-  echo "#⚫ Querying dropbox servers..." && sleep 1 ; check_online 
+
+  # check internet connection
+  echo "#⚫ Querying dropbox servers..." && sleep 1 ; check_online
+
+  # add PPA
   echo "#⚫ Adding PPA..." && sleep 1
-  if [[ "$UBDENV" = "budgie-desktop" ]]; then add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"; fi
-  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"; fi
+  
+  # linuxmint|linuxlite specific
+  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+    add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"
+  else
+    # ubuntu general
+    add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"
+  fi
+
+  # add key
   apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
+
+  # update sources after installing PPA and key
   echo "#⚫ Updating the cache..." && update_sources
+
+  # install dropbox & python-gpgme
   echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
-  rm -f /etc/apt/sources.list.d/dropbox.list
-  if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then inst_ext; fi
+
+  #rm -f /etc/apt/sources.list.d/dropbox.list
+
+  # install file manager extension linuxmint|linuxlite - nemo, caja, thunar
+  if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then inst_ext; fi
+
+  rm_duplicate_repo
+
+  # add dropbox.list repo to /etc/apt/sources.list.d/
+  [ ! -f "$_SOURCELIST" ] && touch "$_SOURCELIST"
+
+  # linuxmint|linuxlite specific
+  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+    echo "deb http://linux.dropbox.com/ubuntu xenial main" | tee "$_SOURCELIST"
+  else
+    # ubuntu general
+    echo "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main" | tee "$_SOURCELIST"
+  fi
+
   echo "#✔ Installation completed." && sleep 1
+
+# uninstall dropbox
 else
   echo "#⚫ Terminating any $_FNAME instances..." ; if [ -n "$(pgrep dropbox)" ]; then killall -9 dropbox; fi && sleep 1
+
+  # remove repo and key
   echo "#⚫ Removing key..." && sleep 1
   apt-key del 5044912E
-  echo "#⚫ Uninstalling dropbox..." && sleep1 ; apt-get remove dropbox python-gpgme -y | show_progress
-  if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove nemo-dropbox -y | show_progress; fi
-  if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove caja-dropbox -y | show_progress; fi
-  if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then apt-get remove thunar-dropbox-plugin -y | show_progress; fi
-  if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove nautilus-dropbox -y | show_progress; fi
-  [ -f "/etc/apt/sources.list.d/dropbox.list" ] && rm -f /etc/apt/sources.list.d/dropbox.list
-  [ -f "/etc/apt/sources.list.d/dropbox.list.save" ] && rm -f /etc/apt/sources.list.d/dropbox.list.save
-  sed -i '/dropbox.com/d' /etc/apt/sources.list ; sed -i '/dropbox.com/d' /etc/apt/sources.list.d/additional-repositories.list
+
+  # uninstall dropbox
+  echo "#⚫ Uninstalling dropbox..." && sleep1 ; apt-get remove --purge dropbox python-gpgme -y | show_progress
+
+  # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
+  if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove --purge nemo-dropbox -y | show_progress; fi
+  if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove --purge caja-dropbox -y | show_progress; fi
+  if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then apt-get remove --purge thunar-dropbox-plugin -y | show_progress; fi
+  if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove --purge nautilus-dropbox -y | show_progress; fi
+
+  rm_duplicate_repo
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -506,14 +560,7 @@ _FNAME="Opera"
 _SOURCELIST="/etc/apt/sources.list.d/opera-stable.list"
 _SOURCELISTLM="/etc/apt/sources.list.d/additional-repositories.list"
 _SOURCELISTUB="/etc/apt/sources.list"
-
-  rm_duplicate_repo() {
-      # repo duplicate removal | Linux Mint specific
-      [ -f "$_SOURCELISTLM" ] && sed -i '/operacdn.com/d' "$_SOURCELISTLM"
-
-      # repo duplicate removal | ubuntu specific
-      [ -f "$_SOURCELISTUB" ] && sed -i '/operacdn.com/d' "$_SOURCELISTUB"
-  }
+_RM_DUPLICATE="operacdn.com"
 
   # use http instead of https in repo list
   repo_http() {
@@ -738,14 +785,7 @@ _FNAME="Vivaldi"
 _SOURCELIST="/etc/apt/sources.list.d/vivaldi.list"
 _SOURCELISTLM="/etc/apt/sources.list.d/additional-repositories.list"
 _SOURCELISTUB="/etc/apt/sources.list"
-
-  rm_duplicate_repo() {
-      # repo duplicate removal | Linux Mint specific
-      [ -f "$_SOURCELISTLM" ] && sed -i '/vivaldi.com/d' "$_SOURCELISTLM"
-
-      # repo duplicate removal | ubuntu specific
-      [ -f "$_SOURCELISTUB" ] && sed -i '/vivaldi.com/d' "$_SOURCELISTUB"
-  }
+_RM_DUPLICATE="vivaldi.com"
 
 # if vivaldi-stable is not installed; install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
@@ -796,7 +836,7 @@ else
     rm -rf "/home/$i/.cache/vivaldi/"
     rm -f "/home/$i/Desktop/vivaldi-stable.desktop"
   done && sleep 2
-  
+
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -808,17 +848,29 @@ _WFVERFL="/tmp/waterfox-project.txt"
 _WFDIR="/usr/lib/waterfox"
 
 # if waterfox is not installed then install
-if [ ! -d "$_WFDIR" ]; then echo "#⚫ Downloading Waterfox..." ; check_online # check internet connection before download
+if [ ! -d "$_WFDIR" ]; then echo "#⚫ Downloading Waterfox..."
+
+  # check internet connection
+  echo "#⚫ Querying Waterfox website..." && sleep 1 ; check_online 
+
   # find latest stable release
-  echo "#⚫ Querying Waterfox website..." && sleep 1 ; check_online # check internet connection
   echo "#⚫ Finding latest release..."
   cd /tmp && curl https://www.waterfoxproject.org/downloads > "$_WFVERFL"
   _WFVER=$(grep -F 'linux64/installer/waterfox' "$_WFVERFL" | awk '{print $2}' | cut -d\" -f2) && sleep .5
+
+  # use http instead of https in repo list
   _WFVERHTTP=$(echo $_WFVER | sed 's/https/http/')
+
+  # get_download  waterfox
   /usr/local/sbin/get_download "$_WFVERHTTP"
 
+  # untar and check download
   echo "#⚫ Processing download..." && sleep 1 && tar xvjf waterfox*.bz2 | show_progress ; check_download 
+
+  # move extracted files
   echo "#⚫ Completing $_FNAME installation..." ; mv -if waterfox "$_WFDIR" && sleep 1
+
+  # create menu shortcut in /usr/share/applications/
   echo "#⚫ Creating program menu shortcut..." && sleep 1
   printf '[Desktop Entry]
 Version=1.0
@@ -843,15 +895,19 @@ Name=Open a New Private Window
 Exec=/usr/lib/waterfox/waterfox -private-window' > /usr/share/applications/waterfox.desktop
   rm -f "$_WFVERFL"
   echo "#✔ Installation completed." && sleep 1
+
+# remove waterfox browser
 else
-  # remove waterfox browser
   echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep waterfox)" ]; then killall -9 waterfox; fi && sleep 2
   echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; rm -rf "$_WFDIR" && rm -f /usr/share/applications/waterfox.desktop
+
+  # remove cache folder from all users accounts
   echo "#⚫ Removing $_FNAME cache..."
   for i in $_ALLUSERS; do
     rm -rf "/home/$i/.cache/waterfox/"
     rm -rf "/home/$i/Desktop/waterfox.desktop"
   done && sleep 2
+
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1171,7 +1227,7 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]; then
 fi
 
 # check for thunar-dropbox-plugin
-if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLD" =~ "Lite" ]]; then
+if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
   if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _thunardropbox=(); else
     if [ -z "$(dpkg -l | grep -E '^ii' | grep 'thunar-dropbox-plugin')" ]; then 
          _thunardropbox=("$_APPICONS/extension.png" "THUNAR-DROPBOX" "thunar-dropbox" "Extension" "No" "Context-menu items from dropbox for Thunar")
