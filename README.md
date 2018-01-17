@@ -39,9 +39,11 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 
  - Will create install and uninstall scripts later, for now:
 
- 1 - Copy UnlockMe.desktop shortcut to your desktop or any other location you wish
+ 1 - Copy UnlockMe.desktop shortcut to your desktop or any other location you wish. E.g.:
+ 
+   $ cd unlockme-master && cp UnlockMe.desktop $HOME/Desktop
 
- 2 - Copy folder "usr" to your / e.g:
+ 2 - Copy folder "usr" to your / :
  
  	 $ cd unlockme-master && sudo cp -R usr /
 
