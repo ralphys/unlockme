@@ -706,10 +706,20 @@ VIVALDIWB() {
 # variables
 _FNAME="Vivaldi"
 _SOURCELIST="/etc/apt/sources.list.d/vivaldi.list"
+_SOURCELISTLM="/etc/apt/sources.list.d/additional-repositories.list"
+_SOURCELISTUB="/etc/apt/sources.list"
+
+  rm_duplicate_repo() {
+      # repo duplicate removal | Linux Mint specific
+      [ -f "$_SOURCELISTLM" ] && sed -i '/repo.vivaldi.com/d' "$_SOURCELISTLM"
+
+      # repo duplicate removal | ubuntu specific
+      [ -f "$_SOURCELISTUB" ] && sed -i '/repo.vivaldi.com/d' "$_SOURCELISTUB"
+  }
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
   echo "#⚫ Downloading & installing $_FNAME..." & sleep 1 ; check_online
-    if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep vivaldi)" ]; then
+    if [ -z "$(grep ^ "$_SOURCELISTUB" /etc/apt/sources.list.d/* | grep vivaldi)" ]; then
       echo "#⚫ Adding repository and keys..." && sleep 1
       add-apt-repository 'deb http://repo.vivaldi.com/archive/deb/ stable main' -y
       wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key add -
@@ -718,13 +728,19 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
     else
       echo "#⚫ Installing $_FNAME..." && apt-get install vivaldi-stable -y | show_progress ; check_inst
     fi
+    rm_duplicate_repo
+
   echo "#✔ Installation completed." && sleep 1
 else
   echo "#⚫ Terminating any $_FNAME instances..." ; if [ ! -z "$(pgrep vivaldi-bin)" ]; then killall -9 vivaldi-bin; fi && sleep 2
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove vivaldi-stable -y | show_progress ; check_remv
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge vivaldi-stable -y | show_progress ; check_remv
   echo "#⚫ Removing repository and keys..." && sleep 1
+  
+  # repo removal
   [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
-  sed -i '/repo.vivaldi.com/d' /etc/apt/sources.list.d/additional-repositories.list
+  rm_duplicate_repo
+
+  # remove vivaldi keys
   _RMGPGKEY=$(wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key adv | awk '{print $2}' | tail -n2 | head -n1 | cut -d\/ -f2)
   apt-key del "$_RMGPGKEY"
   apt-key del 7B8B44A1
