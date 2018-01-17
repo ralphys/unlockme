@@ -4,8 +4,11 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 ## Supports
 
 ⚫ Linux Mint Cinnamon 18.x (xenial)
+
 ⚫ Linux Mint MATE 18.x (xenial)
+
 ⚫ Linux Mint Xfce 18.x (xenial)
+
 ⚫ Linux Lite 3.x (xenial)
 
 !! Ubuntu Budgie Remix (xenial)
