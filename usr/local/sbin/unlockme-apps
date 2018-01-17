@@ -537,17 +537,16 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s')" ]; then
 
       # install opera browser
       echo "#⚫ Installing $_FNAME..." && sleep 1 ; DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
-      rm_duplicate_repo ; repo_http
 
     # if opera browser repo and key were previously installed, just install opera
     else
       echo "#⚫ Installing $_FNAME..." && DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | show_progress ; check_inst
-      rm_duplicate_repo ; repo_http
     fi
 
   # linuxmint MATE specific | restart mate-panel to show Opera in Menu without logout or reboot
   if [[ "$LMDENV" =~ "MATE" ]]; then killall mate-panel; fi && sleep .5
 
+  rm_duplicate_repo ; repo_http
   echo "#✔ Installation completed." && sleep 1
 
 # remove opera browser
@@ -748,25 +747,40 @@ _SOURCELISTUB="/etc/apt/sources.list"
       [ -f "$_SOURCELISTUB" ] && sed -i '/vivaldi.com/d' "$_SOURCELISTUB"
   }
 
+# if vivaldi-stable is not installed; install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]; then
   echo "#⚫ Downloading & installing $_FNAME..." & sleep 1 ; check_online
+
+    # if repo and keys are not installed; install them
     if [ -z "$(grep ^ "$_SOURCELISTUB" /etc/apt/sources.list.d/* | grep vivaldi)" ]; then
       echo "#⚫ Adding repository and keys..." && sleep 1
+
+      # add PPA
       add-apt-repository 'deb http://repo.vivaldi.com/archive/deb/ stable main' -y
       wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key add -
+
+      # update sources after installing PPA and key
       echo "#⚫ Updating the cache..." & update_sources
+
+      # install vivaldi browser
       echo "#⚫ Installing $_FNAME..." && apt-get install vivaldi-stable -y | show_progress ; check_inst
+
+    # if opera browser repo and key were previously installed, just install opera
     else
       echo "#⚫ Installing $_FNAME..." && apt-get install vivaldi-stable -y | show_progress ; check_inst
     fi
     rm_duplicate_repo
 
   echo "#✔ Installation completed." && sleep 1
+
+# remove vivaldi browser
 else
   echo "#⚫ Terminating any $_FNAME instances..." ; if [ ! -z "$(pgrep vivaldi-bin)" ]; then killall -9 vivaldi-bin; fi && sleep 2
   echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge vivaldi-stable -y | show_progress ; check_remv
+
+  # remove repo and keys
   echo "#⚫ Removing repository and keys..." && sleep 1
-  
+
   # repo removal
   [ -f "$_SOURCELIST" ] && rm -f "$_SOURCELIST"
   rm_duplicate_repo
@@ -775,11 +789,14 @@ else
   _RMGPGKEY=$(wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key adv | awk '{print $2}' | tail -n2 | head -n1 | cut -d\/ -f2)
   apt-key del "$_RMGPGKEY"
   apt-key del 7B8B44A1
+
+  # remove cache folder from all users accounts
   echo "#⚫ Removing $_FNAME  cache..."
   for i in $_ALLUSERS; do 
     rm -rf "/home/$i/.cache/vivaldi/"
     rm -f "/home/$i/Desktop/vivaldi-stable.desktop"
   done && sleep 2
+  
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
