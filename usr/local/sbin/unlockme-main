@@ -578,10 +578,10 @@ if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   fi
 fi
 
-# check for dropbox Xfce Fix
+# check for dropbox - Xfce|Budgie Fix
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; then
-  if [[ "$LMDENV" =~ "Xfce" ]]; then applyfix="Xfce"; else applyfix="Budgie"; fi
-  if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _fixdbxfce=()
+  if [[ "$LMDENV" =~ "Xfce" ]]; then applyfix="Xfce"; else if [[ $(lsb_release -sc) = "xenial" ]] && [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; then applyfix="Budgie"; fi ; fi   
+  if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then _fixdbxfce=()
   else 
     if [ "$(grep -F 'Exec=dbus-launch' /usr/share/applications/dropbox.desktop)" ] && [ "$(grep -F 'Exec=dbus-launch' /home/$_SOFTUSR/.config/autostart/dropbox.desktop)" ]; then _fixdbxfce=()
       else _fixdpxfce=(FALSE "FIXDBXFCE" "Dropbox Systray Fix" "Repair" "User" "Fix Dropbox System tray icon and menu - $applyfix ")

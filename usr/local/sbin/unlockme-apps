@@ -379,70 +379,98 @@ _RM_DUPLICATE="dropbox.com"
     fi
   }
 
+  # function dropbox uninstall - when dropbox was installed from its website
+  x_drobox_uninstall() {
+    # remove repo and key
+    echo "#⚫ Removing key..." && sleep 1
+    apt-key del 5044912E
+
+    # uninstall dropbox
+    echo "#⚫ Uninstalling dropbox..." && sleep1 ; apt-get remove --purge dropbox python-gpgme -y | show_progress ; check_remv
+
+    # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
+    if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove --purge nemo-dropbox -y | show_progress; fi
+    if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove --purge caja-dropbox -y | show_progress; fi
+    if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then apt-get remove --purge thunar-dropbox-plugin -y | show_progress; fi
+    if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove --purge nautilus-dropbox -y | show_progress; fi
+
+    rm_duplicate_repo
+  }
+
 # if dropbox is not installed; install it
-if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then
 
-  # check internet connection
-  echo "#⚫ Querying dropbox servers..." && sleep 1 ; check_online
+  if [ "$UBDENV" != "budgie-desktop" ]; then
 
-  # add PPA
-  echo "#⚫ Adding PPA..." && sleep 1
+    # check internet connection
+    echo "#⚫ Querying dropbox servers..." && sleep 1 ; check_online
+
+    # add PPA
+    echo "#⚫ Adding PPA..." && sleep 1
   
-  # linuxmint|linuxlite specific
-  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
-    add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"
-  else
-    # ubuntu general
-    add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"
-  fi
+    # linuxmint|linuxlite specific
+    if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+      add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"
+    else
+      # ubuntu general
+      add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"
+    fi
 
-  # add key
-  apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
+    # add key
+    apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
 
-  # update sources after installing PPA and key
-  echo "#⚫ Updating the cache..." && update_sources
+    # update sources after installing PPA and key
+    echo "#⚫ Updating the cache..." && update_sources
 
-  # install dropbox & python-gpgme
-  echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
+    # install dropbox & python-gpgme
+    echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
 
-  #rm -f /etc/apt/sources.list.d/dropbox.list
+    # install file manager extension linuxmint|linuxlite - nemo, caja, thunar
+    if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then inst_ext; fi
 
-  # install file manager extension linuxmint|linuxlite - nemo, caja, thunar
-  if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then inst_ext; fi
+    rm_duplicate_repo
 
-  rm_duplicate_repo
+    # add dropbox.list repo to /etc/apt/sources.list.d/
+    [ ! -f "$_SOURCELIST" ] && touch "$_SOURCELIST"
 
-  # add dropbox.list repo to /etc/apt/sources.list.d/
-  [ ! -f "$_SOURCELIST" ] && touch "$_SOURCELIST"
+    # linuxmint|linuxlite specific
+    if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+      echo "deb http://linux.dropbox.com/ubuntu xenial main" | tee "$_SOURCELIST"
+    else
+      # ubuntu general
+      echo "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main" | tee "$_SOURCELIST"
+    fi
 
-  # linuxmint|linuxlite specific
-  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
-    echo "deb http://linux.dropbox.com/ubuntu xenial main" | tee "$_SOURCELIST"
-  else
-    # ubuntu general
-    echo "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main" | tee "$_SOURCELIST"
+  else 
+    # if ubuntu-budgie just install nautilus-dropbox 
+    echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install nautilus-dropbox -y | show_progress ; check_inst
   fi
 
   echo "#✔ Installation completed." && sleep 1
 
 # uninstall dropbox
 else
-  echo "#⚫ Terminating any $_FNAME instances..." ; if [ -n "$(pgrep dropbox)" ]; then killall -9 dropbox; fi && sleep 1
+  # kill dropbox instances
+  echo "#⚫ Terminating any $_FNAME instances..." ; if [ -n "$(pgrep dropbox)" ]; then killall -9 dropbox; fi ; sleep 2
 
-  # remove repo and key
-  echo "#⚫ Removing key..." && sleep 1
-  apt-key del 5044912E
+    # if not budgie-desktop call dropbox uninstall function
+    if [ "$UBDENV" != "budgie-desktop" ]; then
+      x_drobox_uninstall
 
-  # uninstall dropbox
-  echo "#⚫ Uninstalling dropbox..." && sleep1 ; apt-get remove --purge dropbox python-gpgme -y | show_progress
+    else
 
-  # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
-  if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove --purge nemo-dropbox -y | show_progress; fi
-  if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove --purge caja-dropbox -y | show_progress; fi
-  if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then apt-get remove --purge thunar-dropbox-plugin -y | show_progress; fi
-  if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove --purge nautilus-dropbox -y | show_progress; fi
+      # if budgie-desktop, check for dropbox package first
+      if [ -n "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
 
-  rm_duplicate_repo
+          # if dropbox package exists, call uninstall function
+          x_drobox_uninstall 
+
+      else
+          # if dropbox package doesn't exist, then assume nautilus-dropbox and remove it
+          apt-get remove --purge nautilus-dropbox -y | show_progress ; check_remv
+      fi   
+    fi
+
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1177,7 +1205,7 @@ else _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "Sel
 fi
 
 # check for dropbox
-if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then
      _dropbox=("$_APPICONS/dropbox.png" "DROPBX" "Dropbox" "Sync Tool" "No" "Cloud synchronization engine")
 else _dropbox=("$_APPICONS/dropbox.png" "DROPBX" "Dropbox" "Sync Tool" "Select to Remove" "Cloud synchronization engine")
 fi
@@ -1374,3 +1402,5 @@ ARRAYS
 RUN
 done
 exit 0
+
+
