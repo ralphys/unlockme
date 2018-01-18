@@ -140,10 +140,10 @@ CAJA-DROPBOX() {
 _FNAME="caja-dropbox"
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'caja-dropbox\s')" ]; then
-  echo "# Downloading & installing caja-dropbox..."; check_online ; apt install caja-dropbox -y | show_progress ; check_inst
+  echo "# Downloading & installing caja-dropbox..."; check_online ; apt-get install caja-dropbox -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
 else
-  echo "#⚫ Uninstalling caja-dropbox..." && apt remove caja-dropbox -y | show_progress ; check_remv
+  echo "#⚫ Uninstalling caja-dropbox..." && apt-get remove --purge caja-dropbox -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -169,23 +169,26 @@ else
 fi
 }
 
-# install / remove clementine
+# App clementine - install / remove 
 CLEMENTINE() {
 
 # variables
 _FNAME="Clementine"
 
+# if not installed, install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'clementine\s')" ]; then
-  echo "# Downloading & installing $_FNAME..."; check_online; apt-get install clementine -y ; check_inst
+  echo "# Downloading & installing $_FNAME..."; check_online; apt-get install clementine -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
 else
+  # kill all clementine instances
   echo "#⚫ Terminating any $_FNAME instances..."; if [ ! -z "$(pgrep clementine)" ]; then killall -9 clementine; fi && sleep 1
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove clementine -y ; check_remv
+  # remove clementine
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge clementine -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
 
-# App google chrome install / remove 
+# App google chrome - install / remove 
 CHROMEWB() {
 
 # variables
@@ -331,32 +334,181 @@ DCONF() {
 _FNAME="dconf Editor"
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'dconf-editor\s')" ]; then
-  echo "#⚫ Downloading & installing $_FNAME..."; check_online ; apt install dconf-editor dconf-cli -y | show_progress ; check_inst
+  echo "#⚫ Downloading & installing $_FNAME..."; check_online ; apt-get install dconf-editor dconf-cli -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
 else
   echo "#⚫ Terminating any $_FNAME instances..."; if [ -n "$(pgrep dconf-editor)" ]; then killall -9 dconf-editor; fi && sleep 1
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove dconf-editor dconf-cli -y | show_progress ; check_remv
+  echo "#⚫ Uninstalling $_FNAME..." && sleep 1 ; apt-get remove --purge dconf-editor dconf-cli -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
 
-
+# App Deluge - install / remove
 DELUGEAPP() {
 
 # variables
 _FNAME="Deluge"
 
-if [ -z "$(dpkg -l | grep -E '^ii' | grep 'deluge\s')" ]; then
-  echo "# Downloading & installing $_FNAME..."; check_online
-  apt-get install deluge -y | show_progress ; check_inst
+deluge_web_icon() {
+
+printf '[Desktop Entry]
+Version=1.0
+Name=Deluge Web UI
+GenericName=BitTorrent Web GUI
+X-GNOME-FullName=Deluge Web GUI Management
+Comment=Manage BitTorrent Deluge from Web GUI
+Categories=FileTransfer;P2P;GTK;
+URL=http://localhost:8112/
+Encoding=UTF-8
+Icon=deluge
+Type=Link' > /usr/share/applications/deluge-web.desktop
+
+ cp /usr/share/applications/deluge-web.desktop /home/$_SOFTUSR/Desktop
+ chown "$_SOFTUSR":"$_SOFTUSR" /home/$_SOFTUSR/Desktop/deluge-web.desktop
+ chmod +x /home/$_SOFTUSR/Desktop/deluge-web.desktop
+}
+
+rm_deluge() {
+
+while (true); do
+
+  delugeOPT=$(yad --title="$_FNAME Uninstall Options" --borders=10  --fixed --window-icon="$_APPICON" --image="/usr/share/unlockme/icons/ui/deluge256-remove.png" --image-on-top \
+               --text="\n                  <span font='Sans 12'>Select component to remove</span>" \
+               --button=" - Desktop GUI"\!gtk-execute:3 --button=" - Web GUI"\!gtk-execute:2 \
+               --button=" Uninstall all"\!gtk-execute:0 --button=" Go Back":1 ; echo $?)
+  
+  case "$delugeOPT" in
+
+    0) echo "#⚫ Uninstalling Deluge Desktop and Web GUI..." && sleep .8
+
+    if [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdeluge\s')" ] && [ -z "$(dpkg -l | grep -E '^ii' | grep '\sdeluged\s')" ] ; then
+
+        echo "#⚫ No Deluge component is currently installed..." && sleep .5
+        zenity --question --width="320" --title="No installed component found" \
+               --text="\nNo Deluge component is currently installed.\n\nWould you like to install a component at this time?" 2>/dev/null
+
+          if [ "$?" = "0" ]; then 
+            echo "# Deluge Install Options..." & break 1
+          else
+            echo "# ..." & break 2
+          fi 
+    fi
+       killall -9 deluged deluge-gtk deluge-gui
+       echo "#⚫ Terminating instances..." && sleep 2
+
+       apt-get remove --purge deluge deluge-gtk deluged deluge-web -y | show_progress ; check_remv
+       rm -f "/usr/share/applications/deluge-web.desktop"
+
+       for i in $_ALLUSERS; do 
+          rm -f "/home/$i/Desktop/deluge.desktop" ; rm -f "/home/$i/Desktop/deluge-web.desktop"
+        done
+        break 2
+       ;;
+
+    1) echo "# Deluge Install Options..." & break 1
+       ;;
+    2) echo "#⚫ Uninstalling Deluge Web GUI..." && sleep .8
+
+       if [ -n "$(dpkg -l | grep -E '^ii' | grep 'deluged\s')" ]; then
+          
+          if [ -n "$(pgrep deluged)" ]; then killall -9 deluged deluge-web; fi
+          echo "#⚫ Terminating instances..." && sleep 1
+          
+          apt-get remove --purge deluged deluge-web -y | show_progress ; check_remv
+
+          for i in $_ALLUSERS; do
+            rm -f "/home/$i/Desktop/deluge-web.desktop"
+          done
+          rm -f /usr/share/applications/deluge-web.desktop
+
+       else
+        echo "#⚫ Deluge Web GUI not installed. No changes needed." && sleep 2 ; echo "# Deluge Uninstall Options..." & continue
+       fi
+       ;;
+    3) echo "#⚫ Uninstalling Deluge Desktop GUI..." && sleep .8
+
+      if [ -n "$(dpkg -l | grep -E '^ii' | grep 'deluge-gtk\s')" ]; then
+
+        if [ -n "$(pgrep deluge-gtk)" ]; then echo "#⚫ Terminating instances..." && sleep 1 ; killall -9 deluge-gtk; fi
+        
+        apt-get remove --purge deluge deluge-gtk -y | show_progress ; check_remv
+      else
+        echo "#⚫ Deluge Desktop GUI not installed. No changes needed." && sleep 2 ; echo "# Deluge Uninstall Options..." & continue
+      fi
+       ;;
+    *) break 2 && echo "# ..." 
+       ;;
+  esac
+  echo "#✔ Uninstallation completed." && sleep 1 
+done
+}
+
+  
+echo "#⚫ $_FNAME Options..." && sleep 1 
+
+while (true); do
+
+INSTDIALOG="\nDeluge is a fully-featured cross-platform BitTorrent client.
+\nIt is free software that adheres to freedesktop standards enabling it to work across many
+desktop environments.\n
+Deluge contains the common features to BitTorrent clients such as Protocol Encryption, DHT,
+Local Peer Discovery (LSD), Peer Exchange (PEX), UPnP, NAT-PMP, Proxy support, Web seeds, global
+and per-torrent speed limits.\n
+Please select the components to install\n
+- Desktop GUI: Install the BitTorrent Desktop client only
+-         Web GUI: Install a browser based GUI and daemon (accessible from the network)
+-         Install all: Install both components; Desktop and Web GUI\n
+* Web GUI default password: <b>deluge</b>\n\n"
+
+delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --height="340" --fixed --window-icon="$_APPICON" --image="/usr/share/unlockme/icons/ui/deluge256-add.png" --image-on-top \
+               --text="$INSTDIALOG" \
+               --button="+ Desktop GUI"\!gtk-execute:3 --button="+ Web GUI"\!gtk-execute:2 \
+               --button=" Install all"\!gtk-execute:0 --button=" Remove Components"\!gtk-delete:1 ; echo $?)
+  
+  case "$delugeOPT" in
+
+    0) echo "#⚫ Installing Deluge Desktop and Web GUI..." && sleep .8 ; check_online
+       
+      if [ -n "$(dpkg -l | grep -E '^ii' | grep '\sdeluge\s')" ] && [ -n "$(dpkg -l | grep -E '^ii' | grep '\sdeluged\s')" ]; then
+
+        zenity --question --width="320" --title="All components installed" \
+               --text="\nAll Deluge components are currently installed.\n\nWould you like to uninstall a component instead?" 2>/dev/null
+
+          if [ "$?" = "0" ]; then 
+            echo "# Deluge Uninstall Options..." & rm_deluge
+          else
+            echo "# ..." & break 1
+          fi 
+
+          #echo "#⚫ Deluge Desktop and Web GUI are already installed." && sleep 2 ; echo "# ..." & break 1
+      else
+          apt-get install deluge deluge-gtk deluged deluge-web -y | show_progress ; check_inst ; deluge_web_icon ; break
+      fi
+      ;;
+    1) echo "# Deluge Uninstall Options..." & rm_deluge
+       ;;
+    2) echo "#⚫ Installing Deluge Web GUI..." && sleep .8 ; check_online
+  
+      if [ -n "$(dpkg -l | grep -E '^ii' | grep '\sdeluge-web\s')" ]; then
+        echo "#⚫ Deluge Web GUI is already installed." && sleep 2 ; continue
+      else
+        apt-get install deluged deluge-web -y | show_progress ; check_inst
+      fi
+      deluge_web_icon
+      ;;
+    3) echo "#⚫ Installing Deluge Desktop GUI..." && sleep .8 ; check_online
+
+      if [ -n "$(dpkg -l | grep -E '^ii' | grep '\(\sdeluge\s\|\s\deluge-gtk\s\)')" ]; then
+        echo "#⚫ Deluge Desktop GUI is already installed." && sleep 2 ; continue
+      else
+        apt-get install deluge deluge-gtk -y | show_progress ; check_inst
+      fi
+       ;;
+    *) echo "# ..." & break
+       ;;
+  esac
   echo "#✔ Installation completed." && sleep 1
-else
-  echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
-  if [ -n "$(pgrep deluge-gtk)" ]; then killall -9 deluge-gtk; fi
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove deluge -y | show_progress ; check_remv
-  for i in $_ALLUSERS; do rm -f "/home/$i/Desktop/deluge.desktop"; done
-  echo "#✔ Uninstallation completed." && sleep 1
-fi
+done
 }
 
 # App dropbox install / remove
@@ -1002,14 +1154,16 @@ else
 fi
 }
 
+# App Data Compressors - install / remove
 ZIPPERS() {
-  if [ -z "$(dpkg -l | grep -E '^ii' | grep 'p7zip-rar\s')" ]; then
+
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(p7zip-rar\s\|p7zip-full\s\|\sunace\s\|\sunrar\s\)')" ]; then
   echo "#⚫ Downloading & Installing data compressors..." && sleep 1 ; check_online 
-  apt-get install p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress
+  apt-get install p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
 else
   echo "#⚫ Uninstalling data compressors..." && sleep 1
-  apt-get remove p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress
+  apt-get remove --purge p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1204,9 +1358,9 @@ else _conkymgr=("$_APPICONS/conky-manager.png" "CONKYMGR" "Conky Manager" "Utili
 fi
 
 # check for deluge
-if [ -z "$(dpkg -l | grep -E '^ii' | grep 'deluge\s')" ]; then
-     _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "No" "Cloud synchronization engine")
-else _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "Select to Remove" "Cloud synchronization engine")
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdeluge\s\|\sdeluged\s\)')" ]; then
+     _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "No" "Powerful and lightweight BitTorrent client")
+else _delugeapp=("$_APPICONS/deluge.png" "DELUGEAPP" "Deluge" "Torrent App" "Select to Modify" "Powerful and lightweight BitTorrent client")
 fi
 
 # check for dropbox
@@ -1343,7 +1497,7 @@ else _waterfoxwb=()
 fi
 
 # check for zippers apps
-if [ -z "$(dpkg -l | grep -E '^ii' | grep 'p7zip-rar\s')" ]; then
+if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(p7zip-rar\s\|p7zip-full\s\|\sunace\s\|\sunrar\s\)')" ]; then
      _zippers=("$_APPICONS/compress.png" "ZIPPERS" "Data Compressors" "Utility" "No" "Installs most common data compressors (Recommended)")
 else _zippers=("$_APPICONS/compress.png" "ZIPPERS" "Data Compressors" "Utility" "Select to Remove" "Installs most common data compressors (Recommended)")
 fi 
@@ -1407,3 +1561,5 @@ ARRAYS
 RUN
 done
 exit 0
+
+
