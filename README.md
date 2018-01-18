@@ -27,7 +27,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 
 ![](https://i.imgur.com/0BP6DL1.png)
 
-=======
+
 # UnlockMe
 ## License ![License](https://img.shields.io/badge/license-GPLv2-green.svg)
 Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and Linux Lite
@@ -54,3 +54,11 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
  	$ cd /usr/share/unlockme/tools && sudo chmod +x unlockme-dropbox.sh
  	
  4 - Launch UnlockMe.desktop :)
+
+![](https://i.imgur.com/Whf8vUj.png)
+
+![](https://i.imgur.com/Ign4zXl.png)
+
+![](https://i.imgur.com/mU8fZzt.png)
+
+![](https://i.imgur.com/wwsM7h0.png)
