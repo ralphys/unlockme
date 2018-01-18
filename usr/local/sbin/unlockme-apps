@@ -96,6 +96,7 @@ update_sources() {
 # App Atom install / remove
 ATOM() {
 
+  echo "#⚫ Preparing..."
   # variables
   _FNAME="Atom"
   _TMPVer="/tmp/atom.txt"
@@ -153,13 +154,17 @@ CATFISH() {
 # variables
 _FNAME="Catfish"
 
+# if not installed, install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'catfish\s')" ]; then check_online
-  echo "# Downloading & installing $_FNAME..." && apt-get install catfish | show_progress -y ; check_inst
+
+  # install catfish
+  echo "# Downloading & installing $_FNAME..." && sleep1 ; apt-get install catfish -y | show_progress ; check_inst
   echo "#✔ Installation completed." && sleep 1
 else
+  # remove catfish
   echo "#⚫ Terminating any $_FNAME instances..." && sleep 1
   if [ ! -z "$(pgrep catfish)" ]; then killall -9 catfish ; fi 
-  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove catfish -y | show_progress ; check_remv
+  echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge catfish -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -470,7 +475,7 @@ else
           apt-get remove --purge nautilus-dropbox -y | show_progress ; check_remv
       fi   
     fi
-
+  [ -f "$_SOURCELIST" ] || [ -f "${_SOURCELIST}.save" ] && rm -f "$_SOURCELIST" "${_SOURCELIST}.save"
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1402,5 +1407,3 @@ ARRAYS
 RUN
 done
 exit 0
-
-
