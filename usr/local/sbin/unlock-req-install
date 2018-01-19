@@ -55,7 +55,7 @@ fi
            --auto-close --no-cancel --width="340" --height="80" --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
 
 # replace Linux Lite default yad package
-if [[ "$LLDENV" =~ "Lite 3" ]]; then
+if [[ "$LLDENV" = "Lite 3" ]]; then
   if [ ! -f "/etc/apt/preferences" ]; then
     touch /etc/apt/preferences
     printf 'Package: yad
