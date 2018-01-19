@@ -368,6 +368,78 @@ Type=Link' > /usr/share/applications/deluge-web.desktop
  chmod +x /home/$_SOFTUSR/Desktop/deluge-web.desktop
 }
 
+add_to_deluge_group() {
+  adduser "$_SOFTUSR" debian-deluged
+}
+
+rem_from_deluge_group() {
+  deluser "$_SOFTUSR" debian-deluged
+}
+
+create_deluge_services() {
+
+### UMask:
+# 007 grants full access to the user and members of the group deluged is running as (in this case debian-deluged) and prevents access from all other accounts.
+# 022 grants full access to the user deluged is running as and only read access to other accounts.
+# 002 grants full access to the user and group deluged is running as and only read access to other accounts.
+# 000 grants full access to all accounts.
+
+  printf '[Unit]
+Description=Deluge Bittorrent Client Daemon
+Documentation=man:deluged
+After=network-online.target
+
+[Service]
+Type=simple
+User=debian-deluged
+Group=debian-deluged
+UMask=007
+ExecStart=/usr/bin/deluged -d -l /var/log/deluge/daemon.log -L warning
+Restart=on-failure
+# Time to wait before forcefully stopped.
+TimeoutStopSec=300
+
+[Install]
+WantedBy=multi-user.target' > /etc/systemd/system/deluged.service
+
+  printf '[Unit]
+Description=Deluge Bittorrent Client Web Interface
+Documentation=man:deluge-web
+After=network-online.target deluged.service
+Wants=deluged.service
+
+[Service]
+Type=simple
+User=debian-deluged
+Group=debian-deluged
+UMask=007
+ExecStart=/usr/bin/deluge-web
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target' > /etc/systemd/system/deluge-web.service
+
+# add current user to debian-deluged group
+add_to_deluge_group
+
+# Deluge logging
+[ ! -d "/var/log/deluge" ] && mkdir -p /var/log/deluge
+chown -R debian-deluged:debian-deluged /var/log/deluge && chmod -R 750 /var/log/deluge
+
+# systemd - reload daemon | enable deluged, deluge-web
+systemctl --system daemon-reload && systemctl enable deluged && systemctl enable deluge-web
+
+# start services deluged, deluge-web
+systemctl start deluged && systemctl start deluge-web
+}
+
+remove_deluge_services() {
+  [ -f "/etc/systemd/system/deluged.service" ] && rm -f /etc/systemd/system/deluged.service
+  [ -f "/etc/systemd/system/deluge-web.service" ] && rm -f /etc/systemd/system/deluge-web.service
+
+}
+
+
 rm_deluge() {
 
 while (true); do
@@ -393,12 +465,17 @@ while (true); do
             echo "# ..." & break 2
           fi 
     fi
-       killall -9 deluged deluge-gtk deluge-gui
+       # stop app and services
+       systemctl stop deluged && systemctl stop deluge-web && killall -9 deluge-gtk deluged deluge-web
        echo "#⚫ Terminating instances..." && sleep 2
 
        apt-get remove --purge deluge deluge-gtk deluged deluge-web -y | show_progress ; check_remv
-       rm -f "/usr/share/applications/deluge-web.desktop"
 
+       # remove services and usergroup membership
+       remove_deluge_services ; rem_from_deluge_group
+
+       # remove shortcuts
+       [ -f "/usr/share/applications/deluge-web.desktop" ] && rm -f "/usr/share/applications/deluge-web.desktop"    
        for i in $_ALLUSERS; do 
           rm -f "/home/$i/Desktop/deluge.desktop" ; rm -f "/home/$i/Desktop/deluge-web.desktop"
         done
@@ -411,11 +488,18 @@ while (true); do
 
        if [ -n "$(dpkg -l | grep -E '^ii' | grep 'deluged\s')" ]; then
           
-          if [ -n "$(pgrep deluged)" ]; then killall -9 deluged deluge-web; fi
-          echo "#⚫ Terminating instances..." && sleep 1
-          
-          apt-get remove --purge deluged deluge-web -y | show_progress ; check_remv
+          if [ -n "$(pgrep deluged)" ]; then 
 
+            # stop services
+            echo "#⚫ Terminating instances..."
+            systemctl stop deluged && systemctl stop deluge-web && killall -9 deluged deluge-web
+          fi
+          
+          # remove deluged deluge-web
+          apt-get remove --purge deluged deluge-web -y | show_progress ; check_remv
+          rem_from_deluge_group
+
+          # remove shortcut from all users desktop 
           for i in $_ALLUSERS; do
             rm -f "/home/$i/Desktop/deluge-web.desktop"
           done
@@ -482,7 +566,8 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
 
           #echo "#⚫ Deluge Desktop and Web GUI are already installed." && sleep 2 ; echo "# ..." & break 1
       else
-          apt-get install deluge deluge-gtk deluged deluge-web -y | show_progress ; check_inst ; deluge_web_icon ; break
+          apt-get install deluge deluge-gtk deluged deluge-web -y | show_progress ; check_inst ; deluge_web_icon
+          service deluged stop && create_deluge_services ; add_to_deluge_group ; break
       fi
       ;;
     1) echo "# Deluge Uninstall Options..." & rm_deluge
@@ -493,6 +578,7 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
         echo "#⚫ Deluge Web GUI is already installed." && sleep 2 ; continue
       else
         apt-get install deluged deluge-web -y | show_progress ; check_inst
+        service deluged stop && create_deluge_services ; add_to_deluge_group
       fi
       deluge_web_icon
       ;;
@@ -1561,5 +1647,4 @@ ARRAYS
 RUN
 done
 exit 0
-
 
