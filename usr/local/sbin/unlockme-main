@@ -49,6 +49,11 @@ fi
 yad --width=340 --height=110 --info --skip-taskbar --undecorated --no-buttons --timeout=1 \
     --text-align=center --text='\n\n\n<span font="Sans 14">Getting Ready</span>\n<span font="Sans 11"> \n  please wait...\n</span>' & sleep .5
 
+# linuxlite specific | failsafe not to use default linuxlite yad package
+if [[ "$LLDENV" =~ "Lite" ]]; then cat /etc/apt/preferences | egrep "yad"
+    if [ $? != 0 ]; then bash unlock-req-install; fi
+fi
+
 # function - clean up common files
 _CLEANUP() {
   [ -e /tmp/unlockme.log ] && rm -f /tmp/unlockme.log

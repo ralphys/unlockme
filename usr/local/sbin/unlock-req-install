@@ -21,47 +21,67 @@
 
 _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
-LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)
 
 # Check Internet connection
 if eval "curl -sk google.com" >> /dev/null 2>&1; then
-    :; 	# Internet connection check passed
-else 	# Prompt ERROR internet connection check failed and exit
-	zenity --info --width=320 --height=120 --ok-label="Close" --title="	Aborted" \
-           --text="\n<b>Your computer is not connected to the internet</b> \n\nRequirements cannot be installed.\n\nPlease check your Internet connection and try again."
-    log_install "the computer is not connected to the internet - yad install aborted."
-exit 0
+    :;  # Internet connection check passed
+else  # Prompt ERROR internet connection check failed and exit
+  zenity --info --width=320 --height=120 --ok-label="Close" --title=" Aborted" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n\nRequired packages may not be installed.\n\nPlease check your Internet connection and try again."
+    log_install "the computer is not connected to the internet - install aborted."
+continue
 fi
 
 if [ $EUID -ne 0 ]; then
   pkexec $0; exit 0
 case $? in
-	0) exit 0 ;;
-   	1) : ;;
+  0) exit 0 ;;
+    1) : ;;
   esac
 fi
 
 # Kill off any package managers that may be running
+(
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
 if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
 if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
 
+# add webupd8 repo
+if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]; then
+    add-apt-repository ppa:nilarimogard/webupd8 -y
+fi
+) | zenity --progress --pulsate --window-icon="$_APPICON" \
+           --auto-close --no-cancel --width="340" --height="80" --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
 
+# replace Linux Lite default yad package
+if [[ "$LLDENV" =~ "Lite 3" ]]; then
+  if [ ! -f "/etc/apt/preferences" ]; then
+    touch /etc/apt/preferences
+    printf 'Package: yad
+Pin: release xenial
+Pin-Priority: 501' > /etc/apt/preferences
+  else
+    cat /etc/apt/preferences | egrep "yad"
+    if [ $? != 0 ]; then
+      printf '%s\nPackage: yad
+Pin: release xenial
+Pin-Priority: 501' >> /etc/apt/preferences
+    fi
+  fi
 
-if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep webupd8)" ]; then
-      add-apt-repository ppa:nilarimogard/webupd8 -y 2>/dev/null
-else :
+  apt-get remove --allow-remove-essential remove yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
+           --auto-close --no-cancel --width="300" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
 
-if [[ "$LLD" =~ "Lite" ]]; then
-if [ ! -f /etc/apt/preferences ]; then touch /etc/apt/preferences; fi
-printf 'Package: yad
-Pin: release n=xenial
-Pin-Priority: 501' > /etc/apt/preferences && sleep 1
-fi
+apt-get update | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="340" --height="80" --title="$_APPNAME - Updating cache" \
+                        --text="  Updating software sources. Please wait.." 2>/dev/null
 
-apt-get update | zenity  --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="260" --height="80" --title="$_APPNAME - Updating software sources" \
-                         --text="⚫ Updating software sources..." 2>/dev/null
-apt-get install yad apt-transport-https autoconf automake pkg-config libgtk-3-dev git -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+apt-get install yad apt-transport-https autoconf automake pkg-config git -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
                  zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="400" --height="60" --title="$_APPNAME - Installing requirements" \
-                  		 	--text="⚫ Installing requirements..." 2>/dev/null
+                        --text="⚫ Installing requirements..." 2>/dev/null
+
+if [[ "$LLDENV" =~ "Lite 3" ]]; then
+  apt-get install lite-sources lite-updatesnotify -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
+           --auto-close --no-cancel --width="340" --height="80" --title=" $_APPNAME" --text=" Reinstalling lite-sources lite-updatesnotify..." 2>/dev/null 
+fi
