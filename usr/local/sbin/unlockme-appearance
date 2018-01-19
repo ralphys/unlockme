@@ -737,12 +737,6 @@ if [ ! -f "/usr/share/unlockme/set/SARDI" ]; then
 	else _sardi=("$_APPICONS/icon.png" "SARDI" "Sardi" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "20+ Sardi icon sets in multiple colors")
 fi
 
-# check for catfish
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'catfish')" ]; then
-     _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "Not Installed" "A handy lightweight interface file searching tool for linux")
-else _catfish=("$_APPICONS/catfish.png" "CATFISH" "Catfish" "Search Tool" "<span foreground='green'>Installed - Select to Remove</span>" "A handy lightweight interface file searching tool for linux")
-fi
-
 # check for breeze-cursors
 if [[ $_DSESSION != 'budgie-desktop' ]]; then
 	if [ ! -f "/usr/share/unlockme/set/BREEZECT" ]; then
