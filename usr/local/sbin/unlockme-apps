@@ -1169,14 +1169,31 @@ else
 fi
 }
 
+# App Waterfox - install / remove
 WATERFOXWB() {
 
 _FNAME="Waterfox"
 _WFVERFL="/tmp/waterfox-project.txt"
 _WFDIR="/usr/lib/waterfox"
 
-# if waterfox is not installed then install
-if [ ! -d "$_WFDIR" ]; then echo "#⚫ Downloading Waterfox..."
+# if package has been installed, remove it
+if [ -n "$(dpkg -l | grep -E '^ii' | grep '\swaterfox\s')" ]; then
+  echo "#⚫ Uninstalling $_FNAME..." && sleep 1
+  apt-get remove --purge waterfox -y | show_progress ; check_download 
+  continue
+fi
+
+# if available in repository, install from repo
+INSTOPT=$(apt-cache policy waterfox | egrep "waterfox" ; echo $?)
+  if [[ "$INSTOPT" =~ "0" ]]; then
+    echo "#⚫ Installing Waterfox..." && sleep 1
+    apt-get install waterfox -y | show_progress ; check_inst
+    echo "#✔ Installation completed." && sleep 1 ; continue
+
+  fi
+
+# if waterfox is not installed and not in a repo, then install from main site
+if [ ! -d "$_WFDIR" ]; then echo "#⚫ No repository found..." && sleep 1
 
   # check internet connection
   echo "#⚫ Querying Waterfox website..." && sleep 1 ; check_online 
@@ -1575,7 +1592,7 @@ fi
 
 # check for waterfox web browser
 echo "$ARCH" | egrep "x86_64" ; if [ $? = 0 ]; then
-  if [ ! -d  "/usr/lib/waterfox" ]; then
+  if [ ! -d  "/usr/lib/waterfox" ] && [ -z "$(dpkg -l | grep -E '^ii' | grep '\swaterfox\s')" ]; then
        _waterfoxwb=("$_APPICONS/waterfox.png" "WATERFOXWB" "Waterfox" "Web Browser" "No" "Waterfox - The free, open and private Web browser")
   else _waterfoxwb=("$_APPICONS/waterfox.png" "WATERFOXWB" "Waterfox" "Web Browser" "Select to Remove" "Waterfox - The free, open and private Web browser")
   fi
@@ -1647,4 +1664,5 @@ ARRAYS
 RUN
 done
 exit 0
+
 
