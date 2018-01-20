@@ -429,6 +429,7 @@ zenity --info --width="300" --height="80" --title="Vertex for Firefox" --text="\
 done
 }
 
+# arc icon theme
 ARCIT() {
 _TMPDIR="/tmp/arc-icon-theme"
 if [ ! -d  "/usr/share/icons/Arc" ]; then
@@ -447,17 +448,24 @@ else
 fi
 }
 
+# flat remix icon theme
 FLATRIT() {
 
 _FNAME="Flat Remix"
+
+echo "#⚫ $_FNAME icon theme..."
+
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'flat-remix-icons')" ]; then
-	echo "#⚫ Downloading & installing $_FNAME Icon Theme..." && sleep 1 && check_online
-	echo "#⚫ Adding PPA..." && sleep 1 ; add-apt-repository ppa:noobslab/icons -y
-	echo "#⚫ Updating the cache..." && sleep 1 ; apt-get update
-	echo "#⚫ Installing $_FNAME..." && apt-get install flat-remix-icons -y
+
+	# if PPA is not installed; add it
+    if [ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep noobslab)" ]; then
+		echo "#⚫ Adding PPA..." ; add-apt-repository ppa:noobslab/icons -y
+		echo "#⚫ Updating the cache..." && update_sources
+	fi
+	echo "#⚫ Installing $_FNAME icon theme..." && sleep 1 ; apt-get install flat-remix-icons -y | show_progress ; check_inst
 	echo "#✔ Installation completed." && sleep 1
 else
-	echo "#⚫ Removing $_FNAME Icon Theme..." && apt-get remove flat-remix-icons -y
+	echo "#⚫ Removing $_FNAME icon theme..." && apt-get remove --purge flat-remix-icons -y | show_progress ; check_remv
 	echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
