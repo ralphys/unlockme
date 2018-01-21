@@ -66,8 +66,13 @@ check_remv() {
   fi
 }
 
-check_online() {
+check_online2() {
   check_internet=$(sudo -u ${SUDO_USER:-$_SOFTUSR} wget -q -t2 --spider https://www.google.com ; echo $?)
+  if [ "$check_internet" -ne "0" ]; then
+    zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to install $_FNAME package from the local cache if available.
+\nIf the package does not exist in the system cache, $_FNAME installation will fail." 2>/dev/null
+  fi
 }
 
 INTCHECK() {
@@ -384,12 +389,12 @@ PACKAGECACHE() {
     echo "#✔ Packages cache cleared." && sleep 1
 }
 
+# preload tweak
 PRELOAD() {
-echo "#⚫ Getting Apps Preload status..." && sleep 1
-APPNAME=" Preload"
-SERVICE="preload"
-_APPICONS="/usr/share/unlockme/icons/zram/"
-appicon3="$_APPICONS/delete.png"
+
+_FNAME=" Preload"
+
+echo "#⚫ Getting $_FNAME status..." && sleep .5
 
 grep -q -F 'vm.swappiness' "/etc/sysctl.conf" && zenity --info  --width="380" --title="Kernel Swappiness Conflict" --icon-name="gtk-dialog-warning" \
        --text="\nYou must reset Kernel Swappiness to defaults before installing Preload.\n
@@ -398,88 +403,66 @@ It already favors and makes use of the kernel page cache.\n
 Contrary to common online tweakguides advises, you should not have a custom vm.swappiness set in sysctl.conf while also using Preload.\n
 You can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n" && continue
 
-# the loop
+# preload loop
 while (true); do
 echo "#⚫ Configuring Preload..."
-# Is preload installed?
+
+# check if preload is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
   # if not installed, then prompt user for installation
-  zenity --question --width="290" --height="80" --title="    $APPNAME" \
-         --text="\nPreload is currently not installed in your system.\n Would you like to install Preload now?" 2>/dev/null
-   answer=$?
-  # Check Internet access
-  if eval "sudo -u ${SUDO_USER:-$_SOFTUSR} curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
-    (zenity --info --width="460" --height="80" --ok-label="Close" --title="$_LT - No Internet connection detected" \
-                   --text="\n<b>Your computer doesn't seem to be connected to the Internet</b> \n \n$_LT will install Preload from your local cache if it's available. \
-    \nIf the package does not exist in your system cache, Preload installation will fail. \nYou can always check your Internet connection and try again at a later time." 2>/dev/null)
-  fi
-    if [ "$answer" -eq "0" ]; then
+  zenity --question --width="340" --height="80" --title=" $APPNAME" \
+         --text="\nPreload is currently not installed in your system.\n Would you like to install preload now?" 2>/dev/null
+   if [ "$?" != "0" ]; then break; fi
+  
+  # check internet connection
+  check_online2
+
+  if [ "$?" -eq "0" ]; then
 
     # install preload
-      echo "#⚫ Installing Preload. Please wait..." & apt-get install preload -y | show_progress
-      if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-          zenity --error --width="260" --height="80" --title="    Error" \
-                 --text="\nAn error occurred while installing Preload!" 2>/dev/null; return
-        else
-          echo "#✔ Preload successfully installed." && sleep 1 ; continue
-        fi
-  else # when user refuses installation, exit out Preload Apps Tweak
+    echo "#⚫ Installing $_FNAME..." && sleep 1 ; apt-get install preload -y | show_progress ; check_inst
+    echo "#✔ Preload successfully installed." && sleep 1 ; return
+
+  else # when user refuses installation, exit out
     exit 0
   fi
 fi
+
 # check if preload service is running and assign variables
-if ps ax | grep -v grep | grep $SERVICE > /dev/null; then
-  appicon1=$_APPICONS/running-on.png ; appicon2=$_APPICONS/blank.png ; _status="Running"
-else
-  appicon1=$_APPICONS/blank.png ; appicon2=$_APPICONS/stopped-on.png ; _status="Stopped"
-fi
+if ps ax | grep -v grep | grep "preload" > /dev/null; then _status="Running"; else _status="Stopped"; fi
 
+# preload status dialog
 if [[ "$_status" =~ "Running" ]]; then
-  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='green'>${_status}</span>\n\n• <span font='Sans 9'>Preload service is always started during boot up</span>"
+  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='green'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  YBTN=" Stop ${_FNAME}"
 else
-  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='red'>${_status}</span>\n\n• <span font='Sans 9'>Preload service is always started during boot up</span>"
+  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='red'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  YBTN=" Start ${_FNAME}"
 fi
 
-# Preload Status Main dialog
-echo "#⚫ Configuring Preload..."
-PRLOAD=$(yad --list --imagelist --fixed --width="365" --fixed --height="240" --button="gtk-close:1" --button=" Change Status"\!gtk-apply:0 --window-icon="$_RUN_ICON" --title="$APPNAME" \
-        --text-align="center" --text="$BTXT" \
-        --print-column=2 --column=":IMG" --column="Service" --column="Description" \
-        $appicon1 "Running" "Preload service is currently running" \
-        $appicon2 "Stopped" "Preload service is currently stopped" \
-        $appicon3 "Remove" "Stop service and Uninstall Preload" 2>/dev/null)
+# preload Main dialog
+echo "# Configuring $_FNAME..."
+PRLOAD=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" --window-icon="$_RUN_ICON" --title="$APPNAME" \
+           --text-align="center" --text="$BTXT" ; echo $?)
 
-if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
-
-  if [[ $PRLOAD =~ Running ]]; then # Start
-    if ps ax | grep -v grep | grep $SERVICE > /dev/null; then
-      echo "#⚫ Service is already running. No changes needed." && sleep 2 ; continue
-    else
-      echo "#⚫ Starting Preload..." && sleep 1 && service preload start
-      echo "#✔ Preload has been started." && sleep 1 ; continue
-    fi
-    elif [[ $PRLOAD =~ Stopped ]]; then # Stop
-      if ps ax | grep -v grep | grep $SERVICE > /dev/null; then
-        echo "#⚫ Stopping Preload..." && sleep 1 && service preload stop
-        echo "#✔ Preload has been stopped." && sleep 1
-      else
-        echo "#⚫ Service is not running. No changes needed." && sleep 2 ; continue
-      fi
-    elif [[ $PRLOAD =~ Remove ]]; then # Remove Preload
-      zenity --question --width="265" --title="$APPNAME" --text="\nAre you sure you want to remove Preload?" 2>/dev/null
-      if [ "$?" -eq "0" ]; then
-        echo "#⚫ Removing Preload. Please wait..." & service preload stop && apt-get remove preload -y | show_progress
-        if [ "${PIPESTATUS[0]}" -ne "0" ]; then
-          echo "#Error..." && sleep 1
-          zenity --error --width="260" --height="80" --title="    Error" \
-                 --text="\nAn error occurred while removing Preload!" 2>/dev/null; return
-        else
-          echo "#✔ Preload successfully removed." && sleep 1 ; return
+case $PRLOAD in
+    0)  if [[ "$_status" =~ "Running" ]]; then # stop
+            echo "#⚫ Stopping $_FNAME..." & service preload stop && sleep .5
+          else
+            echo "#⚫ Starting $_FNAME..." & service preload start && sleep .5
         fi
-      fi
-    else
-      zenity  --info --title=" $APPNAME" --text="\nYou did not select an option. Please try again." 2>/dev/null
-  fi
+        ;;
+    1)  return
+        ;;
+    2)  # remove preload
+          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
+            if [ "$?" -eq "0" ]; then
+              echo "#⚫ Removing $_FNAME..." && sleep .5 ; service preload stop && apt-get remove --purge preload -y | show_progress ; check_remv
+              echo "#✔ $_FNAME successfully removed." && sleep 2 ; return
+            fi
+        ;;
+    *)  return ;;
+  esac
 done
 }
 
@@ -620,6 +603,7 @@ B (the amount - in MB - of free RAM left before the system starts swapping)
 done  
 }
 
+# zram tweak
 ZRAM() {
 
 _FNAME="zRAM"
@@ -636,16 +620,10 @@ if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
   (zenity --question --width="340" --height="80" --title=" $APPNAME" \
          --text="\nzRAM is currently not enabled in your system.\nWould you like to enable zRAM support now?" 2>/dev/null)
 
-    if [ "$?" != "0" ]; then exit 0 ; fi # exit on cancel
+    if [ "$?" != "0" ]; then break ; fi # exit on cancel
 
   # Check Internet access
-  check_online
-  if [ "$check_internet" -ne "0" ]; then
-    zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
-           --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to install $_FNAME package from the local cache if available.
-\nIf the package does not exist in the system cache, $_FNAME installation will fail." 2>/dev/null
-  fi
-
+  check_online2
   # install zram
   if [ "$?" -eq "0" ]; then
     echo "#⚫ Installing $_FNAME..." && sleep 1
@@ -673,15 +651,15 @@ sZRAM=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --butto
                --text-align="center" --text="$BTXT" ; echo $?)
   case $sZRAM in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
-            echo "#⚫ Stopping zRAM..." & service zram-config stop && sleep .5
+            echo "#⚫ Stopping $_FNAME..." & service zram-config stop && sleep .5
           else
-            echo "#⚫ Starting zRAM..." & service zram-config start && sleep .5
+            echo "#⚫ Starting $_FNAME..." & service zram-config start && sleep .5
         fi
         ;;
     1)  return
         ;;
     2)  # Remove zram
-          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}" 2>/dev/null
+          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
             if [ "$?" -eq "0" ]; then
               echo "#⚫ Removing $_FNAME..." && sleep .5 ; service zram-config stop && apt-get remove --purge zram-config -y | show_progress ; check_remv
               echo "#✔ zRAM successfully removed." && sleep 2 ; return
