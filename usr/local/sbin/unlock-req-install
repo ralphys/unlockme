@@ -23,21 +23,25 @@ _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
 LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)
 
-# Check Internet connection
-if eval "curl -sk google.com" >> /dev/null 2>&1; then
-    :;  # Internet connection check passed
-else  # Prompt ERROR internet connection check failed and exit
-  zenity --info --width=320 --height=120 --ok-label="Close" --title=" Aborted" \
+
+check_internet=$(wget -q -t2 --spider https://www.google.com ; echo $?) 
+
+check_connection() {
+  if [ "$check_internet" != 0 ]; then
+    zenity --info --width="360" --height="120" --ok-label="Close" --title=" No internet connection" \
            --text="\n<b>Your computer is not connected to the internet</b> \n\nRequired packages may not be installed.\n\nPlease check your Internet connection and try again."
-    log_install "the computer is not connected to the internet - install aborted."
-continue
-fi
+    log_install "the computer is not connected to the internet."
+    exit 1
+  fi
+}
+
+check_connection
 
 if [ $EUID -ne 0 ]; then
   pkexec $0; exit 0
 case $? in
   0) exit 0 ;;
-    1) : ;;
+  1) : ;;
   esac
 fi
 
@@ -70,6 +74,7 @@ Pin-Priority: 501' >> /etc/apt/preferences
     fi
   fi
 
+  check_connection
   apt-get remove --allow-remove-essential remove yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
            --auto-close --no-cancel --width="300" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
