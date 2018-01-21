@@ -183,7 +183,7 @@ if [ ! -d  "/usr/share/themes/Arc" ]; then
 	make install 2>&1 | show_progress && rm -rf "$_TMPDIR"
 
 	# if Firefox browser is installed, then also install browser theme
-	if [ ! -z  "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
+	if [ -n  "$(dpkg -l | grep -E '^ii' | grep 'firefox\s')" ]; then
 		echo "#⚫ Installing Arc Theme for Firefox..." && sleep 1
 
 		# download from github
@@ -325,6 +325,7 @@ else
 fi
 }
 
+# Capitaine cursors theme
 CAPITAINECT() {
 _LGFILE="/usr/share/unlockme/set/CAPITAINECT"
 _CURDIR="/usr/share/icons"
@@ -343,6 +344,7 @@ else
 fi
 }
 
+# vertex theme
 VERTEXTH() {
 _FFDEF=$(ls /home/$_SOFTUSR/.mozilla/firefox/ | grep '.default')
 if [ ! -d  "/usr/share/themes/Vertex" ] || [ ! -d  "/usr/share/themes/Vertex-Dark" ] || [ ! -d  "/usr/share/themes/Vertex-Light" ] ; then
@@ -453,7 +455,7 @@ FLATRIT() {
 
 _FNAME="Flat Remix"
 
-echo "#⚫ $_FNAME icon theme..."
+echo "# $_FNAME icon theme..."
 
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'flat-remix-icons')" ]; then
 
@@ -470,6 +472,7 @@ else
 fi
 }
 
+# moka icon theme
 MOKAIT() {
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'moka-icon-theme')" ]; then
   echo "#⚫ Downloading & Installing Moka Icon Theme..." && sleep 1 && check_online
@@ -497,6 +500,7 @@ echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
 
+# phoeton icon theme
 PHOETONCT() {
 _LGFILE="/usr/share/unlockme/set/PHOETONCT"
 _CURDIR="/usr/share/icons"
@@ -515,6 +519,7 @@ else
 fi
 }
 
+# papirus icon theme
 PAPIRUSIT() {
 
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'papirus-icon-theme')" ]; then
@@ -533,6 +538,7 @@ else
 fi
 }
 
+# sardi icon theme
 SARDI() {
 
 	_TMPDIR="/tmp/sardi"
@@ -577,7 +583,7 @@ else
 fi
 }
 
-# Check internet access
+# function check internet access
 check_online() {
   if eval "curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
     zenity --info --width="390" --ok-label="Got it!" --title=" $_APPNAME - No Internet access" \
@@ -666,8 +672,11 @@ fi
 # Execute checks
 CHECK() {
 
-# Arc Desktop Theme
+# Arc desktop theme
+# if budgie desktop, do not display Arc theme option in Appearance
 if [[ $_DSESSION != 'budgie-desktop' ]]; then
+
+	# if not budgie, display Arc theme option 
 	if [ ! -d  "/usr/share/themes/Arc" ]; then
      	 _arcth=("$_APPICONS/theme.png" "ARCTH" "Arc Theme" "Desktop Theme" "Not Installed" "Arc Theme (Arc, Arc-Dark, Arc-Darker)")
 	else _arcth=("$_APPICONS/theme.png" "ARCTH" "Arc Theme" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Arc Theme (Arc, Arc-Dark, Arc-Darker)")
@@ -727,7 +736,6 @@ if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'flat-remix-icons')" ]; then
      _flatrit=("$_APPICONS/icon.png" "FLATRIT" "Flat Remix" "Icon Theme" "Not Installed" "Simple icon theme inspired on material design")
 else _flatrit=("$_APPICONS/icon.png" "FLATRIT" "Flat Remix" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Simple icon theme inspired on material design")
 fi
-
 
 # check for moka-icon-theme
 if [[ $_DSESSION != 'budgie-desktop' ]]; then
