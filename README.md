@@ -62,3 +62,5 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 ![](https://i.imgur.com/mU8fZzt.png)
 
 ![](https://i.imgur.com/wwsM7h0.png)
+
+![](https://i.imgur.com/aFEgs4O.png)
