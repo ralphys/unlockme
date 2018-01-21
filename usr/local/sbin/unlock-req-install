@@ -82,7 +82,7 @@ fi
 apt-get update | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="340" --height="80" --title="$_APPNAME - Updating cache" \
                         --text="  Updating software sources. Please wait.." 2>/dev/null
 
-apt-get install yad apt-transport-https autoconf automake pkg-config git -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+apt-get install yad apt-transport-https autoconf automake pkg-config git curl -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
                  zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="400" --height="60" --title="$_APPNAME - Installing requirements" \
                         --text="⚫ Installing requirements..." 2>/dev/null
 

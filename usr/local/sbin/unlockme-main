@@ -36,6 +36,7 @@ zenity --question --icon-name="info" --window-icon="info" --width=300 --height=1
 ⚫ apt-transport-https
 ⚫ autoconf
 ⚫ automake
+⚫ curl
 ⚫ git
 ⚫ pkg-config
 ⚫ yad" 2>/dev/null
@@ -762,8 +763,8 @@ CHECK
 BITS=$(getconf LONG_BIT)
 if [ -f "/etc/linuxmint/info" ]; then _LMDES="$(cat /etc/linuxmint/info | grep 'GRUB' | cut -d\= -f2)"
 elif [ -f "/etc/llver" ]; then _LMDES="$(cat /etc/llver) ${BITS}-bit"
-elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then 
-_LMDES="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
+elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then _LMDES="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
+elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]]; then  _LMDES="Ubuntu MATE $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
 else _LMDES="$(cat /etc/issue | cut -d\\ -f1)"; fi
 
 # Main dialog
