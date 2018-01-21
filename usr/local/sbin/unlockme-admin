@@ -36,11 +36,11 @@ _LOGS="/tmp/unlockme.log"
 touch "$_LOGS"; chown "$_SOFTUSR":"$_SOFTUSR" "$_LOGS"; chmod 600 "$_LOGS"
 }
 
-function RUN_ICON() {
+RUN_ICON() {
 _RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
 }
 
-function VIEW_SAVE_LOG() {
+VIEW_SAVE_LOG() {
 if [ ${_FAILURE} -eq "1" ]; then rm -f "$_LOGS"; else
    zenity --text-info --width="750" --height="400" --cancel-label="Quit" --ok-label="Save..." --title=" $APPNAME - Log" --filename="$_LOGS" 2>/dev/null
   if [ "$?" -eq "0" ]; then
@@ -52,7 +52,25 @@ if [ ${_FAILURE} -eq "1" ]; then rm -f "$_LOGS"; else
 fi
 }
 
-function INTCHECK() {
+check_inst() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while installing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME installation failed." && sleep 1; continue
+  fi
+}
+
+check_remv() {
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while removing $_FNAME." 2>/dev/null
+      echo "#✘ $_FNAME uninstallation failed." && sleep 1; continue
+  fi
+}
+
+check_online() {
+  check_internet=$(sudo -u ${SUDO_USER:-$_SOFTUSR} wget -q -t2 --spider https://www.google.com ; echo $?)
+}
+
+INTCHECK() {
   # Check Internet access
   if eval "sudo -u ${SUDO_USER:-$_SOFTUSR} curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
     (zenity --info --width="460" --height="80" --ok-label="Close" --title="$APPNAME - No Internet connection" \
@@ -119,7 +137,7 @@ bash unlockme-appearance
 }
 
 show_progress() {
-	stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
 AUTOREMOVE() {
@@ -398,13 +416,13 @@ if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
     if [ "$answer" -eq "0" ]; then
 
     # install preload
-    	echo "#⚫ Installing Preload. Please wait..." & apt-get install preload -y | show_progress
-    	if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-        	zenity --error --width="260" --height="80" --title="    Error" \
-            	   --text="\nAn error occurred while installing Preload!" 2>/dev/null; return
-      	else
-        	echo "#✔ Preload successfully installed." && sleep 1 ; continue
-      	fi
+      echo "#⚫ Installing Preload. Please wait..." & apt-get install preload -y | show_progress
+      if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+          zenity --error --width="260" --height="80" --title="    Error" \
+                 --text="\nAn error occurred while installing Preload!" 2>/dev/null; return
+        else
+          echo "#✔ Preload successfully installed." && sleep 1 ; continue
+        fi
   else # when user refuses installation, exit out Preload Apps Tweak
     exit 0
   fi
@@ -497,14 +515,14 @@ vfs_cache_pressure = 50
 
   case $? in
        0) if [ "$_CACHEPR" = "$VALCP" ]; then echo "# Already $VALCP. No changes needed..." && sleep 1; continue; fi
-			sysctl vm.vfs_cache_pressure=$VALCP
-      		grep -q -F 'vm.vfs_cache_pressure' $_SYSFL || echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
-      		echo "#⚫ Applying cache pressure value..." && sleep 1
-      	if [ ! -z $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]; then echo "#⚫ Updating cache pressure value..." && sleep 1
-        	sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
-      	fi
+      sysctl vm.vfs_cache_pressure=$VALCP
+          grep -q -F 'vm.vfs_cache_pressure' $_SYSFL || echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
+          echo "#⚫ Applying cache pressure value..." && sleep 1
+        if [ ! -z $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]; then echo "#⚫ Updating cache pressure value..." && sleep 1
+          sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
+        fi
       
-      	if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+        if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
             zenity --error --width="320" --height="80" --title="    Error" \
                    --text="\nAn error occurred applying new values." 2>/dev/null; continue
         else
@@ -575,16 +593,16 @@ B (the amount - in MB - of free RAM left before the system starts swapping)
         # If system's current swappiness equals new set value, don't make unnecessary changes
           if [ "$_SWPNSS" = "$VALUE" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
 
-		    # set sysctl swappiness value  	
-		    sysctl vm.swappiness=$VALUE
+        # set sysctl swappiness value   
+        sysctl vm.swappiness=$VALUE
 
-      	if grep -q -F 'vm.swappiness' "$_SYSFL"; then echo "#⚫ Updating swappiness value..." && sleep 1
-      		sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL" 	
+        if grep -q -F 'vm.swappiness' "$_SYSFL"; then echo "#⚫ Updating swappiness value..." && sleep 1
+          sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL"   
         else echo "#⚫ Applying new swappiness value..." && sleep 1
-        	sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" && sleep 1
-      	fi
+          sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" && sleep 1
+        fi
       
-      	if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+        if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
             zenity --error --width="320" --height="80" --title="    Error" \
                    --text="\nAn error occurred applying new values." 2>/dev/null; continue
           else
@@ -593,9 +611,9 @@ B (the amount - in MB - of free RAM left before the system starts swapping)
             sysctl -p
         fi;;
        1) break;;
-	   2) if [ "$_SWPNSS" = "60" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
-		  echo "#⚫ Reseting swappiness value..." ; grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
-	   	  sysctl vm.swappiness=60 && sysctl -p && sleep 1;;
+     2) if [ "$_SWPNSS" = "60" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
+      echo "#⚫ Reseting swappiness value..." ; grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
+        sysctl vm.swappiness=60 && sysctl -p && sleep 1;;
      252) break;;
       -1) echo "# An unexpected error has occurred.";;
   esac
@@ -603,123 +621,76 @@ done
 }
 
 ZRAM() {
-echo "#⚫ Getting zRAM status..." && sleep 1
-_APPNAME=" zRAM"
-_APPICONS="/usr/share/unlockme/icons/zram"
-appicon3="$_APPICONS/delete.png"
+
+_FNAME="zRAM"
+echo "#⚫ Getting $_FNAME status..." && sleep .5
+
 # the loop
 while (true); do
-echo "#⚫ Configuring zRAM..."
-# Is zram installed?
+echo "#⚫ Configuring $_FNAME..."
+
+# check if zram is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
-  # if not installed, then prompt user for installation
-  zenity --question --width="300" --height="80" --title="    $APPNAME" \
-         --text="\nzRAM is currently not enabled in your system.\n Would you like to enable zRAM support now?" 2>/dev/null
-         answer=$?
+  
+  # if not installed, prompt user for installation
+  (zenity --question --width="340" --height="80" --title=" $APPNAME" \
+         --text="\nzRAM is currently not enabled in your system.\nWould you like to enable zRAM support now?" 2>/dev/null)
+
+    if [ "$?" != "0" ]; then exit 0 ; fi # exit on cancel
+
   # Check Internet access
-  if eval "curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
-    (zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="$_LT - No Internet connection" \
-            --text="\n<b>Your computer is not connected to the internet</b> \n\n* We will attempt to install zRAM package from the local cache if available.
-\n* If the package does not exist in your system cache, zRAM installation will fail.\n\nYou can always check your internet connection and try again at a later time." 2>/dev/null)
-    answer=$?
+  check_online
+  if [ "$check_internet" -ne "0" ]; then
+    zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to install $_FNAME package from the local cache if available.
+\nIf the package does not exist in the system cache, $_FNAME installation will fail." 2>/dev/null
   fi
-  if [ "$answer" -eq "0" ]; then echo "#⚫ Installing zRAM. Please wait..." && sleep 1
-    apt-get install zram-config -y # install zram
-      if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-        zenity --error --width="260" --height="80" --title="    Error" --text="\nAn error occurred while installing zRAM!" 2>/dev/null; return
-      else
-        echo "#✔ zRAM successfully installed." && sleep 1 & systemctl start zram-config ; continue
-      fi
+
+  # install zram
+  if [ "$?" -eq "0" ]; then
+    echo "#⚫ Installing $_FNAME..." && sleep 1
+    apt-get install zram-config -y | show_progress ; check_inst
+    echo "#✔ zRAM successfully installed." & systemctl start zram-config && sleep 2 ; return
   else exit 0 # when user refuses installation, exit out zRAM Tweak
   fi
 fi
+
 # check if zRAM service is running and assign variables
-if [ -e /dev/zram0 ]; then appicon1=$_APPICONS/running-on.png ; appicon2=$_APPICONS/blank.png ; _status="Running"
-else appicon1=$_APPICONS/blank.png ; appicon2=$_APPICONS/stopped-on.png ; _status="Stopped"
-fi
+if [ -e /dev/zram0 ]; then _status="Running" ; else _status="Stopped" ; fi
 
 # zRAM Status Main dialog
-echo "#Configuring zRAM..."
+echo "# Configuring $_FNAME..."
 if [[ "$_status" =~ "Running" ]]; then
-  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='green'>${_status}</span>\n\n• <span font='Sans 9'>zRAM service is always started during boot up</span>"
+  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='green'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  YBTN=" Stop ${_FNAME}"
 else
-  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='red'>${_status}</span>\n\n• <span font='Sans 9'>zRAM service is always started during boot up</span>"
+  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='red'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  YBTN=" Start ${_FNAME}"
 fi
 
-sZRAM=$(yad --list --imagelist --width="365" --fixed --height="240" --button="gtk-close:1" --button=" Change Status"\!gtk-apply:0 --window-icon="$_RUN_ICON" --title="$APPNAME" \
-               --text-align="center" --text="$BTXT" \
-               --print-column=2 --column=":IMG" --column="Service" --column="Description" \
-               $appicon1 "Running" "zRAM service is currently running" \
-               $appicon2 "Stopped" "zRAM service is currently stopped" \
-               $appicon3 "Remove" "Stop service and Uninstall zRAM" 2>/dev/null)
-
-if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
-if [[ $sZRAM =~ Running ]]; then # Start
-  if [ -e /dev/zram0 ]; then echo "#⚫ zRAM is already running. No changes needed." && sleep 2 ; continue
-  else
-    echo "#⚫ Starting zRAM..." && sleep .5 && service zram-config start
-    echo "#✔ zRAM has been started." && sleep 1 ; continue
-  fi
-elif [[ $sZRAM =~ Stopped ]]; then # Stop
-  if [ -e /dev/zram0 ]; then
-    echo "#⚫ Stopping zRAM..." & service zram-config stop
-    echo "#✔ zRAM has been stopped." && sleep 2
-  else
-    echo "#⚫ zRAM is not running. No changes needed." && sleep 2 ; continue
-  fi
-elif [[ $sZRAM =~ Remove ]]; then # Remove zram
-  zenity --question --width="265" --title="$APPNAME" --text="\nAre you sure you want to remove zRAM?" 2>/dev/null
-  if [ "$?" -eq "0" ]; then
-    echo "#⚫ Removing zRAM. Please wait..." && service zram-config stop && apt-get remove zram-config -y
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-      zenity --error --width="260" --height="80" --title="  Error" --text="\nAn error occurred while removing zRAM!" 2>/dev/null; return
-    else
-      echo "#✔ zRAM successfully removed." && sleep 2 ; return
-    fi
-  fi
-else
-  zenity  --info --height="40" --title=" $APPNAME" --text="\nYou did not select an option. Please try again."
-fi
+# zRAM Main dialog
+sZRAM=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" --window-icon="$_RUN_ICON" --title="$APPNAME" \
+               --text-align="center" --text="$BTXT" ; echo $?)
+  case $sZRAM in
+    0)  if [[ "$_status" =~ "Running" ]]; then # stop
+            echo "#⚫ Stopping zRAM..." & service zram-config stop && sleep .5
+          else
+            echo "#⚫ Starting zRAM..." & service zram-config start && sleep .5
+        fi
+        ;;
+    1)  return
+        ;;
+    2)  # Remove zram
+          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}" 2>/dev/null
+            if [ "$?" -eq "0" ]; then
+              echo "#⚫ Removing $_FNAME..." && sleep .5 ; service zram-config stop && apt-get remove --purge zram-config -y | show_progress ; check_remv
+              echo "#✔ zRAM successfully removed." && sleep 2 ; return
+            fi
+        ;;
+    *)  return ;;
+  esac
 done
 }
-
-
-
-
-# Scheduled Tasks 
-#SCHTASKS() {
-#_APPNAME="Scheduled Tasks"
-#echo "#⚫ Getting application status..." & sleep .5
-#echo "# Waiting for user input..."
-# Is preload installed?
-#if [ -z  "$(dpkg -l | grep -E '^ii' | grep gnome-schedule)" ]; then
-  # if not installed, then prompt user for installation
-#  INTCHECK
-  #if [ "$answer" -eq "0" ]; then
-#    echo "#⚫ Installing $_APPNAME, please wait..." & apt-get install gnome-schedule -y
-#    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-#      zenity --error --width="260" --height="80" --title="    Error" \
-#             --text="\nAn error occurred while installing $_APPNAME!" 2>/dev/null; return
-#    else
-#        echo "#✔ $_APPNAME successfully installed." && sleep 2 ; return
-#    fi
-#else
-#  zenity --question --width="265" --title="$APPNAME" --text="\nAre you sure you want to remove $_APPNAME?" 2>/dev/null
-#    if [ "$?" -eq "0" ]; then
-#        echo "#⚫ Removing $_APPNAME, please wait..." & killall gnome-schedule & apt-get remove --purge gnome-schedule -y
-#        if [ "${PIPESTATUS[0]}" -ne "0" ]; then
-#          echo "# Error..." && sleep 1
-#          zenity --error --width="260" --height="80" --title="    Error" \
-#                 --text="\nAn error occurred while removing $_APPNAME!" 2>/dev/null; return
-#        else
-#          echo "#✔ $_APPNAME successfully removed." && sleep 2 ; return
-#        fi
-#    else
-#      echo "# User aborted..." & sleep .5 ; continue
-#    fi
-#fi
-#}
-
 
 ## Arrays execution
 RUN_ICON

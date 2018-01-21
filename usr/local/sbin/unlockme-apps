@@ -53,6 +53,7 @@ check_inst() {
       echo "#✘ $_FNAME installation failed." && sleep 1; continue
   fi
 }
+
 check_remv() {
   if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
       zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while removing $_FNAME." 2>/dev/null
@@ -1664,5 +1665,4 @@ ARRAYS
 RUN
 done
 exit 0
-
 
