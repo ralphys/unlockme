@@ -410,7 +410,7 @@ echo "#⚫ Configuring Preload..."
 # check if preload is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
   # if not installed, then prompt user for installation
-  zenity --question --width="340" --height="80" --title=" $APPNAME" \
+  zenity --question --width="340" --height="80" --title="    $APPNAME" \
          --text="\nPreload is currently not installed in your system.\n Would you like to install preload now?" 2>/dev/null
    if [ "$?" != "0" ]; then break; fi
   
@@ -466,6 +466,7 @@ case $PRLOAD in
 done
 }
 
+# residual config files tweak
 RESIDCONFIG() {
 echo "#⚫ Removing residual configuration files..." && sleep 1
 dpkg --purge `dpkg -l | grep '^rc' | awk '{print $2}'`
@@ -476,16 +477,22 @@ dpkg --purge `dpkg -l | grep '^rc' | awk '{print $2}'`
 echo "#✔ Residual configuration files cleared" && sleep 1
 }
 
+# kernel cache pressure tweak
 SCACHEPR() {
+
+echo "# Configuring kernel cache pressure..."
+
+# the loop
 while (true); do
 
 _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
 
 # Main dialog
-VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="480" --borders="8" --button=gtk-close:1 --button=gtk-apply:0 \
-      --title=" Kernel Cache Pressure" --value="$_CACHEPR" --max-value="150" \
-      --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
+VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="480" --borders="8" \
+      --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
+          --title=" Kernel Cache Pressure" --value="$_CACHEPR" --max-value="150" \
+          --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
 \nBasically, this is access data about the filesystem. It is generally very costly to look up and also\nvery frequently requested, so it's an excellent thing for your system to cache.
 \nAt the default value (100), the kernel will attempt to reclaim dentries and inodes at a 'fair' rate\nwith respect to pagecache and swapcache reclaim.
 \nDecreasing cache pressure causes the kernel to prefer to retain dentry and inode caches. 
@@ -497,25 +504,33 @@ vfs_cache_pressure = 50
 \n  ▼ <span font='Sans 12'> Set Cache Pressure</span>")
 
   case $? in
-       0) if [ "$_CACHEPR" = "$VALCP" ]; then echo "# Already $VALCP. No changes needed..." && sleep 1; continue; fi
+      0) if [ "$_CACHEPR" = "$VALCP" ]; then echo "# Already $VALCP. No changes needed..." && sleep 1; continue; fi
       sysctl vm.vfs_cache_pressure=$VALCP
           grep -q -F 'vm.vfs_cache_pressure' $_SYSFL || echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
           echo "#⚫ Applying cache pressure value..." && sleep 1
-        if [ ! -z $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]; then echo "#⚫ Updating cache pressure value..." && sleep 1
-          sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
-        fi
+          if [ -n $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]; then echo "#⚫ Updating cache pressure value..." && sleep 1
+            sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
+          fi
       
-        if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-            zenity --error --width="320" --height="80" --title="    Error" \
-                   --text="\nAn error occurred applying new values." 2>/dev/null; continue
-        else
-            zenity --info --width="340" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
+          if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+              zenity --error --width="320" --height="80" --title="    Error" \
+                     --text="\nAn error occurred applying new values." 2>/dev/null; continue
+          else
+              zenity --info --width="360" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
                    --text="\nNew cache pressure value has been successfully applied." 2>/dev/null
-                   sysctl -p
-        fi;;
-       1) break;;
-     252) break;;
-      -1) echo "# An unexpected error has occurred.";;
+                sysctl -p
+          fi
+          ;;
+
+    2)  if [ "$_CACHEPR" = "100" ]; then echo "#⚫ Already $VALCP. No changes needed..." && sleep 1; continue; fi
+
+      # reset cache pressure
+        echo "#⚫ Reseting cache pressure value..."
+        grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL" && sed -i '/.*vm.vfs_cache_pressure.*/d' "$_SYSFL"
+          sysctl vm.vfs_cache_pressure=100 && sysctl -p && sleep 1
+        ;;
+
+      *) break ;;
   esac
 done
 }
