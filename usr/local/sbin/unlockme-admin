@@ -52,6 +52,15 @@ if [ ${_FAILURE} -eq "1" ]; then rm -f "$_LOGS"; else
 fi
 }
 
+# common functions
+ask-logout-super() {
+  zenity --question --window-icon="info" --width="260" --height="80" --title="  $APPNAME" \
+         --text="\nChanges will take effect after next login.\n\n Would you like to logout now?" 2>/dev/null
+      if [ "$?" -eq "0" ]; then echo "# Logging out..."; srvs="$(service --status-all | egrep 'lightdm|mdm' | awk '{ print $4}')"
+        for i in "$srvs"; do systemctl restart $i; done
+      fi
+}
+
 check_inst() {
   if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
       zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while installing $_FNAME." 2>/dev/null
@@ -72,15 +81,6 @@ check_online2() {
     zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
            --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to install $_FNAME package from the local cache if available.
 \nIf the package does not exist in the system cache, $_FNAME installation will fail." 2>/dev/null
-  fi
-}
-
-INTCHECK() {
-  # Check Internet access
-  if eval "sudo -u ${SUDO_USER:-$_SOFTUSR} curl -sk google.com" >> /dev/null 2>&1; then :; else # Prompt ERROR internet connection
-    (zenity --info --width="460" --height="80" --ok-label="Close" --title="$APPNAME - No Internet connection" \
-                   --text="\n<b>Your computer is not connected to the Internet</b>
-    \nIf the package does not exist in your system cache, $_APPNAME installation will fail.\n\nYou can always check your Internet connection and try again at a later time." 2>/dev/null)
   fi
 }
 
@@ -275,17 +275,8 @@ find /var/log \( -name '*.gz' -o -name '*.0' -o -name '*.1' \) -exec rm -rf {} \
 echo "#✔ Archived logs cleared." && sleep 1
 }
 
-# common functions
-ask-logout-super() {
-  zenity --question --window-icon="info" --width="260" --height="80" --title="  $APPNAME" \
-         --text="\nChanges will take effect after next login.\n\n Would you like to logout now?" 2>/dev/null
-      if [ "$?" -eq "0" ]; then echo "#⚫ Logging out..."; srvs="$(service --status-all | egrep 'lightdm|mdm' | awk '{ print $4}')"
-        for i in "$srvs"; do systemctl restart $i; done
-      fi
-}
-
 MGMTSAVESESSION() {
-    echo "#⚫ Manage Save Session..." && sleep 1
+    echo "# Manage Save Session..." && sleep .5
     kiosk_dir=/etc/xdg/xfce4/kiosk
     kioskrc=/etc/xdg/xfce4/kiosk/kioskrc
     APPNAME="Manage Save Session"
@@ -320,21 +311,22 @@ CustomizeSecurity=NONE\nShutdown=ALL\nSaveSession=ALL\n" >> $kioskrc
     fi
 # main loop
 while (true); do
-echo "#⚫ Manage Save Session..."
+echo "# Manage Save Session..."
 grep -q "SaveSession=ALL" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon1=$_APPSICONS/appicon1-on.png; else appicon1=$_APPSICONS/blank.png; fi
+  if [ $? = 0 ]; then appicon1="TRUE"; else appicon1="FALSE"; fi
 grep -q "SaveSession=NONE" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon3=$_APPSICONS/appicon3-on.png; else appicon3=$_APPSICONS/blank.png; fi
+  if [ $? = 0 ]; then appicon3="TRUE"; else appicon3="FALSE"; fi
 grep -q "SaveSession=%sudo" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon2=$_APPSICONS/appicon2-on.png; else appicon2=$_APPSICONS/blank.png; fi
+  if [ $? = 0 ]; then appicon2="TRUE"; else appicon2="FALSE"; fi
+
 # main dialog
-answd=$(yad --list --dclick-action= --fixed --image="$_imgheader" --title="$APPNAME" --window-icon="$_RUN_ICON" --width="525" --height="200" --text-align="center" \
-              --button="gtk-close:1" --button="gtk-apply:0" --hide-column=2 --print-column=2 --borders="5" \
-              --text='<span font="Sans Bold 10">\n\nEnable or Disable Save Session:</span>\n' \
-              --column="Status:IMG" --column="ANSW" --column=" Save Session" --column=" Description" \
-              $appicon1 "30" "Enable for all users" "Enable for all accounts" \
-              $appicon2 "20" "Enable for admins" "Enable for sudoers only" \
-              $appicon3 "10" "Disable for all users" "Disable for all accounts" 2>/dev/null)
+answd=$(yad --list --radiolist --dclick-action= --fixed --no-headers --image="$_imgheader" --title="$APPNAME" --window-icon="$_RUN_ICON" --width="430" --height="200" --text-align="center" \
+              --button="gtk-close:1" --button="gtk-apply:0" --print-column=2 --borders="5" \
+              --text='<span font="Sans Bold 10">\n\n\n\n\nSave Session Options:</span>\n' \
+              --column=" ":RD --column="ANSW":HD --column=" Description":TEXT \
+              $appicon1 "30" "Enable for all users" \
+              $appicon2 "20" "Enable for administrators" \
+              $appicon3 "10" "Disable for all users")
 stop=$?
 answ="$(echo $answd | cut -d'|' -f1)"
 
