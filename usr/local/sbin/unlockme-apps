@@ -323,7 +323,7 @@ else
 
   # remove conky manager
   echo "#⚫ Uninstalling $_FNAME..." && apt-get remove --purge conky-manager -y | show_progress ; check_remv
-  rm -rf /home/$_SOFTUSR/.conky
+  rm -rf /home/$_SOFTUSR/.conky/unlockme
   echo "#✔ Uninstallation completed." && sleep 1
 fi
 }
@@ -1665,4 +1665,5 @@ ARRAYS
 RUN
 done
 exit 0
+
 

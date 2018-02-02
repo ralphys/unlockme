@@ -92,8 +92,8 @@ FRM="$@"
 echo $FRM | grep "AUTOREMOVE" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('AUTOREMOVE'); fi
 
-#echo $FRM | grep "SCHTASKS" > /dev/null
-#if [ $? = 0 ]; then ARRAYC+=('SCHTASKS'); fi
+echo $FRM | grep "BYPASSPSWADMPKEXEC" > /dev/null
+if [ $? = 0 ]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
 
 echo $FRM | grep "FIXDBXFCE2" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('FIXDBXFCE2'); fi
@@ -156,6 +156,38 @@ _DATE=$(date "+%Y-%m-%d %H")
 echo "0" > "/home/$_SOFTUSR/.local/share/.dryapt"
 echo "$_DATE" >> "/home/$_SOFTUSR/.local/share/.dryapt"
 echo "#✔ Unneeded packages cleared" && sleep 1
+}
+
+BYPASSPSWADMPKEXEC() {
+echo "#Configuring pkexec password prompt..." && sleep .5
+_WFILE0="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"
+_WFILE1="/usr/share/unlockme/set/ACTPKEXEC"
+if [ ! -f "$_WFILE0" ]; then
+  echo "#⚫ Bypassing pkexec password prompt for admins..." && sleep 2
+  touch "$_WFILE0" 
+  printf '[No pkexec password prompt for sudoers]
+Identity=unix-group:sudo
+Action=*
+ResultActive=yes' > "$_WFILE0"
+  touch $_WFILE1
+  if [ -f "$_WFILE0" ] && [ -f "$_WFILE1" ]; then
+    echo "#✔ pkexec bypass for admins applied." && sleep 2
+  else
+    echo "#Error..." && sleep .5 ; echo "#✘ An error occurred applying pkexec bypass." && sleep 2
+  fi
+else
+  zenity --question --width="300" --title="pkexec password prompt" \
+         --text="\nDo you want to enable pkexec password prompt for admins again?" 2>/dev/null
+  if [ "$?" = "0" ]; then 
+    echo "#⚫ Restoring pkexec password prompt for admins..." && sleep 2
+    rm -f "$_WFILE0" "$_WFILE1"
+    if [ ! -f "$_WFILE0" ] && [ ! -f "$_WFILE1" ]; then
+      echo "#✔ pkexec for admins enabled." && sleep 2
+    else
+      echo "#Error..." && sleep .5 ; echo "#✘ An error occurred removing pkexec bypass." && sleep 2
+    fi
+  fi
+fi
 }
 
 CHNAMEHOST() {
