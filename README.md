@@ -13,7 +13,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 
 
-![](https://i.imgur.com/pg69J8n.png)
+![](https://i.imgur.com/N1btqp6.png)
 
 ![](https://i.imgur.com/0BP6DL1.png)
 
