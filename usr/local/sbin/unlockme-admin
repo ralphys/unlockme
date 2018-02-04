@@ -513,7 +513,7 @@ _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
 
 # Main dialog
-VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="480" --borders="8" \
+VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --width="740" --height="480" --borders="8" \
       --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
           --title=" Kernel Cache Pressure" --value="$_CACHEPR" --max-value="150" \
           --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
@@ -588,7 +588,7 @@ echo "#⚫ Configuring swappiness..."
 _SWPNSS="$(cat /proc/sys/vm/swappiness)"
 
 # Main dialog
-VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="560" --borders="8" --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
+VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --width="740" --height="560" --borders="8" --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
       --title="Adjust system Swappiness" --value="$_SWPNSS" \
       --text="<span font='Sans Bold 10'>\nSwappiness</span>\n\nThe Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
 A high value improves file-system performance, while aggressively swapping less active processes
