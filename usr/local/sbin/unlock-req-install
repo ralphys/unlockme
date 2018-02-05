@@ -23,7 +23,6 @@ _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
 LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)
 
-
 check_internet=$(wget -q -t2 --spider https://www.google.com ; echo $?) 
 
 check_connection() {
@@ -63,19 +62,19 @@ if [[ "$LLDENV" = "Lite 3" ]]; then
   if [ ! -f "/etc/apt/preferences" ]; then
     touch /etc/apt/preferences
     printf 'Package: yad
-Pin: release xenial
+Pin: origin ppa.launchpad.net
 Pin-Priority: 501' > /etc/apt/preferences
   else
     cat /etc/apt/preferences | egrep "yad"
     if [ $? != 0 ]; then
       printf '%s\nPackage: yad
-Pin: release xenial
+Pin: origin ppa.launchpad.net
 Pin-Priority: 501' >> /etc/apt/preferences
     fi
   fi
 
   check_connection
-  apt-get remove --allow-remove-essential remove yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
+  apt-get remove --allow-remove-essential --purge yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
            --auto-close --no-cancel --width="300" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
 
