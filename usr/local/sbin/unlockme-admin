@@ -20,6 +20,7 @@
 ARCH=$(uname -i)
 DENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
 LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+PPMD=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # Kill off any package managers that may be running
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
@@ -204,7 +205,7 @@ if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then continue ; fi
 
 while (true); do
   _NEW_HOSTNAME=$(zenity --entry --width="350" --window-icon="$_ICON" --ok-label="Change" --cancel-label="Cancel" --title=" Change Hostname" \
-                         --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: MintBox) below \nand click 'Change' to proceed.
+                         --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: LinuxBox) below \nand click 'Change' to proceed.
                          \nNote: The hostname must not be empty, or start with \nhashtags, or contain whitespaces or underscores.\n" --entry-text="${_HOSTNAME}" 2>/dev/null)
 
   if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
@@ -226,7 +227,7 @@ while (true); do
       # update netbios name = hostname in Samba smb.conf
       _SMBCONF="/etc/samba/smb.conf"
       sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
-      echo "#⚫ Updating services, please wait..." && sleep 2
+      echo "#⚫ Updating services. Please wait..." && sleep 2
       # restart/reload services
       systemctl reload smbd && systemctl restart nmbd && systemctl restart network-manager && sleep 3; dhclient
 
@@ -242,12 +243,12 @@ while (true); do
   done
 fi
 
-# Change Hostname Xfce MATE
-if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]]; then
+# Change Hostname Xfce MATE LXce
+if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]] || [[ "$PPMD" =~ "PeppermintOS" ]]; then
   
 while (true); do
 _NEW_HOSTNAME=$(zenity --entry --width="350" --window-icon="$_ICON" --ok-label="Change" --title=" Change Hostname" \
-                 --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: MintBox) below \nand click 'Change' to proceed.
+                 --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: LinuxBox) below \nand click 'Change' to proceed.
                  \nNote: The hostname must not be empty, or start with \nhashtags, or contain whitespaces or underscores.\n" --entry-text="${_HOSTNAME}" 2>/dev/null)
 
 if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
@@ -270,7 +271,7 @@ echo "$_NEW_HOSTNAME" | egrep "^[[:space:]]*$|^#|[[:space:]]|*_.*" >/dev/null
     # update netbios name = hostname in Samba smb.conf
     _SMBCONF="/etc/samba/smb.conf"
     sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
-    echo "#⚫ Updating services, please wait..." && sleep 1
+    echo "#⚫ Updating services. Please wait..." && sleep 1
     systemctl reload smbd && systemctl restart nmbd # restart/reload samba services
     systemctl reload network-manager && sleep 3; dhclient
     chown "$_SOFTUSR":"$_SOFTUSR" "/home/$_SOFTUSR/.Xauthority"

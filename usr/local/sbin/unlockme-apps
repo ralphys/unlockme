@@ -23,6 +23,9 @@ LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{pr
 # variable Linux Lite Desktop Environment
 LLDENV=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
 
+# variable Peppermint Desktop Environment
+PPMDENV=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
+
 # variable Ubuntu-Bugdie Desktop Environment
 UBDENV=$(cat /tmp/UnlockDS)
 
@@ -610,9 +613,9 @@ _RM_DUPLICATE="dropbox.com"
 
   # function install file manager extension
   inst_ext() {
-    zenity --question --width=280 --height="120" --title="Extension available" --text="\nWould you also like to install the dropbox \nextension for your file manager?" 2>/dev/null
+    zenity --question --width="320" --height="120" --title="Extension available" --text="\nWould you also like to install the dropbox extension for your file manager?" 2>/dev/null
     if [ "$?" -eq "0" ]; then
-      if [[ "$LMDENV" =~ "Cinnamon" ]]; then
+      if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
         echo "# Installing integration for Nemo..."; apt-get install nemo-dropbox -y | show_progress
       elif [[ "$LMDENV" =~ "MATE" ]]; then
         echo "# Installing integration for Caja..."; apt-get install caja-dropbox -y | show_progress
@@ -641,6 +644,10 @@ _RM_DUPLICATE="dropbox.com"
     rm_duplicate_repo
   }
 
+  add_dropbox_key() {
+    apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
+  }
+
 # if dropbox is not installed; install it
 if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then
 
@@ -661,7 +668,12 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" 
     fi
 
     # add key
-    apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
+    echo "#⚫ Adding Dropbox Signing Key..." && add_dropbox_key
+      while (true); do
+        echo "#⚫ Waiting on signing Key from pgp.mit.edu server..."
+        if [ -n "$(apt-key list 5044912E)" ]; then break; fi
+        add_dropbox_key
+      done
 
     # update sources after installing PPA and key
     echo "#⚫ Updating the cache..." && update_sources
@@ -670,7 +682,7 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" 
     echo "# Downloading & installing $_FNAME..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
 
     # install file manager extension linuxmint|linuxlite - nemo, caja, thunar
-    if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then inst_ext; fi
+    if [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]]; then inst_ext; fi
 
     rm_duplicate_repo
 
@@ -1665,5 +1677,3 @@ ARRAYS
 RUN
 done
 exit 0
-
-

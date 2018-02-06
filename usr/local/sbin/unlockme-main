@@ -29,6 +29,9 @@ LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{pr
 # variable Linux Lite Desktop Environment
 LLDENV=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
 
+# variable Peppermint Desktop Environment
+PPMDENV=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
+
 # check requirements
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'yad\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'apt-transport-https')" ]; then
 zenity --question --icon-name="info" --window-icon="info" --width=300 --height=120 --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
@@ -659,7 +662,7 @@ fi
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname with easy. (Logout required)")
-elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
+elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
   _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname with easy. (No restart required)")
 else _chnamehost=()
 fi
@@ -770,7 +773,14 @@ CHECK
 
 # Main dialog os version
 BITS=$(getconf LONG_BIT)
-if [ -f "/etc/linuxmint/info" ]; then _LMDES="$(cat /etc/linuxmint/info | grep 'GRUB' | cut -d\= -f2)"
+if [ -f "/etc/linuxmint/info" ]; then 
+
+    if [[ "$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)" =~ "PeppermintOS" ]]; then
+      _LMDES="$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2) ${BITS}-bit"
+    else
+      _LMDES="$(cat /etc/linuxmint/info | grep 'GRUB' | cut -d\= -f2)"
+    fi
+
 elif [ -f "/etc/llver" ]; then _LMDES="$(cat /etc/llver) ${BITS}-bit"
 elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then _LMDES="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
 elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]]; then  _LMDES="Ubuntu MATE $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
