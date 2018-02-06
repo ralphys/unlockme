@@ -1,5 +1,5 @@
 # UnlockMe
-Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and Linux Lite
+Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce, Linux Lite and others
 
 ## Tested on
 
@@ -9,6 +9,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 - Linux Lite 3.x (xenial)
 - Ubuntu MATE 16.04 (xenial)
 - Ubuntu Budgie (budgie-remix) 16.04 (xenial)
+- Peppermint 8 (xenial)
 
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 
