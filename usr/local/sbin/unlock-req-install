@@ -78,14 +78,14 @@ Pin-Priority: 501' >> /etc/apt/preferences
            --auto-close --no-cancel --width="300" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
 
-apt-get update | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="340" --height="80" --title="$_APPNAME - Updating cache" \
-                        --text="  Updating software sources. Please wait.." 2>/dev/null
+apt-get update 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="80" --title="$_APPNAME - Updating cache" \
+                        --text="  Updating software sources. Please wait..." 2>/dev/null
 
 apt-get install yad apt-transport-https autoconf automake pkg-config git curl -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
-                 zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="400" --height="60" --title="$_APPNAME - Installing requirements" \
+                 zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="60" --title="$_APPNAME - Installing requirements" \
                         --text="⚫ Installing requirements..." 2>/dev/null
 
 if [[ "$LLDENV" =~ "Lite 3" ]]; then
   apt-get install lite-sources lite-updatesnotify -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="340" --height="80" --title=" $_APPNAME" --text=" Reinstalling lite-sources lite-updatesnotify..." 2>/dev/null 
+           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Reinstalling lite-sources lite-updatesnotify..." 2>/dev/null 
 fi
