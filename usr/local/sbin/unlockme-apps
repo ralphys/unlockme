@@ -309,7 +309,7 @@ if [ -z "$(dpkg -l | grep -E '^ii' | grep 'conky-manager\s')" ]; then
 
   # add UnlockForUs widgets
   echo "#⚫ Adding widgets..." && sleep 1
-  wget https://unlockforus.com/repository/downloads/conky/unlockme.7z -O /tmp/unlockme.7z
+  wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/repository/downloads/conky/unlockme.7z -O /tmp/unlockme.7z
 
   # if conky directory does not exist; create it
   [ ! -d "/home/$_SOFTUSR/.conky" ] && mkdir -p /home/$_SOFTUSR/.conky
@@ -754,8 +754,8 @@ _FNAME="Filezilla"
 if [ -z "$(dpkg -l | grep -E '^ii' | grep 'filezilla\s')" ]; then
   echo "#⚫ Downloading & installing $_FNAME..."; check_online ; apt-get install filezilla -y | show_progress ; check_inst
   echo "#⚫ Downloading $_FNAME themes..." && sleep 1
-  wget https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-faenza.zip -O /tmp/lite-faenza.zip
-  wget https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-x.zip -O /tmp/lite-x.zip
+  wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-faenza.zip -O /tmp/lite-faenza.zip
+  wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-x.zip -O /tmp/lite-x.zip
   if [ -z "$(dpkg -l | grep -E '^ii' | grep 'unzip\s')" ]; then apt-get install unzip -y; fi
   unzip /tmp/lite-faenza.zip -d /usr/share/filezilla/resources/ && rm -f /tmp/lite-faenza.zip
   unzip /tmp/lite-x.zip -d /usr/share/filezilla/resources/ && rm -f /tmp/lite-x.zip
