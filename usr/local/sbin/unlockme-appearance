@@ -788,7 +788,7 @@ _SOFTUSR=$(cat /tmp/unlockusr)
 # first run the checks
 CHECK
 # Main dialog
-selection=$(yad --list --multiple --dclick-action= --width=830 --height=620 --window-icon="$_APPICON" --image="$_APPICON" --image-on-top --button="gtk-close:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
+selection=$(yad --list --multiple --dclick-action= --width=880 --height=620 --window-icon="$_APPICON" --image="$_APPICON" --image-on-top --button="gtk-close:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --borders="8" --search-column="3" --column=" :IMG" --column="SELECTION" --column="Name" --column="Category" \
                 --column="Status" --column="Description" --hide-column="2" --print-column=2 \
                 --text="<span font='Sans 9'>\nSelect the set(s) you wish to download and install, then click the Begin button. 

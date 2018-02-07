@@ -787,7 +787,7 @@ elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]
 else _LMDES="$(cat /etc/issue | cut -d\\ -f1)"; fi
 
 # Main dialog
-selection=$(yad --list --checklist --width="840" --height="560" --window-icon="$ICON" --image="$ICON" --borders=12 \
+selection=$(yad --list --checklist --width="880" --height="560" --window-icon="$ICON" --image="$ICON" --borders=12 \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \
