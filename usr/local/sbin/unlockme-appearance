@@ -168,10 +168,10 @@ _FFTMP="/tmp/arc-firefox-theme"
 
 # if not installed, then task = install
 if [ ! -d  "/usr/share/themes/Arc" ]; then
-	echo "#⚫ Preparing for installation..." && sleep 1 && check_online
+	echo "#⚫ Preparing..." && sleep 1 && check_online
 
 	# if temp directories exist, remove them
-	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR" ; [ -d "$_FFTMP" ] && rm -rf "$_FFTMP" && install_deps
+	[ -d "$_TMPDIR" ] && rm -rf "$_TMPDIR" ; [ -d "$_FFTMP" ] && rm -rf "$_FFTMP" ; install_deps
 
 	# download theme from github
 	echo "#⚫ Downloading from github..." && sleep 1
@@ -401,7 +401,7 @@ else
 	FL4="TRUE"
 fi
 
-OPT=$(yad --list --radiolist --fixed --on-top --dclick-action= --no-selection --borders=8 --width=370 --height=210 --text-align=center --button=gtk-close:1 --button=gtk-apply:0 --no-headers \
+OPT=$(yad --list --radiolist --on-top --dclick-action= --no-selection --borders=8 --width=460 --height=220 --text-align=center --button=gtk-close:1 --button=gtk-apply:0 --no-headers \
 --window-icon="$_APPICON" --title=" Vertex for Firefox" --text="<span font='Sans 11'>\nVertex Theme selector for Firefox</span>\n" \
 --column= --column="selector" --column=" " --column=Description --hide-column="2" --print-column="2" \
 $FL1 "vdef" "Vertex" "Use the default Vertex theme for Firefox" \
