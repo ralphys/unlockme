@@ -24,8 +24,8 @@ PPMD=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # Kill off any package managers that may be running
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
-if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
-if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
+if [ -n "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
+if [ -n "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
 
 # variables
 _SOFTUSR=$(cat "/tmp/unlockusr")
@@ -95,6 +95,9 @@ if [ $? = 0 ]; then ARRAYC+=('AUTOREMOVE'); fi
 
 echo $FRM | grep "BYPASSPSWADMPKEXEC" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
+
+echo $FRM | grep "IPV6" > /dev/null
+if [ $? = 0 ]; then ARRAYC+=('IPV6'); fi
 
 echo $FRM | grep "FIXDBXFCE2" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('FIXDBXFCE2'); fi
@@ -299,6 +302,61 @@ FIXDBXFCE2() {
   echo "#✔ Fixes applied." && sleep 1
 }
 
+# enable / disable IPv6 tweak
+IPV6() {
+
+# sysctl.conf variable
+_SYSFL="/etc/sysctl.conf"
+_PROCSYS="/proc/sys/net/ipv6/conf/all/disable_ipv6"
+
+echo "#Configuring IPv6..." && sleep .5
+
+if grep -q -F '1' "$_PROCSYS"; then
+  
+  # enable IPv6
+  echo "#⚫ Enabling IPv6..."
+  sed -i '/.*net.ipv6.conf.all.disable_ipv6.*/d' "$_SYSFL" 
+
+  # when IPv6 is enabled, remove IPv4 preference
+  grep -q -Fx 'precedence ::ffff:0:0/96  100' /etc/gai.conf && sed -i '/precedence ::ffff:0:0\/96  100/s/^/#/g' "/etc/gai.conf" && sleep .5
+  sysctl -w net.ipv6.conf.all.disable_ipv6=0
+  sysctl -p && sleep .5
+
+  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do nmcli connection modify "$nets" ipv6.method "auto"; done
+  nmcli con reload
+
+    if [ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" -eq 0 ] && [ "$(cat ${_PROCSYS})" -eq 0 ]; then
+      echo "#✔ IPv6 has been enabled." && sleep 2
+    else
+      echo "#✘ An error occurred while enabling IPv6." && sleep 2
+    fi
+else
+  # disable IPv6
+  echo "#⚫ Disabling IPv6..."
+
+  if grep -q -F 'net.ipv6.conf.all.disable_ipv6' "$_SYSFL"; then
+    sed -i 's/.*net.ipv6.conf.all.disable_ipv6.*/net.ipv6.conf.all.disable_ipv6 = 1/g' "$_SYSFL"
+  else
+    sed -i -e "\$anet.ipv6.conf.all.disable_ipv6 = 1" "$_SYSFL"
+  fi
+
+  # when IPv6 is disabled, prefer IPv4
+  grep -q -Fx '#precedence ::ffff:0:0/96  100' /etc/gai.conf && sed -i '/precedence ::ffff:0:0\/96  100/s/^#//g' "/etc/gai.conf" && sleep .5
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1
+  sysctl -p && sleep .5
+
+  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do nmcli connection modify "$nets" ipv6.method "ignore"; done
+  nmcli con reload
+
+    if [ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" -ge 1 ] && [ "$(cat ${_PROCSYS})" -eq 1 ]; then
+      echo "#✔ IPv6 has been disabled." && sleep 2
+    else
+      echo "#✘ An error occurred while disabling IPv6." && sleep 2
+    fi
+fi
+}
+
+# delete log archives tweak
 LOGARCHIVES() {
 echo "#⚫ Deleting archived logs..." && sleep 1
 find /var/log \( -name '*.gz' -o -name '*.0' -o -name '*.1' \) -exec rm -rf {} \;
@@ -560,6 +618,7 @@ vfs_cache_pressure = 50
 done
 }
 
+# kernel swappiness tweak
 SYSSWAP() {
 # sysctl.conf variable
 _SYSFL="/etc/sysctl.conf"

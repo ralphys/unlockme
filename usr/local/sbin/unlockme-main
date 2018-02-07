@@ -472,6 +472,9 @@ if [ $? = 0 ]; then ARRAYB+=('AUTOREMOVE'); fi
 echo "$selection" | grep "BYPASSPSWADMPKEXEC" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('BYPASSPSWADMPKEXEC'); fi
 
+echo "$selection" | grep "IPV6" > /dev/null
+if [ $? = 0 ]; then ARRAYB+=('IPV6'); fi
+
 echo "$selection" | grep "THEMING" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('THEMING'); fi
 
@@ -618,6 +621,12 @@ fi
 if [ -d "$HOME/.mozilla/firefox/" ]; then
      _ffoxprofile=(FALSE "FFOXPROFILE" " -- Firefox Profile" "Cleanup" "User" "<span foreground='red'>Remove Firefox browser profile</span>")
 else _ffoxprofile=()
+fi
+
+# Check enable / disable IPv6 tweak
+if grep -q -F '1' "/proc/sys/net/ipv6/conf/all/disable_ipv6"; then
+     _ipv6=(FALSE "IPV6" "Enable IPv6" "Management" "System" "<span foreground='green'>IPv6 has been disabled - Select to Enable IPv6</span>")
+else _ipv6=(FALSE "IPV6" "Disable IPv6" "Management" "System" "Disable IPv6")
 fi
 
 # Check if  midori browser cache exists
@@ -799,6 +808,7 @@ selection=$(yad --list --checklist --width="880" --height="560" --window-icon="$
 "${_autoremove[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
+"${_ipv6[@]}" \
 "${_fixdpcin[@]}" \
 "${_fixdpxfce[@]}" \
 "${firefoxcache[@]}" \
