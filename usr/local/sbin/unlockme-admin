@@ -19,7 +19,7 @@
 # check Edition
 ARCH=$(uname -i)
 DENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
-LLD=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+LLD=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
 PPMD=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # Kill off any package managers that may be running
@@ -95,6 +95,9 @@ if [ $? = 0 ]; then ARRAYC+=('AUTOREMOVE'); fi
 
 echo $FRM | grep "BYPASSPSWADMPKEXEC" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
+
+echo $FRM | grep "DNSCACHE" > /dev/null
+if [ $? = 0 ]; then ARRAYC+=('DNSCACHE'); fi
 
 echo $FRM | grep "IPV6" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('IPV6'); fi
@@ -290,6 +293,7 @@ done
 fi
 }
 
+# fix dropbox | Xfce tweak
 FIXDBXFCE2() {
   # set proper permissions for .dbus folder
   echo "#⚫ Fixing folder permissions ~/.dbus ..." && sleep 1
@@ -300,6 +304,145 @@ FIXDBXFCE2() {
   _DBAPPFL="/usr/share/applications/dropbox.desktop"
   [ -f "$_DBAPPFL" ] && sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBAPPFL"
   echo "#✔ Fixes applied." && sleep 1
+}
+
+# dnscache tweak
+DNSCACHE() {
+
+_FNAME="DNS Cache"
+_CACHE="/etc/NetworkManager/dnsmasq.d/cache"
+_DNSSEC="/etc/NetworkManager/dnsmasq.d/dnssec"
+_TTL="/etc/NetworkManager/dnsmasq.d/ttl"
+
+while (true); do
+echo "#⚫ Configuring $_FNAME..." 
+
+  disable_dns_cache() {
+
+    echo "# Disabling DNS cache..." && sleep .5
+    rm -f "$_CACHE" "$_DNSSEC" "$_TTL"
+    /etc/init.d/networking force-reload
+    continue
+  }
+
+  disable_dnssec() {
+    rm -f "$_DNSSEC" && /etc/init.d/networking force-reload
+    #echo "#⚫ Disabling DNSSEC..." && sleep .5
+  }
+
+  disable_ttl() {
+    rm -f "$_TTL" && /etc/init.d/networking force-reload
+    #echo "#⚫ Restoring TTL..." && sleep .5
+  }
+
+# check 
+if [ -f "$_CACHE" ]; then
+  _cachestatus="TRUE" _cachetxt="<span foreground='green'>DNS Cache Enabled</span>"
+else
+ _cachestatus="FALSE" _cachetxt="Enable DNS Cache"
+fi
+
+if [ -f "$_DNSSEC" ]; then 
+  _dnssecstatus="TRUE" _dnssectxt="<span foreground='green'>DNSSEC Enabled</span>"
+else 
+  _dnssecstatus="FALSE" _dnssectxt="Enable DNSSEC"
+fi
+
+if [ -f "$_TTL" ]; then 
+  _ttlstatus="TRUE" _ttltxt="<span foreground='green'>TTL Cache Increased</span>"
+else 
+  _ttlstatus="FALSE" _ttltxt="Increase TTL Cache"
+fi
+
+_DIALOGTXT="\nNetwork Manager DNS Cache\n
+Only enable DNS cache if you are a single user on your computer 
+and you're in network that you control such as your home network.\n
+Do not use DNS cache if you are connected to public networks,
+otherwise protect and encrypt your dns requests with DNSCrypt.\n\n"
+
+answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=300 --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" \
+               --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection \
+               --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
+               --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
+               ${_cachestatus} "cachestatus" "$_cachetxt" \
+               ${_dnssecstatus} "dnssecstatus" "$_dnssectxt" \
+               ${_ttlstatus} "ttlstatus" "$_ttltxt")
+
+execute=$?
+DNSCACHE="$(echo $answd)"
+
+# exit on Close or X
+if [ "$execute" -eq "1" ] || [ "$execute" -eq "252" ]; then break; fi
+
+# flush dns cache
+if [ "$execute" -eq "2" ]; then 
+  echo "# Flushing DNS cache..." && sleep 1
+  if [ -n  "$(dpkg -l | grep -E '^ii' | grep '\snscd\s')" ]; then
+    /etc/init.d/nscd restart
+  else
+    /etc/init.d/dns-clean restart && /etc/init.d/networking force-reload
+  fi
+  echo "#✔ DNS cache flushed." && sleep 1
+  continue
+fi
+
+# message when no option is selected
+if [ "$execute" -eq "0" ] && [ -z "$DNSCACHE" ]; then 
+  zenity --info --timeout=5 --width="260" --ok-label="Got it" --title="$_FNAME" --text="\nNo option select. Please select at least one option." 2>/dev/null
+  continue
+fi
+
+# disable dns cache
+if [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ]; then
+
+  if [ -f "/etc/NetworkManager/dnsmasq.d/cache" ] && [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ]; then disable_dns_cache; fi
+
+  if [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -n "$(echo "$DNSCACHE" | egrep 'dnssecstatus')" ] || [ -n "$(echo "$DNSCACHE" | egrep 'ttlstatus')" ] ; then
+    echo "#  DNS Cache is not enabled." && sleep 1
+    continue
+  fi
+else
+
+if [ -n "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -z "$(echo "$DNSCACHE" | egrep 'dnssecstatus')" ]; then disable_dnssec ; fi
+if [ -n "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -z "$(echo "$DNSCACHE" | egrep 'ttlstatus')" ]; then disable_ttl ; fi
+fi
+
+# apply selections
+  # DNS CACHE
+  if [[ "$DNSCACHE" =~ "cachestatus" ]]; then 
+
+    # enable dns cache
+    if [ ! -f "$_CACHE" ];then touch "$_CACHE"
+      echo "#⚫ Enabling DNS cache..."
+      sed -i 's/cache-size.*/cache-size=1000/g' "$_CACHE" && sleep 1
+    fi
+  fi
+
+  # DNSSEC
+  if [[ "$DNSCACHE" =~ "dnssecstatus" ]]; then
+
+    # enable dnssec
+    if [ ! -f "$_DNSSEC" ]; then touch "$_DNSSEC"
+      echo "#⚫ Enabling DNSSEC..." 
+      printf 'conf-file=/usr/share/dnsmasq-base/trust-anchors.conf
+dnssec
+dnssec-check-unsigned' > "$_DNSSEC" && sleep 1
+    fi
+  fi
+
+  # TTL
+  if [[ "$DNSCACHE" =~ "ttlstatus" ]]; then
+
+    # increase TTL
+    if [ ! -f "$_TTL" ]; then touch "$_TTL"
+      echo "#⚫ Increasing TTL..." 
+      printf 'neg-ttl=300
+max-ttl=43200
+min-cache-ttl=3600
+max-cache-ttl=86400' > "$_TTL" && sleep 1
+    fi
+  fi
+done
 }
 
 # enable / disable IPv6 tweak

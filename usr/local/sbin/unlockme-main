@@ -27,7 +27,7 @@ export TEXTDOMAIN=unlockme
 LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
 
 # variable Linux Lite Desktop Environment
-LLDENV=$(cat /etc/llver | grep 'Lite' | awk '{print $2}')
+LLDENV=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
 
 # variable Peppermint Desktop Environment
 PPMDENV=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
@@ -472,6 +472,9 @@ if [ $? = 0 ]; then ARRAYB+=('AUTOREMOVE'); fi
 echo "$selection" | grep "BYPASSPSWADMPKEXEC" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('BYPASSPSWADMPKEXEC'); fi
 
+echo "$selection" | grep "DNSCACHE" > /dev/null
+if [ $? = 0 ]; then ARRAYB+=('DNSCACHE'); fi
+
 echo "$selection" | grep "IPV6" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('IPV6'); fi
 
@@ -559,7 +562,7 @@ fi
 # Check for bypass pkexec password prompt
 if [ ! -f "/usr/share/unlockme/set/ACTPKEXEC" ]; then
      _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "Bypass pkexec password prompt for admin accounts")
-else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - Active - (select to remove)</span>")
+else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - (select to remove)</span>")
 fi
 
 # Check if the google-chrome browser cache exists
@@ -588,6 +591,12 @@ if [ -d "$HOME/.config/chromium/" ]; then
 else _chromiumprofile=()
 fi
 
+# Check for dns cache tweak
+if [ ! -f "/etc/NetworkManager/dnsmasq.d/cache" ]; then
+     _dnscache=(FALSE "DNSCACHE" "Enable DNS Cache" "Management" "System" "Enable DNS Cache")
+else _dnscache=(FALSE "DNSCACHE" "DNS Cache" "Management" "System" "<span foreground='green'>DNS Cache Enabled - (select to modify)</span>")
+fi
+
 # check for dropbox Cinnamon Fix
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _fixdpcin=()
@@ -612,7 +621,7 @@ fi
 
 # Check if firefox browser cache exists
 if [  -d  "$HOME/.cache/mozilla/" ]; then
-  FFCACHESIZE=$(du -sh "$HOME/.cache/mozilla/firefox/"| awk '{print $1}'| sed 's/$/B/')
+  FFCACHESIZE=$(du -sh "$HOME/.cache/mozilla/firefox/" 2>&1 | awk '{print $1}'| sed 's/$/B/')
   firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
 else firefoxcache=()
 fi
@@ -670,9 +679,9 @@ fi
 
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
-  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname with easy. (Logout required)")
+  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
 elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
-  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname with easy. (No restart required)")
+  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
 else _chnamehost=()
 fi
 
@@ -796,18 +805,19 @@ elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]
 else _LMDES="$(cat /etc/issue | cut -d\\ -f1)"; fi
 
 # Main dialog
-selection=$(yad --list --checklist --width="880" --height="560" --window-icon="$ICON" --image="$ICON" --borders=12 \
+selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --borders=8 \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \
                 --text="<span font='Sans 9'>$_LMDES\n</span>
 <span font='Sans 9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
 \nYou can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
-"FALSE" "THEMING" "Appearance" "Install or Remove" "Customization" "A selection of popular desktop themes, icons and cursors sets" \
+"FALSE" "THEMING" "Appearance" "Install or Remove" "Customize" "A selection of popular desktop themes, icons and cursors" \
 "FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Install and remove selected commonly used applications" \
 "${_autoremove[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
+"${_dnscache[@]}" \
 "${_ipv6[@]}" \
 "${_fixdpcin[@]}" \
 "${_fixdpxfce[@]}" \

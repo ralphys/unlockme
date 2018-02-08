@@ -47,8 +47,8 @@ fi
 # Kill off any package managers that may be running
 (
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
-if [ ! -z "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
-if [ ! -z "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
+if [ -n "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
+if [ -n "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
 
 # add webupd8 repo
 if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]; then
