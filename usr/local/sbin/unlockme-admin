@@ -360,7 +360,7 @@ and you're in network that you control such as your home network.\n
 Do not use DNS cache if you are connected to public networks,
 otherwise protect and encrypt your dns requests with DNSCrypt.\n\n"
 
-answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=300 --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" \
+answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=310 --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" \
                --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection \
                --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
                --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
