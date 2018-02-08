@@ -321,18 +321,17 @@ echo "#⚫ Configuring $_FNAME..."
 
     echo "# Disabling DNS cache..." && sleep .5
     rm -f "$_CACHE" "$_DNSSEC" "$_TTL"
-    /etc/init.d/networking force-reload
+    echo "# Restarting Network Manager..." 
+    service network-manager restart ; sleep 2
     continue
   }
 
   disable_dnssec() {
     rm -f "$_DNSSEC" && /etc/init.d/networking force-reload
-    #echo "#⚫ Disabling DNSSEC..." && sleep .5
   }
 
   disable_ttl() {
     rm -f "$_TTL" && /etc/init.d/networking force-reload
-    #echo "#⚫ Restoring TTL..." && sleep .5
   }
 
 # check 
@@ -343,9 +342,9 @@ else
 fi
 
 if [ -f "$_DNSSEC" ]; then 
-  _dnssecstatus="TRUE" _dnssectxt="<span foreground='green'>DNSSEC Enabled</span>"
+  _dnssecstatus="TRUE" _dnssectxt="<span foreground='green'>DNSSEC Validation Enabled</span>"
 else 
-  _dnssecstatus="FALSE" _dnssectxt="Enable DNSSEC"
+  _dnssecstatus="FALSE" _dnssectxt="Enable DNSSEC Validation"
 fi
 
 if [ -f "$_TTL" ]; then 
@@ -358,7 +357,10 @@ _DIALOGTXT="\nNetwork Manager DNS Cache\n
 Only enable DNS cache if you are a single user on your computer 
 and you're in network that you control such as your home network.\n
 Do not use DNS cache if you are connected to public networks,
-otherwise protect and encrypt your dns requests with DNSCrypt.\n\n"
+otherwise protect and encrypt your dns requests with DNSCrypt.\n
+⚫ DNSSEC Validation
+    Your upstream DNS provider must support DNSSEC,
+    otherwise you will lose connectivity.\n"
 
 answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=310 --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" \
                --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection \
@@ -387,7 +389,7 @@ if [ "$execute" -eq "2" ]; then
 fi
 
 # message when no option is selected
-if [ "$execute" -eq "0" ] && [ -z "$DNSCACHE" ]; then 
+if [ "$execute" -eq "0" ] && [ -z "$DNSCACHE" ] && [ ! -f "$_CACHE" ]; then 
   zenity --info --timeout=5 --width="260" --ok-label="Got it" --title="$_FNAME" --text="\nNo option select. Please select at least one option." 2>/dev/null
   continue
 fi
@@ -414,7 +416,7 @@ fi
     # enable dns cache
     if [ ! -f "$_CACHE" ];then touch "$_CACHE"
       echo "#⚫ Enabling DNS cache..."
-      sed -i 's/cache-size.*/cache-size=1000/g' "$_CACHE" && sleep 1
+      printf 'cache-size=1000' > "$_CACHE" && sleep 1
     fi
   fi
 
@@ -442,6 +444,8 @@ min-cache-ttl=3600
 max-cache-ttl=86400' > "$_TTL" && sleep 1
     fi
   fi
+  echo "#⚫ Restarting Network Manager..." 
+  service network-manager restart ; sleep 2
 done
 }
 
