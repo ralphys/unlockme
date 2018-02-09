@@ -378,11 +378,11 @@ if [ "$execute" -eq "1" ] || [ "$execute" -eq "252" ]; then break; fi
 
 # flush dns cache
 if [ "$execute" -eq "2" ]; then 
-  echo "# Flushing DNS cache..." && sleep 1
+  echo "# Flushing DNS cache..."
   if [ -n  "$(dpkg -l | grep -E '^ii' | grep '\snscd\s')" ]; then
-    /etc/init.d/nscd restart
+    /etc/init.d/nscd restart ; sleep 3
   else
-    /etc/init.d/dns-clean restart && /etc/init.d/networking force-reload
+    service network-manager restart ; sleep 3
   fi
   echo "#✔ DNS cache flushed." && sleep 1
   continue
