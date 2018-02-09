@@ -105,6 +105,11 @@ elif [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -eq 0 ]; then
 else bash -c "/usr/local/sbin/dryapt" &
 fi
 
+BLOCKHOSTS() {
+  echo "# Blacklist Generator..."
+  bash blockhosts
+}
+
 # function remove Chrome cache 
 CHROMECACHE() {
   _BROWSERNAME="Google Chrome" _BROWSERCACHEDIR="$HOME/.cache/google-chrome/" ; rm_browser_cache
@@ -395,6 +400,9 @@ ARRAYB=()    # Array for admin tasks
 
 ################## ARRAY A #########################
 
+echo "$selection" | grep "BLOCKHOSTS" > /dev/null
+if [ $? = 0 ]; then ARRAYA+=('BLOCKHOSTS'); fi
+
 echo "$selection" | grep "CHROMECACHE" > /dev/null
 if [ $? = 0 ]; then ARRAYA+=('CHROMECACHE'); fi
 
@@ -557,6 +565,12 @@ if [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -gt 0 ]; then
   _DRYAPTVAL=$(cat "$_DRYAPT" | head -n+1)
   _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
 else _autoremove=()
+fi
+
+# Check for blockhosts
+if [ ! -f "/etc/NetworkManager/dnsmasq.d/blacklist" ]; then
+     _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware and tracking domains")
+else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "<span foreground='green'>Active blacklist applied - (select to modify)</span>")
 fi
 
 # Check for bypass pkexec password prompt
@@ -815,6 +829,7 @@ selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$
 "FALSE" "THEMING" "Appearance" "Install or Remove" "Customize" "A selection of popular desktop themes, icons and cursors" \
 "FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Install and remove selected commonly used applications" \
 "${_autoremove[@]}" \
+"${_blockhosts[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
 "${_dnscache[@]}" \

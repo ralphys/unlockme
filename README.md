@@ -14,7 +14,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce, Lin
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 
 
-![](https://i.imgur.com/N1btqp6.png)
+![](https://i.imgur.com/MNn2xEa.png)
 
 ![](https://i.imgur.com/0BP6DL1.png)
 
@@ -32,7 +32,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 
  1 - Copy UnlockMe.desktop shortcut to your desktop or any other location you wish. E.g.:
  
-   $ cd unlockme-master && cp UnlockMe.desktop $HOME/Desktop
+   ~$ cd unlockme-master && cp UnlockMe.desktop $HOME/Desktop
 
  2 - Copy folder "usr" to your / :
  
@@ -40,9 +40,10 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 
  3 - Make scripts executable:
  
- 	$ cd /usr/local/sbin && sudo chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps unlockme-main unlock-req-install
+ 	~$ cd /usr/local/sbin
+ 	~$ sudo chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps unlockme-main unlock-req-install blockhosts
    
- 	$ cd /usr/share/unlockme/tools && sudo chmod +x unlockme-dropbox.sh
+ 	~$ cd /usr/share/unlockme/tools && sudo chmod +x unlockme-dropbox.sh
  	
  4 - Launch UnlockMe.desktop :)
 
