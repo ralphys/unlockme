@@ -15,20 +15,17 @@ the system; you'll be prompted to save it instead.\n"
 if [ $EUID -ne 0 ]; then
 
 	yad --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders=8 --title="$_APPNAME" --text="$dialog0" --on-top \
-		--fixed --button="gtk-quit":1 --button="Authenticate"\!gtk-refresh:2 --button="Continue"\!gtk-ok:0
+		--fixed --button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0
 	
 	case "$?" in
 		0) : ;;
 		2) pkexec $0; exit 0 ;;
 		*) exit 0 ;;
 	esac
-else :
-fi
-
-if [ $EUID -eq 0 ]; then
+else 
 	if [ -f "/etc/NetworkManager/dnsmasq.d/blacklist" ]; then
-		zenity --question --width="370" --height="120" --title="Active blacklist found" \
-			   --text="\nAn active blacklist is currently enable in the system.\nWould you like to remove it?" 2>/dev/null
+		zenity --question --width="300" --height="120" --title="Active blacklist found" \
+			   --text="\nAn active blacklist is currently enable in the system. Would you like to remove it?" 2>/dev/null
 
 		if [[ "$?" -eq "0" ]]; then 
 			(
@@ -39,7 +36,6 @@ if [ $EUID -eq 0 ]; then
 			echo "# Blacklist removed." && sleep 1 ) | yad --progress --pulsate --width=340 --height=110 --title="Progress Status" --text="" --center --no-buttons \
 														   --skip-taskbar --undecorated --no-cancel --percentage=0 --auto-close --auto-kill
 			exit 0
-		else :
 		fi
 	fi
 fi
@@ -74,7 +70,6 @@ SOURCES=""
 SOURCES="$@"
 
 # Blacklist additional sites (add inside quotes, space-separated)
-# BLACKLIST="google-analytics.com bbtrack.com yldbt.com switchadhub.com mathtag.com adnxs.com ads.revjet.com"
 BLACKLIST="$(cat $GENFILEB)"
 #echo "$BLACKLIST" > $GENFILEB
 
