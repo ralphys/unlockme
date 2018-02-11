@@ -518,7 +518,6 @@ MGMTSAVESESSION() {
     kiosk_dir=/etc/xdg/xfce4/kiosk
     kioskrc=/etc/xdg/xfce4/kiosk/kioskrc
     APPNAME="Manage Save Session"
-    _APPSICONS="/usr/share/unlockme/icons/ui"
     _imgheader="/usr/share/unlockme/icons/ui/logout-screen.png"
 
     if [ -d $kiosk_dir ]; then
@@ -551,20 +550,28 @@ CustomizeSecurity=NONE\nShutdown=ALL\nSaveSession=ALL\n" >> $kioskrc
 while (true); do
 echo "# Manage Save Session..."
 grep -q "SaveSession=ALL" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon1="TRUE"; else appicon1="FALSE"; fi
+  if [ $? = 0 ]; then selector1="TRUE"; else selector1="FALSE"; fi
 grep -q "SaveSession=NONE" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon3="TRUE"; else appicon3="FALSE"; fi
+  if [ $? = 0 ]; then selector3="TRUE"; else selector3="FALSE"; fi
 grep -q "SaveSession=%sudo" $kioskrc && echo $?
-  if [ $? = 0 ]; then appicon2="TRUE"; else appicon2="FALSE"; fi
+  if [ $? = 0 ]; then selector2="TRUE"; else selector2="FALSE"; fi
 
 # main dialog
-answd=$(yad --list --radiolist --dclick-action= --fixed --no-headers --image="$_imgheader" --title="$APPNAME" --window-icon="$_RUN_ICON" \
-              --width="430" --height="200" --text-align="center" --text='<span font="Sans Bold 10">\n\n\n\n\nSave Session Options:</span>\n' --no-selection \
+dialog='\nYou have probably noticed the "Save session for future logins"
+option in the shutdown dialog.\n
+Some users may inadvertently save their sessions on logout
+and become confused wondering why there are so many 
+applications popping up during login.\n
+As Administrator you can enable, limit or disable the ability
+to save sessions on logout.\n'
+
+answd=$(yad --list --radiolist --dclick-action= --fixed --image="$_imgheader" --title="$APPNAME" --window-icon="$_RUN_ICON" \
+              --width="580" --height="350" --text="$dialog" --no-selection --borders=8 --center \
               --button="gtk-close:1" --button="gtk-apply:0" --print-column=2 --borders="5" \
-              --column=" ":RD --column="ANSW":HD --column=" Description":TEXT \
-              $appicon1 "30" "Enable for all users" \
-              $appicon2 "20" "Enable for administrators" \
-              $appicon3 "10" "Disable for all users")
+              --column="▼":RD --column="ANSW":HD --column="Save Session Options":TEXT \
+              $selector1 "30" "Enable for all users" \
+              $selector2 "20" "Enable for administrators" \
+              $selector3 "10" "Disable for all users")
 stop=$?
 answ="$(echo $answd | cut -d'|' -f1)"
 
