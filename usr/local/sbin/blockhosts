@@ -224,7 +224,7 @@ if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
 # additional hosts variables
 add2="https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts"
 # add6="https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts" # (issues when selected with other lists)
-add11="https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts"
+add11="https://raw.githubusercontent.com/FadeMind/hosts.extras/master/Spotify-Ad-free/hosts"
 add12="https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts"
 add13="https://raw.githubusercontent.com/tyzbit/hosts/master/data/tyzbit/hosts"
 add16="http://hosts-file.net/ad_servers.asp"
