@@ -568,9 +568,10 @@ else _autoremove=()
 fi
 
 # Check for blockhosts
-if [ ! -f "/etc/NetworkManager/dnsmasq.d/blacklist" ]; then
-     _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware and tracking domains")
-else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "<span foreground='green'>Active blacklist applied - (select to modify)</span>")
+if [ $(wc -l /etc/NetworkManager/dnsmasq.d/blacklist 2>/dev/null | awk '{print $1}') -gt "1" ]; then
+      blocked_count=$(wc -l /etc/NetworkManager/dnsmasq.d/blacklist 2>/dev/null | awk '{print $1}')
+     _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "<span foreground='green'>${blocked_count} undesirable hosts blacklisted - (select to modify)</span>")
+else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware and tracking domains")
 fi
 
 # Check for bypass pkexec password prompt

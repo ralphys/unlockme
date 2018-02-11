@@ -15,7 +15,7 @@ the system; you'll be prompted to save it instead.\n"
 if [ $EUID -ne 0 ]; then
 
 	yad --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders=8 --title="$_APPNAME" --text="$dialog0" --on-top \
-		--fixed --button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0
+		--fixed --button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0 2>/dev/null
 	
 	case "$?" in
 		0) : ;;
@@ -71,8 +71,6 @@ SOURCES="$@"
 
 # Blacklist additional sites (add inside quotes, space-separated)
 BLACKLIST="$(cat $GENFILEB)"
-#echo "$BLACKLIST" > $GENFILEB
-
 WHITELIST="$(cat $GENFILEW)"
 
 echo "20"
@@ -122,20 +120,37 @@ echo "# Adding custom whitelist records... done" ; sleep .5
 
 sed -i -e "/0\.0\.0\.0/d" $TMPFILE
 
+
+# unbound formatting 
 if [[ "$_DNSSERV" == "UNBOUND" ]]; then
-	echo "90"
-	echo "# Configuring records for unbound..." ; sleep 1
+	echo "85"
+	echo "# Configuring records for unbound..."
 	sort -u $TMPFILE -o $TMPFILE
-	cat $TMPFILE | awk '{print "local-zone: \""$1"\" redirect\nlocal-data: \""$1" A 0.0.0.0\""}' > "$bgenfile"
+	cat $TMPFILE | awk '{print "local-zone: \""$1"\" redirect\nlocal-data: \""$1" A 0.0.0.0\""}' > "$bgenfile" ; sleep 2
 fi
 
-
+# dnsmasq formatting
 if [[ "$_DNSSERV" == "DNSMASQ" ]]; then
-	echo "90"
-	echo "# Configuring records for dnsmasq..." ; sleep 1
+	echo "85"
+	echo "# Configuring records for dnsmasq..." 
 
 sort -u $TMPFILE -o $TMPFILE
-cat $TMPFILE | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile"
+cat $TMPFILE | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile" ; sleep 2
+
+	# clean list errors in domain names - e.g.: domain..net instead of domain.net
+		echo "95"
+		echo "# Cleaning up records. Please wait..."  
+		sed -i '/\.\./d' "$bgenfile" ; sleep 2
+
+	# delete address=/0.0.0.0/ if in blacklist
+		sed -i '/address=\/\0\.0\.0\.0\//d' "$bgenfile" ; sleep 2
+
+	# cleanup incompleted TLDs
+		no_tld=$(rev $bgenfile | cut -c9- | rev | cut -d\= -f2 | sed -n '/\./!p')
+		for incomplete in $no_tld; do
+			echo "# Incompleted TLD ${incomplete}..." && sleep .5
+			sed -i "$incomplete"'d' "$bgenfile"
+		done
 fi
 
 echo "99"
@@ -190,56 +205,58 @@ unified_gambling_porn_social="https://raw.githubusercontent.com/StevenBlack/host
 unified_fakenews_gambling_porn_social="https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts"	# Unified hosts + fakenews + gambling + porn + social
 
 # Unified hosts selector dialog
-_dialog="Sources based on StevenBlack @github hosts list
-\n  ⚫ Unified hosts includes known adware + malware hosts\n"
+_dialog="$_APPNAME consolidates several reputable hosts files and merges
+ them into a unified list with duplicates removed.\n
+	<span font='9'>⚫ Lists source: StevenBlack's @github hosts list
+	⚫ Unified hosts includes known adware + malware hosts\n</span>"
 
 # additional hosts selector dialog
 _dialog2="Sources based on StevenBlack @github hosts list 
 \n  ⚫ Additional hosts lists - Multiple can be selected"
 
 echo "5"
-echo "# Selecting Unified blacklist sources..." && sleep .1
+echo "# Selecting Unified blacklist sources..." && sleep .2
 
-ans=$(zenity  --list --width="480" --height="540" --ok-label="Next" --title=" Blacklist Generator" --text="$_dialog" --window-icon="$_RUN_ICON" \
-			  --radiolist --hide-column="2" --print-column="2" --column="" --column="blist" --column="Blacklist Source" \
-TRUE  "$unified" "Unified hosts" \
-FALSE "$unified_fakenews" "Unified hosts + Fake News" \
-FALSE "$unified_gambling" "Unified hosts + Gambling" \
-FALSE "$unified_porn" "Unified hosts + porn" \
-FALSE "$unified_social" "Unified hosts + Social" \
-FALSE "$unified_fakenews_gambling" "Unified hosts + Fakenews + Gambling" \
-FALSE "$unified_fakenews_porn" "Unified hosts + Fakenews + Porn" \
-FALSE "$unified_fakenews_social" "Unified hosts + Fakenews + Social" \
-FALSE "$unified_gambling_porn" "Unified hosts + Gambling + Porn" \
-FALSE "$unified_gambling_social" "Unified hosts + Gambling + Social" \
-FALSE "$unified_porn_social" "Unified hosts + Porn + Social" \
-FALSE "$unified_fakenews_gambling_porn" "Unified hosts + Fakenews + Gambling + Porn" \
-FALSE "$unified_fakenews_gambling_social" "Unified hosts + Fakenews + Gambling + Social" \
-FALSE "$unified_fakenews_porn_social" "Unified hosts + Fakenews + Porn + Social" \
-FALSE "$unified_gambling_porn_social" "Unified hosts + Gambling + Porn + Social" \
-FALSE "$unified_fakenews_gambling_porn_social" "Unified hosts + fakenews + gambling + porn + social" 2>/dev/null)
+ans=$(zenity  --list --width="480" --height="580" --ok-label="Next" --title=" Blacklist Generator" --text="$_dialog" --window-icon="$_RUN_ICON" \
+			  --radiolist --hide-column="2" --print-column="2" --column="▼" --column="blist" --column="Select Unified hosts list" \
+TRUE  "$unified" "  Unified hosts" \
+FALSE "$unified_fakenews" "  Unified hosts + Fake News" \
+FALSE "$unified_gambling" "  Unified hosts + Gambling" \
+FALSE "$unified_porn" "  Unified hosts + porn" \
+FALSE "$unified_social" "  Unified hosts + Social" \
+FALSE "$unified_fakenews_gambling" "  Unified hosts + Fakenews + Gambling" \
+FALSE "$unified_fakenews_porn" "  Unified hosts + Fakenews + Porn" \
+FALSE "$unified_fakenews_social" "  Unified hosts + Fakenews + Social" \
+FALSE "$unified_gambling_porn" "  Unified hosts + Gambling + Porn" \
+FALSE "$unified_gambling_social" "  Unified hosts + Gambling + Social" \
+FALSE "$unified_porn_social" "  Unified hosts + Porn + Social" \
+FALSE "$unified_fakenews_gambling_porn" "  Unified hosts + Fakenews + Gambling + Porn" \
+FALSE "$unified_fakenews_gambling_social" "  Unified hosts + Fakenews + Gambling + Social" \
+FALSE "$unified_fakenews_porn_social" "  Unified hosts + Fakenews + Porn + Social" \
+FALSE "$unified_gambling_porn_social" "  Unified hosts + Gambling + Porn + Social" \
+FALSE "$unified_fakenews_gambling_porn_social" "  Unified hosts + fakenews + gambling + porn + social" 2>/dev/null)
 if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
 
 # Additional hosts based on StevenBlack hosts list. See https://github.com/StevenBlack/hosts
 # additional hosts variables
 add2="https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts"
 # add6="https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts" # (issues when selected with other lists)
+add16="https://hosts-file.net/ad_servers.txt"
 add11="https://raw.githubusercontent.com/FadeMind/hosts.extras/master/Spotify-Ad-free/hosts"
 add12="https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts"
 add13="https://raw.githubusercontent.com/tyzbit/hosts/master/data/tyzbit/hosts"
-add16="http://hosts-file.net/ad_servers.asp"
 
 
 echo "10"
 echo "# Selecting additional blacklist sources..."
 # additional hosts selector dialog yad --selectable-labels
 ans2=$(zenity --list --checklist --width="600" --height="300" --ok-label="Next" --title=" $_APPNAME" --text="$_dialog2" --window-icon="$_RUN_ICON" \
-			   --hide-column="2" --separator=" " --print-column="2" --column="" --column="blist" --column="List Name" --column="Description" \
+			   --hide-column="2" --separator=" " --print-column="2" --column="▼" --column="blist" --column="List Name" --column="Description" \
 		FALSE "$add2" "add.2o7Net" "Tracking sites based on hostsfile.org content" \
+		FALSE "$add16" "hpHosts" "Ads and Tracking servers only" \
 		FALSE "$add11" "SpotifyAds" "Sources based on Xeroday @github content" \
 		FALSE "$add12" "Steven Black's ad-hoc list  " "Additional sketchy domains" \
-		FALSE "$add13" "tyzbit" "Microsoft tracking domains" \
-		FALSE "$add16" "hpHosts" "Ads and Tracking servers only" 2>/dev/null)
+		FALSE "$add13" "tyzbit" "Microsoft tracking domains" 2>/dev/null)
 
 if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
 
@@ -253,7 +270,7 @@ isn't blocked.\n\n
 ▼ Whitelist domains (space separated)"
 
 szwhite=$(yad --entry --image="/usr/share/unlockme/icons/ui/whitelist90.png" --button="gtk-cancel:1" --button="Next":0 --title=" Whitelist Domains" \
-			  --text="$_dialog3" --entry-text="" --width=500 --height=300 --borders=8 --fixed --center --window-icon="$_RUN_ICON")
+			  --text="$_dialog3" --entry-text="" --width=500 --height=300 --borders=8 --fixed --center --window-icon="$_RUN_ICON" 2>/dev/null)
 	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
 	echo "$szwhite" > "$GENFILEW"
 
@@ -265,7 +282,7 @@ but you also want to block yahoo.com and youtube.com by adding\nthem here.\n\n
 ▼ Blacklist domains (space separated)"
 
 szblack=$(yad --entry --image="/usr/share/unlockme/icons/ui/blacklist90.png" --button="gtk-cancel:1" --button="Next":0 --title=" Blacklist Domains" \
-			  --text="$_dialog4" --entry-text="" --width=500 --height=300 --borders=8 --fixed --center --window-icon="$_RUN_ICON")
+			  --text="$_dialog4" --entry-text="" --width=500 --height=300 --borders=8 --fixed --center --window-icon="$_RUN_ICON" 2>/dev/null)
 	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0; fi
 	echo "$szblack" > "$GENFILEB"
 
