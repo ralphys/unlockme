@@ -24,13 +24,13 @@ export TEXTDOMAIN=unlockme
 
 # check Editions
 # variable Linux Mint Desktop Environment
-LMDENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
+LMDENV=$(cat /etc/linuxmint/info 2>&1 | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
 
 # variable Linux Lite Desktop Environment
 LLDENV=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
 
 # variable Peppermint Desktop Environment
-PPMDENV=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
+PPMDENV=$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # check requirements
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'yad\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'apt-transport-https')" ]; then
@@ -708,7 +708,8 @@ fi
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
-elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
+elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]] \
+  || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
   _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
 else _chnamehost=()
 fi

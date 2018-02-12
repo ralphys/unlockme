@@ -18,9 +18,9 @@
 
 # check Edition
 ARCH=$(uname -i)
-DENV=$(cat /etc/linuxmint/info | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
+DENV=$(cat /etc/linuxmint/info 2>&1 | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
 LLD=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
-PPMD=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
+PPMD=$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # Kill off any package managers that may be running
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
@@ -250,7 +250,8 @@ while (true); do
 fi
 
 # Change Hostname Xfce MATE LXce
-if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]] || [[ "$PPMD" =~ "PeppermintOS" ]]; then
+if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]] || [[ "$PPMD" =~ "PeppermintOS" ]] \
+  || [ -n  "$(which budgie-desktop)" ]; then
   
 while (true); do
 _NEW_HOSTNAME=$(zenity --entry --width="350" --window-icon="$_ICON" --ok-label="Change" --title=" Change Hostname" \
