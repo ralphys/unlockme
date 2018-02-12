@@ -23,15 +23,15 @@ Report issues and feel free to suggest your own fixes/tweaks/script improvements
 
 Option 1 - Install from Terminal:
 
-$ wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh && chmod +x install.sh && ./install.sh
+`~$ wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh && chmod +x install.sh && ./install.sh`
 
 Option 2 - Manually download
 
 - Download and extract 
 - Make install.sh executable:
-$ chmod +x install.sh
+`~$ chmod +x install.sh`
 - Launch installer:
-$ ./install.sh
+`~$ ./install.sh`
 
 ## Screenshots
 
