@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=UnlockMe
+Comment=Customize, tweaks and clean your system
+Exec=unlockme-main
+Icon=unlockme
+Terminal=false
+Type=Application
+Encoding=UTF-8
+Categories=Application;System;Settings;
+StartupNotify=false
