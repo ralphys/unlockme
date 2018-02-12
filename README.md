@@ -19,25 +19,21 @@ Report issues and feel free to suggest your own fixes/tweaks/script improvements
 
 ## Installation Instructions
 
- ** Will create install and uninstall scripts later, for now:
+ ** Will create uninstaller script later **
 
- 1 - Copy UnlockMe.desktop shortcut to your desktop or any other location you wish. E.g.:
- 
-   ~$ cd unlockme-master && cp UnlockMe.desktop $HOME/Desktop
+Option 1 - Install from Terminal:
 
- 2 - Copy folder "usr" to your / :
- 
- 	~$ cd unlockme-master && sudo cp -R usr /
+ ~$ wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh &&  && ./install.sh
 
- 3 - Make scripts executable:
- 
- 	~$ cd /usr/local/sbin
- 	~$ sudo chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps unlockme-main unlock-req-install blockhosts
-   
- 	~$ cd /usr/share/unlockme/tools && sudo chmod +x unlockme-dropbox.sh
- 	
- 4 - Launch UnlockMe.desktop :)
+Option 2 - Manually download
 
+- Download and extract 
+- Make install.sh executable:
+  ~$ chmod +x install.sh
+- Launch installer:
+  ~$ ./install.sh
+
+## Screenshots
 
 ![](https://i.imgur.com/lc9VAKQ.png)
 
