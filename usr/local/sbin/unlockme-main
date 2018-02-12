@@ -540,7 +540,8 @@ if [ ${#ARRAYA[@]} -ne 0 ]; then
           echo "# Done"
           sleep 1
         fi
-    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill --skip-taskbar --width="340" --height="110" --center --text="\n<span font='Sans 13'>UnlockMe</span>"
+    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill \
+               --skip-taskbar --fixed --center --width="340" --height="110" --text="\n<span font='Sans 13'>UnlockMe</span>"
 fi
 
 # Check whether ARRAYB is empty and skip execution if so
@@ -653,10 +654,22 @@ if grep -q -F '1' "/proc/sys/net/ipv6/conf/all/disable_ipv6"; then
 else _ipv6=(FALSE "IPV6" "Disable IPv6" "Management" "System" "Disable IPv6")
 fi
 
+# check for kernel cache pressure
+if [ $(cat /proc/sys/vm/vfs_cache_pressure) -ne "100" ]; then
+     _scachepr=(FALSE "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom kernel cache pressure applied - (select to modify)</span>")
+else _scachepr=(FALSE "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Controls how the kernel reclaims memory used for caching")
+fi
+
+# check for kernel swappiness
+if [ $(cat /proc/sys/vm/swappiness) -ne "60" ]; then
+     _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "<span foreground='green'>Custom kernel swappiness applied - (select to modify)</span>")
+else _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used")
+fi
+
 # Check if  midori browser cache exists
 if [  -d  "$HOME/.cache/midori/" ]; then
   MDCACHESIZE=$(du -sh "$HOME/.cache/midori/" | awk '{print $1}' | sed 's/$/B/')
-  _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from your Midori browser cache")
+     _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from your Midori browser cache")
 else _midoricache=()
 fi
 
@@ -669,7 +682,7 @@ fi
 # Check if  opera browser cache exists
 if [  -d  "$HOME/.cache/opera/Cache/" ]; then
   OPCACHESIZE=$(du -sh "$HOME/.cache/opera/Cache/" | awk '{print $1}' | sed 's/$/B/')
-  _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from your Opera browser cache")
+     _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from your Opera browser cache")
 else _operacache=()
 fi
 
@@ -682,7 +695,7 @@ fi
 # Check if  Pale Moon browser cache exists
 if [  -d  "$HOME/.cache/moonchild productions/pale moon/" ]; then
   PMCACHESIZE=$(du -sh "$HOME/.cache/moonchild productions/pale moon/" | awk '{print $1}' | sed 's/$/B/')
-  _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from your Pale Moon browser cache")
+     _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from your Pale Moon browser cache")
 else _palemooncache=()
 fi
 
@@ -839,8 +852,8 @@ selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$
 "${_fixdpxfce[@]}" \
 "${firefoxcache[@]}" \
 "${_chnamehost[@]}" \
-"FALSE" "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Controls how the kernel reclaims memory used for caching" \
-"FALSE" "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used" \
+"${_scachepr[@]}" \
+"${_sysswap[@]}" \
 "${_logarchives[@]}" \
 "${_mgmtsavesession[@]}" \
 "${_midoricache[@]}" \

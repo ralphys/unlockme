@@ -1405,9 +1405,10 @@ if [ ${#ARRAYA[@]} -ne 0 ]; then
         echo "$PERCENTAGE"
         if [ "$PERCENTAGE" == "100" ]; then
           echo "# Done"
-          sleep 1
+          sleep .1
         fi
-    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill --skip-taskbar --width="340" --height="110" --center --text="\n<span font='Sans 13'>UnlockMe</span>"
+    done | yad --fixed --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill \
+               --fixed --center --skip-taskbar --width="340" --height="110" --text="\n<span font='Sans 13'>UnlockMe</span>"
 fi
 }
 
@@ -1677,4 +1678,5 @@ ARRAYS
 RUN
 done
 exit 0
+
 

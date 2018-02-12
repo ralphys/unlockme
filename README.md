@@ -1,5 +1,9 @@
 # UnlockMe
+## License ![License](https://img.shields.io/badge/license-GPLv2-green.svg)
 Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce, Linux Lite and others
+
+## Authors
+- [Ralphy](https://github.com/ralphys)
 
 ## Tested on
 
@@ -13,19 +17,6 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce, Lin
 
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 
-
-![](https://i.imgur.com/MNn2xEa.png)
-
-![](https://i.imgur.com/0BP6DL1.png)
-
-
-# UnlockMe
-## License ![License](https://img.shields.io/badge/license-GPLv2-green.svg)
-Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and Linux Lite
-
-## Authors
-- [Ralphy](https://github.com/ralphys)
-
 ## Installation Instructions
 
  ** Will create install and uninstall scripts later, for now:
@@ -36,7 +27,7 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
 
  2 - Copy folder "usr" to your / :
  
- 	 $ cd unlockme-master && sudo cp -R usr /
+ 	~$ cd unlockme-master && sudo cp -R usr /
 
  3 - Make scripts executable:
  
@@ -47,12 +38,33 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce and 
  	
  4 - Launch UnlockMe.desktop :)
 
-![](https://i.imgur.com/Whf8vUj.png)
 
-![](https://i.imgur.com/Ign4zXl.png)
+![](https://i.imgur.com/lc9VAKQ.png)
+
+![](https://i.imgur.com/G6Y9kzB.png)
+
+![](https://i.imgur.com/Iht0gBc.png)
+
+![](https://i.imgur.com/ivXlQuW.png)
+
+![](https://i.imgur.com/R3RXrKb.png)
+
+![](https://i.imgur.com/E5FZLiH.png)
+
+![](https://i.imgur.com/aLNG125.png)
+
+![](https://i.imgur.com/itOrViL.png)
+
+![](https://i.imgur.com/0F4KbOR.png)
+
+![](https://i.imgur.com/0BP6DL1.png)
+
+![](https://i.imgur.com/Whf8vUj.png)
 
 ![](https://i.imgur.com/mU8fZzt.png)
 
 ![](https://i.imgur.com/wwsM7h0.png)
+
+![](https://i.imgur.com/WwdcwX4.png) 
 
 ![](https://i.imgur.com/aFEgs4O.png)

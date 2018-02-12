@@ -726,19 +726,18 @@ _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
 
 # Main dialog
-VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="580" --borders="8" \
-      --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
-          --title=" Kernel Cache Pressure" --value="$_CACHEPR" --max-value="150" \
-          --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
+VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" --width="740" --height="540" --borders="8" \
+            --fixed --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title=" Kernel Cache Pressure" \
+            --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+            --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
 \nBasically, this is access data about the filesystem. It is generally very costly to look up and also\nvery frequently requested, so it's an excellent thing for your system to cache.
 \nAt the default value (100), the kernel will attempt to reclaim dentries and inodes at a 'fair' rate\nwith respect to pagecache and swapcache reclaim.
 \nDecreasing cache pressure causes the kernel to prefer to retain dentry and inode caches. 
 Increasing cache pressure beyond 100 causes the kernel to prefer to reclaim dentries and inodes.
 \n<span font='Sans Bold 10'>Recommended Value</span>\n
 vfs_cache_pressure = 50
-* It is not recommended to set cache pressure = 0
 * Increasing cache pressure significantly beyond 100 may have negative performance impact.
-\n  ▼ <span font='Sans 12'> Set Cache Pressure</span>")
+\n\n  ▼ <span font='Sans 12'> Set Cache Pressure</span>")
 
   case $? in
       0) if [ "$_CACHEPR" = "$VALCP" ]; then echo "# Already $VALCP. No changes needed..." && sleep 1; continue; fi
@@ -802,9 +801,8 @@ echo "#⚫ Configuring swappiness..."
 _SWPNSS="$(cat /proc/sys/vm/swappiness)"
 
 # Main dialog
-VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --center --window-icon="$_RUN_ICON" --scale --fixed --width="740" --height="590" --borders="8" --button=gtk-close:1 --button=" Reset"\!gtk-refresh:2 --button=gtk-apply:0 \
-      --title="Adjust system Swappiness" --value="$_SWPNSS" \
-      --text="<span font='Sans Bold 10'>\nSwappiness</span>\n\nThe Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
+_MDIALOGTXT="<span font='Sans Bold 10'>\nSwappiness</span>\n
+The Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
 A high value improves file-system performance, while aggressively swapping less active processes
 out of physical memory. A low value avoids swapping processes out of memory, which usually
 decreases latency, at the cost of I/O performance.
@@ -812,15 +810,17 @@ decreases latency, at the cost of I/O performance.
 task may want to drastically lower the setting.
 \n<span font='Sans Bold 10'>Recommended Swappiness Values</span>\n
 - Swappiness = 10  Recommended when sufficient RAM exists in a system
-- Swappiness = 60  The default value
+- Swappiness = 60  Default system value
 - Swappiness = 100 The kernel will swap aggressively
-* It is not recommended to set swappiness = 0
+\n<span font='Sans Bold 10'>Calculate your Swap Formula</span>
+\nfree -m (total) / 100 = A   (Total system memory divided by 100 equals A)
+A * 10 = B   (A, times 10, equals B)
+B   (the amount -in Megabytes- of free RAM left in the system before swapping)
+\n  ▼ <span font='Sans 12'> Set System Swappiness</span>"
 
-<span font='Sans Bold 10'>Calculate your Swap Formula</span>
-\nfree -m (total) / 100 = A  (Total system memory divided by 100 equals A)
-A * 10 = B            (A, times 10, equals B)
-B (the amount - in MB - of free RAM left before the system starts swapping)
-\n  ▼ <span font='Sans 12'> Set System Swappiness</span>")
+VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" --width="740" --height="590" --fixed --center \
+            --title="Adjust system Swappiness"  --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+            --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
   case $? in
         # if preload is installed, display warning
@@ -941,7 +941,8 @@ while read  line; do
       echo "#Done"
       sleep 1
     fi
-done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill --skip-taskbar --width="340" --height="110" --center --text="<span font='Sans 13'>\nUnlockMe</span>"
+done | yad --text-align=center --borders=10 --no-buttons --progress --pulsate --auto-close --auto-kill --width="340" --height="110" \
+           --fixed --center --skip-taskbar --undecorated --text="<span font='Sans 13'>\nUnlockMe</span>"
 
 unset ARAYC
 unset FRM
