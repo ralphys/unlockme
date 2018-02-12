@@ -34,8 +34,8 @@ PPMDENV=$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)
 
 # check requirements
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'yad\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'apt-transport-https')" ]; then
-zenity --question --icon-name="info" --window-icon="info" --width=340 --height=120 --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
-       --text="\nThe following requirements will be downloaded and installed as needed:\n
+zenity --question --icon-name="info" --window-icon="info" --width=300 --height=120 --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
+       --text="\nThe following requirements will be downloaded and installed:\n
 ⚫ apt-transport-https
 ⚫ autoconf
 ⚫ automake
