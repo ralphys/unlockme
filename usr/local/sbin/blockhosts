@@ -140,7 +140,7 @@ cat $TMPFILE | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile" ; sleep 2
 	# clean list errors in domain names - e.g.: domain..net instead of domain.net
 		echo "90"
 		echo "# Cleaning up records. Please wait..."
-		grep -q -Fx '..' "$bgenfile" && sed -i '/\.\./d' "$bgenfile" ; sleep 1
+		grep -q -F '..' "$bgenfile" && sed -i '/\.\./d' "$bgenfile" ; sleep 1
 		
 	# delete address=/0.0.0.0/ if in blacklist
 		echo "95"
@@ -301,7 +301,7 @@ isn't blocked.\n\n
 ▼ Whitelist domains (space separated)"
 
 szwhite=$(yad --entry --image="$_wlimage" --button="gtk-cancel:1" --button="Next":0 --title=" Whitelist Domains" --wrap \
-			  --text="$_dialog3" --entry-text="" --width=500 --height=300 --borders=8 --center --window-icon="$_RUN_ICON" 2>/dev/null)
+			  --text="$_dialog3" --entry-text="" --width="540" --height="300" --borders="8" --center --window-icon="$_RUN_ICON" 2>/dev/null)
 	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
 	echo "$szwhite" > "$GENFILEW"
 
@@ -313,12 +313,12 @@ but you also want to block yahoo.com and youtube.com by adding them here.\n\n
 ▼ Blacklist domains (space separated)"
 
 szblack=$(yad --entry --image="/usr/share/unlockme/icons/ui/blacklist90.png" --button="gtk-cancel:1" --button="Next":0 --title=" Blacklist Domains" \
-			  --text="$_dialog4" --entry-text="" --width=500 --height=300 --borders="8" --center --window-icon="$_RUN_ICON" --wrap 2>/dev/null)
+			  --text="$_dialog4" --entry-text="" --width="540" --height="300" --borders="8" --center --window-icon="$_RUN_ICON" --wrap 2>/dev/null)
 	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0; fi
 	echo "$szblack" > "$GENFILEB"
 
 # Begin blacklist processing
-gen_blacklist $ans $ans2 ) | yad --progress --width=340 --height=110 --title="Progress Status" --text="" --center --no-buttons --skip-taskbar \
+gen_blacklist $ans $ans2 ) | yad --progress --width="340" --height="110" --title="Progress Status" --text="" --center --no-buttons --skip-taskbar \
 								 --undecorated --no-cancel --percentage=0 --auto-close --auto-kill 2>/dev/null
 (( $? != 0 )) && zenity --error --text="Error in command execution."
 exit 0
