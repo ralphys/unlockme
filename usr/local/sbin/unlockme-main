@@ -54,7 +54,7 @@ yad --width=340 --height=110 --info --skip-taskbar --undecorated --no-buttons --
     --text-align=center --text='\n\n\n<span font="Sans 14">Getting Ready</span>\n<span font="Sans 11"> \n  please wait...\n</span>' & sleep .5
 
 # linuxlite specific | failsafe not to use default linuxlite yad package
-if [[ "$LLDENV" =~ "Lite" ]]; then cat /etc/apt/preferences | egrep "yad"
+if [[ "$LLDENV" =~ "Lite" ]]; then cat /etc/apt/preferences | egrep -q "yad"
     if [ $? != 0 ]; then bash unlock-req-install; fi
 fi
 
@@ -590,7 +590,7 @@ fi
 
 # Check if google-chrome browser profile exists
 if [ -d "$HOME/.config/google-chrome" ]; then
-     _chromeprofile=(FALSE "CHROMEPROFILE" " -- Chrome Profile" "Cleanup" "User" "<span foreground='red'>Remove Chrome browser profile</span>")
+     _chromeprofile=(FALSE "CHROMEPROFILE" " -- Chrome Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Chrome browser profile</span>")
 else _chromeprofile=()
 fi
 
@@ -603,7 +603,7 @@ fi
 
 # Check if chromium browser profile exists
 if [ -d "$HOME/.config/chromium/" ]; then
-     _chromiumprofile=(FALSE "CHROMIUMPROFILE" " -- Chromium Profile" "Cleanup" "User" "<span foreground='red'>Remove Chromium browser profile</span>")
+     _chromiumprofile=(FALSE "CHROMIUMPROFILE" " -- Chromium Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Chromium browser profile</span>")
 else _chromiumprofile=()
 fi
 
@@ -619,7 +619,7 @@ if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   else 
     if [ ! -f "/home/$_SOFTUSR/.local/share/.fixdbcin" ]; then
       _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "Fix Dropbox Autostart in Cinnamon")
-      else _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "<span foreground='chocolate'>Applied - Select to remove</span>") 
+      else _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "<span foreground='green'>Applied - (select to remove)</span>") 
     fi
   fi
 fi
@@ -644,7 +644,7 @@ fi
 
 # Check if firefox browser profile exists
 if [ -d "$HOME/.mozilla/firefox/" ]; then
-     _ffoxprofile=(FALSE "FFOXPROFILE" " -- Firefox Profile" "Cleanup" "User" "<span foreground='red'>Remove Firefox browser profile</span>")
+     _ffoxprofile=(FALSE "FFOXPROFILE" " -- Firefox Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Firefox browser profile</span>")
 else _ffoxprofile=()
 fi
 
@@ -661,9 +661,13 @@ else _scachepr=(FALSE "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" 
 fi
 
 # check for kernel swappiness
-if [ $(cat /proc/sys/vm/swappiness) -ne "60" ]; then
-     _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "<span foreground='green'>Custom kernel swappiness applied - (select to modify)</span>")
-else _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used")
+if [ $(cat /proc/sys/vm/swappiness) -eq "60" ]; then
+  if which preload > /dev/null; then
+       _sysswap=(FALSE "SYSSWAP" "<span foreground='red'>Kernel Swappiness</span>" "" "" "Kernel setting that controls how often the swap file is used")
+  else _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used")
+  fi
+else 
+       _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "<span foreground='green'>Custom kernel swappiness applied - (select to modify)</span>")
 fi
 
 # Check if  midori browser cache exists
@@ -675,7 +679,7 @@ fi
 
 # Check if midori browser profile exists
 if [ -d "$HOME/.config/midori/" ]; then
-     _midoriprofile=(FALSE "MIDORIPROFILE" " -- Midori Profile" "Cleanup" "User" "<span foreground='red'>Remove Midori browser profile</span>")
+     _midoriprofile=(FALSE "MIDORIPROFILE" " -- Midori Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Midori browser profile</span>")
 else _midoriprofile=()
 fi
 
@@ -688,7 +692,7 @@ fi
 
 # Check if opera browser profile exists
 if [ -d "$HOME/.config/opera/" ]; then
-     _operaprofile=(FALSE "OPERAPROFILE" " -- Opera Profile" "Cleanup" "User" "<span foreground='red'>Remove Opera browser profile</span>")
+     _operaprofile=(FALSE "OPERAPROFILE" " -- Opera Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Opera browser profile</span>")
 else _operaprofile=()
 fi
 
@@ -701,7 +705,7 @@ fi
 
 # Check if Pale Moon browser profile exists
 if [ -d "$HOME/.moonchild productions/" ]; then
-     _palemoonprofile=(FALSE "PALEMOONPROFILE" " -- Pale Moon Profile" "Cleanup" "User" "<span foreground='red'>Remove Pale Moon browser profile</span>")
+     _palemoonprofile=(FALSE "PALEMOONPROFILE" " -- Pale Moon Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Pale Moon browser profile</span>")
 else _palemoonprofile=()
 fi
 
@@ -737,7 +741,11 @@ fi
 
 # Check if preload is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
+  if [ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
+   else
+     _preload=(FALSE "PRELOAD" "<span foreground='red'>Preload Apps</span>" "" "" "Fetch commonly used apps into RAM for faster startup times")
+   fi
 else _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "<span foreground='green'>Preload is currently installed - (select to modify)</span>")
 fi
 
@@ -757,7 +765,7 @@ fi
 
 # Check if seamonkey browser profile exists
 if [ -d "$HOME/.mozilla/seamonkey/" ]; then
-     _seamonkeyprofile=(FALSE "SEAMONKEYPROFILE" " -- SeaMonkey Profile" "Cleanup" "User" "<span foreground='red'>Remove SeaMonkey browser profile</span>")
+     _seamonkeyprofile=(FALSE "SEAMONKEYPROFILE" " -- SeaMonkey Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove SeaMonkey browser profile</span>")
 else _seamonkeyprofile=()
 fi
 
@@ -777,13 +785,17 @@ fi
 
 # Check if vivaldi browser profile exists
 if [ -d "$HOME/.config/vivaldi" ]; then
-     _vivaldiprofile=(FALSE "VIVALDIPROFILE" " -- Vivaldi Profile" "Cleanup" "User" "<span foreground='red'>Remove Vivaldi browser profile</span>")
+     _vivaldiprofile=(FALSE "VIVALDIPROFILE" " -- Vivaldi Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Vivaldi browser profile</span>")
 else _vivaldiprofile=()
 fi
 
 # Check if zram is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
+  if [ $(cat /sys/module/zswap/parameters/enabled) == "Y" ]; then
+     _zram=(FALSE "ZRAM" "<span foreground='red'>zRAM</span>" "" "" "Compressed RAM based block device for faster I/O")
+   else
      _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "Compressed RAM based block device for faster I/O")
+   fi
 else _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "<span foreground='green'>zRAM is currently installed - (select to modify)</span>")
 fi
 
@@ -796,7 +808,7 @@ fi
 
 # Check if waterfox browser profile exists
 if [ -d "$HOME/.waterfox" ]; then
-     _waterfoxprofile=(FALSE "WATERFOXPROFILE" " -- Waterfox Profile" "Cleanup" "User" "<span foreground='red'>Remove Waterfox browser profile</span>")
+     _waterfoxprofile=(FALSE "WATERFOXPROFILE" " -- Waterfox Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Waterfox browser profile</span>")
 else _waterfoxprofile=()
 fi
 
@@ -822,10 +834,10 @@ CHECK
 BITS=$(getconf LONG_BIT)
 if [ -f "/etc/linuxmint/info" ]; then 
 
-    if [[ "$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2)" =~ "PeppermintOS" ]]; then
-      _LMDES="$(cat /etc/linuxmint/info | grep 'DESCRIPTION' | cut -d\" -f2) ${BITS}-bit"
+    if [[ "$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)" =~ "PeppermintOS" ]]; then
+      _LMDES="$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2) ${BITS}-bit"
     else
-      _LMDES="$(cat /etc/linuxmint/info | grep 'GRUB' | cut -d\= -f2)"
+      _LMDES="$(cat /etc/linuxmint/info 2>&1 | grep 'GRUB' | cut -d\= -f2)"
     fi
 
 elif [ -f "/etc/llver" ]; then _LMDES="$(cat /etc/llver) ${BITS}-bit"

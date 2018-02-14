@@ -635,7 +635,7 @@ _FNAME=" Preload"
 echo "#⚫ Getting $_FNAME status..." && sleep .5
 
 grep -q -F 'vm.swappiness' "/etc/sysctl.conf" && zenity --info  --width="380" --title="Kernel Swappiness Conflict" --icon-name="gtk-dialog-warning" \
-       --text="\nYou must reset Kernel Swappiness to defaults before installing Preload.\n
+       --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload.\n
 Preload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. 
 It already favors and makes use of the kernel page cache.\n
 Contrary to common online tweakguides advises, you should not have a custom vm.swappiness set in sysctl.conf while also using Preload.\n
@@ -779,14 +779,14 @@ _SYSFL="/etc/sysctl.conf"
   # check for preload function
   preload_warn() {
     # if preload is installed, display warning
-    if ps ax | grep -v grep | grep preload > /dev/null; then echo "# Warning - conflict detected..." ; fi
-    zenity --info  --width="380" --title="Preload Daemon Conflict" --icon-name="gtk-dialog-warning" \
-       --text="\nYou must remove Preload from your system before manually adjusting kernel swappiness.\n
-Preload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. 
-It already favors and makes use of the kernel page cache.\n
-Contrary to common online tweakguides advises, you should not set a custom vm.swappiness while also running Preload.\n
-You can remove Preload using UnlockMe App or by executing the following command from Terminal:\n
-~$ <b>sudo apt purge preload -y</b> \n"
+    if which preload > /dev/null; then echo "# Application conflict detected..." ; fi
+    zenity --warning  --width="380" --title="Preload daemon conflict" \
+           --text="\nYou must remove Preload from your system before manually adjusting kernel swappiness. \
+\n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
+It already favors and makes use of the kernel page cache. \
+\n\nContrary to common online tweakguides advises, you should not set a custom vm.swappiness while also running Preload. \
+\nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
+\n\n~$ <b>sudo apt-get remove preload -y</b> \n"
 
   # reset swappiness default values
   grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
@@ -862,6 +862,14 @@ ZRAM() {
 
 _FNAME="zRAM"
 echo "#⚫ Getting $_FNAME status..." && sleep .5
+
+# check if zswap is enabled
+if [ $(cat /sys/module/zswap/parameters/enabled) == "Y" ]; then
+  zenity --warning --width="340" --height="80" --title=" Application Conflict detected" \
+         --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
+\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
+  continue
+fi
 
 # the loop
 while (true); do
