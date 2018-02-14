@@ -389,8 +389,9 @@ WHISKERMREST() {
   restart_panel
 }
 
-# dialog window icon
-ICON="/usr/share/pixmaps/unlockme.png"
+
+ICON="/usr/share/pixmaps/unlockme.png"                  # dialog window icon
+VARZSWAP="$(cat /sys/module/zswap/parameters/enabled)"  # zswap variable
 
 ARRAYS() {
 
@@ -505,7 +506,18 @@ echo "$selection" | grep "PACKAGECACHE" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('PACKAGECACHE'); fi
 
 echo "$selection" | grep "PRELOAD" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('PRELOAD'); fi
+if [ $? = 0 ]; then
+  if [ -n "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]; then
+    zenity --warning --width="380" --title="Custom kernel swappiness detected" --window-icon="info" --icon-name="info" \
+           --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload. \
+\n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
+It already favors and makes use of the kernel page cache. \
+\n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness set in the system while also using Preload. \
+\n\nYou can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n"
+  else
+    ARRAYB+=('PRELOAD')
+  fi
+fi
 
 echo "$selection" | grep "RESIDCONFIG" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('RESIDCONFIG'); fi
@@ -514,10 +526,32 @@ echo "$selection" | grep "SCACHEPR" > /dev/null
 if [ $? = 0 ]; then ARRAYB+=('SCACHEPR'); fi 
 
 echo "$selection" | grep "SYSSWAP" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('SYSSWAP'); fi 
+if [ $? = 0 ]; then
+  # if preload is installed display info
+  if which preload > /dev/null; then
+    zenity --warning --width="380" --title="preload daemon detected" --window-icon="info" --icon-name="info" \
+           --text="\nYou must remove Preload from the system before manually adjusting kernel swappiness. \
+\n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
+It already favors and makes use of the kernel page cache. \
+\n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness defined while also running Preload. \
+\nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
+\n\n~$ <b>sudo apt-get remove preload -y</b> \n"
+  else
+    ARRAYB+=('SYSSWAP')
+  fi
+fi 
 
 echo "$selection" | grep "ZRAM" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('ZRAM'); fi
+if [ $? = 0 ]; then 
+  # if zswap is installed display info
+  if [ "$VARZSWAP" == "Y" ]; then
+    zenity --warning --width="340" --height="80" --title=" ZSWAP detected" --window-icon="info" --icon-name="info" \
+           --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
+\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
+  else
+    ARRAYB+=('ZRAM')
+  fi
+fi
 }
 
 RUN() {
@@ -552,6 +586,7 @@ if [ ${#ARRAYB[@]} -ne 0 ]; then
   esac
 fi
 }
+
 # Execute checks
 CHECK() {
 
@@ -663,7 +698,7 @@ fi
 # check for kernel swappiness
 if [ $(cat /proc/sys/vm/swappiness) -eq "60" ]; then
   if which preload > /dev/null; then
-       _sysswap=(FALSE "SYSSWAP" "<span foreground='red'>Kernel Swappiness</span>" "" "" "Kernel setting that controls how often the swap file is used")
+       _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness ¡¡" "" "" "Kernel setting that controls how often the swap file is used")
   else _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used")
   fi
 else 
@@ -744,7 +779,7 @@ if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
   if [ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
    else
-     _preload=(FALSE "PRELOAD" "<span foreground='red'>Preload Apps</span>" "" "" "Fetch commonly used apps into RAM for faster startup times")
+     _preload=(FALSE "PRELOAD" "Preload Apps ¡¡" "" "" "Fetch commonly used apps into RAM for faster startup times")
    fi
 else _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "<span foreground='green'>Preload is currently installed - (select to modify)</span>")
 fi
@@ -791,8 +826,8 @@ fi
 
 # Check if zram is installed
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
-  if [ $(cat /sys/module/zswap/parameters/enabled) == "Y" ]; then
-     _zram=(FALSE "ZRAM" "<span foreground='red'>zRAM</span>" "" "" "Compressed RAM based block device for faster I/O")
+  if [ "$VARZSWAP" == "Y" ]; then
+     _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" "Compressed RAM based block device for faster I/O")
    else
      _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "Compressed RAM based block device for faster I/O")
    fi

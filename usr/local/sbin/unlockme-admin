@@ -634,13 +634,6 @@ _FNAME=" Preload"
 
 echo "#⚫ Getting $_FNAME status..." && sleep .5
 
-grep -q -F 'vm.swappiness' "/etc/sysctl.conf" && zenity --info  --width="380" --title="Kernel Swappiness Conflict" --icon-name="gtk-dialog-warning" \
-       --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload.\n
-Preload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. 
-It already favors and makes use of the kernel page cache.\n
-Contrary to common online tweakguides advises, you should not have a custom vm.swappiness set in sysctl.conf while also using Preload.\n
-You can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n" && continue
-
 # preload loop
 while (true); do
 echo "#⚫ Configuring Preload..."
@@ -777,26 +770,8 @@ SYSSWAP() {
 # sysctl.conf variable
 _SYSFL="/etc/sysctl.conf"
   # check for preload function
-  preload_warn() {
-    # if preload is installed, display warning
-    if which preload > /dev/null; then echo "# Application conflict detected..." ; fi
-    zenity --warning  --width="380" --title="Preload daemon conflict" \
-           --text="\nYou must remove Preload from your system before manually adjusting kernel swappiness. \
-\n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
-It already favors and makes use of the kernel page cache. \
-\n\nContrary to common online tweakguides advises, you should not set a custom vm.swappiness while also running Preload. \
-\nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
-\n\n~$ <b>sudo apt-get remove preload -y</b> \n"
 
-  # reset swappiness default values
-  grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
-  sysctl vm.swappiness=60 && sysctl -p
-}
-
-# check whether preload is installed
-if ps ax | grep -v grep | grep preload > /dev/null; then preload_warn ; fi
-
-# start swappiness main window loop
+# kernel swappiness main window loop
 while (true); do
 echo "#⚫ Configuring swappiness..."
 _SWPNSS="$(cat /proc/sys/vm/swappiness)"
@@ -824,35 +799,33 @@ VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_R
             --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
   case $? in
-        # if preload is installed, display warning
-       0) if ps ax | grep -v grep | grep preload > /dev/null; then preload_warn ; continue ; fi
 
-        # If system's current swappiness equals new set value, don't make unnecessary changes
+       0) # If system's current swappiness equals new set value, don't make unnecessary changes
           if [ "$_SWPNSS" = "$VALUE" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
 
-        # set sysctl swappiness value   
-        sysctl vm.swappiness=$VALUE
+          # set sysctl swappiness value   
+          sysctl vm.swappiness=$VALUE
 
-        if grep -q -F 'vm.swappiness' "$_SYSFL"; then echo "#⚫ Updating swappiness value..." && sleep 1
-          sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL"   
-        else echo "#⚫ Applying new swappiness value..." && sleep 1
-          sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" && sleep 1
-        fi
+          if grep -q -F 'vm.swappiness' "$_SYSFL"; then echo "#⚫ Updating swappiness value..." && sleep 1
+            sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL"   
+          else echo "#⚫ Applying new swappiness value..." && sleep 1
+            sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" && sleep 1
+          fi
       
-        if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-            zenity --error --width="320" --height="80" --title="    Error" \
-                   --text="\nAn error occurred applying new values." 2>/dev/null; continue
+          if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+              zenity --error --width="320" --height="80" --title="    Error" \
+                     --text="\nAn error occurred applying new values." 2>/dev/null; continue
           else
-            zenity --info --width="320" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
-                   --text="\nNew swappiness value has been successfully applied." 2>/dev/null
-            sysctl -p
-        fi;;
-       1) break;;
-     2) if [ "$_SWPNSS" = "60" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
-      echo "#⚫ Reseting swappiness value..." ; grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
-        sysctl vm.swappiness=60 && sysctl -p && sleep 1;;
-     252) break;;
-      -1) echo "# An unexpected error has occurred.";;
+              zenity --info --width="320" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
+                     --text="\nNew swappiness value has been successfully applied." 2>/dev/null
+              sysctl -p
+          fi ;;
+       1) break ;;
+       2) if [ "$_SWPNSS" = "60" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
+          echo "#⚫ Reseting swappiness value..." ; grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
+          sysctl vm.swappiness=60 && sysctl -p && sleep 1 ;;
+     252) break ;;
+      -1) echo "# An unexpected error has occurred." ;;
   esac
 done  
 }
@@ -862,14 +835,6 @@ ZRAM() {
 
 _FNAME="zRAM"
 echo "#⚫ Getting $_FNAME status..." && sleep .5
-
-# check if zswap is enabled
-if [ $(cat /sys/module/zswap/parameters/enabled) == "Y" ]; then
-  zenity --warning --width="340" --height="80" --title=" Application Conflict detected" \
-         --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
-\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
-  continue
-fi
 
 # the loop
 while (true); do
