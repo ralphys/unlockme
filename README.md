@@ -17,13 +17,13 @@ Bash script App based on Yad and Zenity for Linux Mint Cinnamon, MATE, Xfce, Lin
 
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 
-## Installation Instructions
+## Installation and Update Instructions
 
  ** Will create uninstaller script later **
 
-Option 1 - Install from Terminal:
+Option 1 - From Terminal:
 
-`wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh && chmod +x install.sh && ./install.sh`
+`cd /tmp && wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh && chmod +x install.sh && ./install.sh`
 
 Option 2 - Manually download
 

@@ -389,9 +389,7 @@ WHISKERMREST() {
   restart_panel
 }
 
-
-ICON="/usr/share/pixmaps/unlockme.png"                  # dialog window icon
-VARZSWAP="$(cat /sys/module/zswap/parameters/enabled)"  # zswap variable
+ICON="/usr/share/pixmaps/unlockme.png" # dialog window icon
 
 ARRAYS() {
 
@@ -513,7 +511,7 @@ if [ $? = 0 ]; then
 \n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
 It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness set in the system while also using Preload. \
-\n\nYou can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n"
+\n\nYou can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n" 2>/dev/null
   else
     ARRAYB+=('PRELOAD')
   fi
@@ -535,7 +533,7 @@ if [ $? = 0 ]; then
 It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness defined while also running Preload. \
 \nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
-\n\n~$ <b>sudo apt-get remove preload -y</b> \n"
+\n\n~$ <b>sudo apt-get remove preload -y</b> \n" 2>/dev/null
   else
     ARRAYB+=('SYSSWAP')
   fi
@@ -544,12 +542,31 @@ fi
 echo "$selection" | grep "ZRAM" > /dev/null
 if [ $? = 0 ]; then 
   # if zswap is installed display info
-  if [ "$VARZSWAP" == "Y" ]; then
-    zenity --warning --width="340" --height="80" --title=" ZSWAP detected" --window-icon="info" --icon-name="info" \
+  if [ "$VARZSWAP" == "Y" ] || [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
+    zenity --warning --width="340" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
            --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
-\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
+\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null 
   else
     ARRAYB+=('ZRAM')
+  fi
+fi
+
+echo "$selection" | grep "ZSWAP" > /dev/null
+if [ $? = 0 ]; then 
+  # check for pending restart
+  if [[ "$VARZSWAP" == "Y" && -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]] || [[ "$VARZSWAP" == "N" && -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+    zenity --question --width="360" --height="120" --title=" Pending Restart" \
+           --text="\nThe computer must be restarted for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
+    if [ $? = 0 ]; then systemctl reboot; else continue; fi
+  fi
+
+  # if zram is installed display info
+  if [ "$VARZRAM" == "ii" ]; then
+    zenity --warning --width="360" --height="80" --title=" zRAM detected" --window-icon="info" --icon-name="info" \
+           --text="\nzRAM is currently enabled in your system. zRAM and zSWAP must not be enabled at the same time. \
+\n\nPlease disable zRAM before enabling zSWAP." 2>/dev/null
+  else
+    ARRAYB+=('ZSWAP')
   fi
 fi
 }
@@ -589,6 +606,9 @@ fi
 
 # Execute checks
 CHECK() {
+
+VARZSWAP="$(cat /sys/module/zswap/parameters/enabled)"                  # zswap variable
+VARZRAM="$(dpkg -l | grep -E '^ii' | grep zram-config | cut -d' ' -f1)" # zram variable
 
 # Manage Save Session
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
@@ -824,14 +844,42 @@ if [ -d "$HOME/.config/vivaldi" ]; then
 else _vivaldiprofile=()
 fi
 
-# Check if zram is installed
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
-  if [ "$VARZSWAP" == "Y" ]; then
+# Check for zram
+if [ -z  "$VARZRAM" ]; then
+  if [ "$VARZSWAP" == "Y" ] || [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
      _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" "Compressed RAM based block device for faster I/O")
    else
      _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "Compressed RAM based block device for faster I/O")
    fi
 else _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "<span foreground='green'>zRAM is currently installed - (select to modify)</span>")
+fi
+
+# Check for zswap
+# check kernel for zswap
+if [ $(cat /boot/config-`uname -r` | grep -i zswap | cut -d= -f2) == "y" ]; then
+  # if zswap is not enabled
+  if [ "$VARZSWAP" == "N" ]; then
+    # if zram is installed
+    if [ -n "$VARZRAM" ]; then
+       _zswap=(FALSE "ZSWAP" "zSWAP ¡¡" "" "" "Efficient use of RAM and disk based swap. Minimizes Disk I/O")
+    else
+        # if zswap is not enabled but grub value exists
+        if [ "$VARZSWAP" == "N" ] && [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then 
+            _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "" "" "Efficient use of RAM and disk based swap. Minimizes Disk I/O")
+        else
+          # zswap default
+          _zswap=(FALSE "ZSWAP" "zSWAP" "Performance" "System" "Efficient use of RAM and disk based swap. Minimizes Disk I/O")
+        fi
+    fi
+  else 
+      if [ "$VARZSWAP" == "Y" ] && [ -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
+       # pending reboot for removal
+        _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "Performance" "System" "<span foreground='green'>zSWAP is currently enabled - (select to modify)</span>")
+      else
+       # zswap installed
+       _zswap=(FALSE "ZSWAP" "zSWAP" "Performance" "System" "<span foreground='green'>zSWAP is currently enabled - (select to modify)</span>")
+     fi
+  fi
 fi
 
 # Check if waterfox browser cache exists
@@ -918,6 +966,7 @@ selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$
 "${_waterfoxcache[@]}" \
 "${_whiskermrest[@]}" \
 "${_zram[@]}" \
+"${_zswap[@]}" \
 "${_chromeprofile[@]}" \
 "${_chromiumprofile[@]}" \
 "${_ffoxprofile[@]}" \

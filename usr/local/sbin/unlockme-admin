@@ -37,6 +37,10 @@ _LOGS="/tmp/unlockme.log"
 touch "$_LOGS"; chown "$_SOFTUSR":"$_SOFTUSR" "$_LOGS"; chmod 600 "$_LOGS"
 }
 
+show_progress() {
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+}
+
 RUN_ICON() {
 _RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
 }
@@ -137,6 +141,9 @@ if [ $? = 0 ]; then ARRAYC+=('SYSSWAP'); fi
 
 echo $FRM | grep "ZRAM" > /dev/null
 if [ $? = 0 ]; then ARRAYC+=('ZRAM'); fi
+
+echo $FRM | grep "ZSWAP" > /dev/null
+if [ $? = 0 ]; then ARRAYC+=('ZSWAP'); fi
 
 # Functions
 
@@ -895,6 +902,78 @@ sZRAM=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --butto
     *)  return ;;
   esac
 done
+}
+
+# zswap tweak
+ZSWAP() {
+
+_FNAME="zSWAP"
+echo "#⚫ Getting $_FNAME status..." && sleep .5
+
+# if zswap is not enable; enable it
+if grep -q 'N' "/sys/module/zswap/parameters/enabled"; then
+  echo "# Configuring zSWAP..."
+  # prompt for confirmation
+  zenity --question --width="340" --height="120" --title="$_FNAME" \
+         --text="\nzSWAP is not currently enabled in the system. Would you like to enable zSWAP?" 2>/dev/null
+  if [ $? = 0 ]; then
+    # enable zswap
+    echo "#⚫ Enabling zSWAP..." && sleep 1
+
+    # enable lz4 (for faster compression/decompression)
+    echo "#⚫ Enabling lz4 lz4_compress..." && sleep 2
+    modprobe -v lz4 lz4_compress | show_progress
+    printf '# Begin ZSWAP UnlockMe - DO NOT EDIT
+lz4
+lz4_compress
+# ZSWAP UnlockMe' >> /etc/initramfs-tools/modules
+    echo "#⚫ Updating initramfs..." && sleep 1
+    update-initramfs -u | show_progress
+
+    echo "#⚫ Updating kernel boot parameters..."   
+    # grub GRUB_CMDLINE_LINUX_DEFAULT var replacement
+    VARZSWAPREPLACE=$(grep 'GRUB_CMDLINE_LINUX_DEFAULT' "/etc/default/grub" | sed 's/\"/ /2' |
+    sed 's/$/zswap\.enabled=1 zswap\.compressor=lz4 zswap\.max_pool_percent=20 zswap\.zpool=z3fold"/')
+
+    # enabling zswap kernel parameters
+    sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT.*|$VARZSWAPREPLACE|" /etc/default/grub ; sleep 2
+
+    # update grub
+    echo "#⚫ Updating grub..." && sleep 1
+    update-grub 2>&1 | show_progress
+    echo "#✔ zSWAP has been enabled." && sleep 1
+
+    zenity --question --width="340" --height="120" --title=" $_FNAME" \
+           --text="\nYou must restart the computer for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
+           if [ $? = 0 ]; then systemctl reboot; fi
+  fi
+else
+  echo "# Configuring zSWAP..."
+  # prompt for removal confirmation
+  zenity --question --width="360" --height="120" --title="$_FNAME" \
+         --text="\nzSWAP is currently enabled in the system. Would you like to disable zSWAP?" 2>/dev/null
+  if [ $? = 0 ]; then
+    # disable zswap
+    echo "#⚫ Disabling zSWAP..." && sleep 1
+    sed -i -e '/UnlockMe/,+3d' /etc/initramfs-tools/modules ; sleep 1
+
+    echo "#⚫ Updating initramfs..." && sleep 1
+    update-initramfs -u | show_progress
+
+    echo "#⚫ Updating kernel boot parameters..." && sleep 1
+    # delete zswap kernel parameters
+    sed -i 's/[ \t]zswap\.enabled=1//g ; s/[ \t]zswap\.compressor=lz4//g ; s/[ \t]zswap\.max_pool_percent=20//g ; s/[ \t]zswap\.zpool=z3fold//g' /etc/default/grub
+
+    # update grub
+    echo "#⚫ Updating grub..." && sleep 1
+    update-grub 2>&1 | show_progress
+    echo "#✔ zSWAP has been disabled." && sleep 1
+
+    zenity --question --width="320" --height="120" --title=" $_FNAME" \
+           --text="\nYou must restart the computer for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
+           if [ $? = 0 ]; then systemctl reboot; fi
+  fi
+fi
 }
 
 ## Arrays execution
