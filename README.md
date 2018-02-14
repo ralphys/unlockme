@@ -38,7 +38,7 @@ Option 2 - Manually download
 
 ## Screenshots
 
-![](https://i.imgur.com/lc9VAKQ.png)
+![](https://i.imgur.com/LuthW2D.png)
 
 ![](https://i.imgur.com/G6Y9kzB.png)
 
