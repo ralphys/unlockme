@@ -16,11 +16,17 @@
 # system, in /usr/share/common-licenses/GPL-2.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# check Edition
+# variable check editions
+mintinfo="/etc/linuxmint/info"
+liteinfo="/etc/llver"
+ppminfo=$mintinfo
+
+# architecture
 ARCH=$(uname -i)
-DENV=$(cat /etc/linuxmint/info 2>&1 | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
-LLD=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
-PPMD=$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)
+
+DENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk '{print $1}')
+LLD=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
+PPMD=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # Kill off any package managers that may be running
 if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi

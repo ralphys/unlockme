@@ -55,7 +55,7 @@ if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd
     add-apt-repository ppa:nilarimogard/webupd8 -y
 fi
 ) | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="340" --height="80" --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
+           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
 
 # replace Linux Lite default yad package
 if [[ "$LLDENV" = "Lite 3" ]]; then
@@ -75,7 +75,7 @@ Pin-Priority: 501' >> /etc/apt/preferences
 
   check_connection
   apt-get remove --allow-remove-essential --purge yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="300" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
+           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
 
 apt-get update 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="80" --title="$_APPNAME - Updating cache" \

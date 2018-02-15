@@ -22,15 +22,18 @@ export LANG=C.UTF-8
 export TEXTDOMAINDIR=/usr/share/locale/
 export TEXTDOMAIN=unlockme
 
-# check Editions
-# variable Linux Mint Desktop Environment
-LMDENV=$(cat /etc/linuxmint/info 2>&1 | head -n3 | tail -n1 | cut -d\" -f2 | awk '{print $1}')
+# variable edition
+mintinfo="/etc/linuxmint/info"
+liteinfo="/etc/llver"
+ppminfo=$mintinfo
 
-# variable Linux Lite Desktop Environment
-LLDENV=$(cat /etc/llver 2>&1 | grep 'Lite' | awk '{print $2}')
-
-# variable Peppermint Desktop Environment
-PPMDENV=$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)
+# desktop environment
+# linuxmint
+LMDENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk '{print $1}')
+# linuxlite
+LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
+# peppermint
+PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # check requirements
 if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'yad\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'apt-transport-https')" ]; then
@@ -51,19 +54,19 @@ fi
 
 # start splash
 yad --width=340 --height=110 --info --skip-taskbar --undecorated --no-buttons --timeout=1 \
-    --text-align=center --text='\n\n\n<span font="Sans 14">Getting Ready</span>\n<span font="Sans 11"> \n  please wait...\n</span>' & sleep .5
+    --text-align=center --text='\n\n\n<span font="Sans 14">Getting Ready</span>\n<span font="Sans 11"> \n  please wait...\n</span>' & 
 
 # linuxlite specific | failsafe not to use default linuxlite yad package
-if [[ "$LLDENV" =~ "Lite" ]]; then cat /etc/apt/preferences | egrep -q "yad"
+if [[ "$LLDENV" == "Lite" ]]; then cat /etc/apt/preferences | grep -q "yad"
     if [ $? != 0 ]; then bash unlock-req-install; fi
 fi
 
 # function - clean up common files
 _CLEANUP() {
-  [ -e /tmp/unlockme.log ] && rm -f /tmp/unlockme.log
+  [ -e /tmp/unlockme.log ] && rm -f /tmp/unlockme.log # log file
   [ -e "$TMPLTF" ] && rm -f "$TMPLTF"
   [ -e /tmp/aptx ] && rm -f /tmp/aptx
-  [ -e /tmp/UnlockDS ] && rm -f /tmp/UnlockDS
+  [ -e /tmp/UnlockDS ] && rm -f /tmp/UnlockDS         # desktop session file
 }
 
 # function - remove browser profile 
@@ -598,7 +601,7 @@ fi
 # Check whether ARRAYB is empty and skip execution if so
 if [ ${#ARRAYB[@]} -ne 0 ]; then
    case $? in
-    0) pkexec unlockme-admin "${ARRAYB[@]}" ;;
+    0) pkexec unlockme-admin "${ARRAYB[@]}";;
     1) return
   esac
 fi
@@ -618,8 +621,8 @@ fi
 
 # Check Autoremove packages
 if [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -gt 0 ]; then
-  _DRYAPTVAL=$(cat "$_DRYAPT" | head -n+1)
-  _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
+     _DRYAPTVAL=$(cat "$_DRYAPT" | head -n+1)
+     _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
 else _autoremove=()
 fi
 
@@ -638,8 +641,8 @@ fi
 
 # Check if the google-chrome browser cache exists
 if [ -d  "$HOME/.cache/google-chrome/" ]; then
-  GCCACHESIZE=$(du -sh "$HOME/.cache/google-chrome/" | awk '{print $1}' | sed 's/$/B/')
-  chromecache=(FALSE "CHROMECACHE" "Chrome Cache" "Cleanup" "User" "You can remove $GCCACHESIZE from your Chrome browser cache")
+     GCCACHESIZE=$(du -sh "$HOME/.cache/google-chrome/" | awk '{print $1"B"}')
+     chromecache=(FALSE "CHROMECACHE" "Chrome Cache" "Cleanup" "User" "You can remove $GCCACHESIZE from your Chrome browser cache")
 else chromecache=()
 fi
 
@@ -650,9 +653,9 @@ else _chromeprofile=()
 fi
 
 # Check if the chromium browser cache exists
-if [  -d  "$HOME/.cache/chromium/" ]; then
-  CHRCACHESIZE=$(du -sh "$HOME/.cache/chromium/" | awk '{print $1}' | sed 's/$/B/')
-  chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
+if [ -d  "$HOME/.cache/chromium/" ]; then
+     CHRCACHESIZE=$(du -sh "$HOME/.cache/chromium/" | awk '{print $1"B"}')
+     chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
 else chromiumcache=()
 fi
 
@@ -692,8 +695,8 @@ fi
 
 # Check if firefox browser cache exists
 if [  -d  "$HOME/.cache/mozilla/" ]; then
-  FFCACHESIZE=$(du -sh "$HOME/.cache/mozilla/firefox/" 2>&1 | awk '{print $1}'| sed 's/$/B/')
-  firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
+     FFCACHESIZE=$(du -sh "$HOME/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
+     firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
 else firefoxcache=()
 fi
 
@@ -727,7 +730,7 @@ fi
 
 # Check if  midori browser cache exists
 if [  -d  "$HOME/.cache/midori/" ]; then
-  MDCACHESIZE=$(du -sh "$HOME/.cache/midori/" | awk '{print $1}' | sed 's/$/B/')
+     MDCACHESIZE=$(du -sh "$HOME/.cache/midori/" | awk '{print $1"B"}')
      _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from your Midori browser cache")
 else _midoricache=()
 fi
@@ -740,7 +743,7 @@ fi
 
 # Check if  opera browser cache exists
 if [  -d  "$HOME/.cache/opera/Cache/" ]; then
-  OPCACHESIZE=$(du -sh "$HOME/.cache/opera/Cache/" | awk '{print $1}' | sed 's/$/B/')
+     OPCACHESIZE=$(du -sh "$HOME/.cache/opera/Cache/" | awk '{print $1"B"}')
      _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from your Opera browser cache")
 else _operacache=()
 fi
@@ -753,7 +756,7 @@ fi
 
 # Check if  Pale Moon browser cache exists
 if [  -d  "$HOME/.cache/moonchild productions/pale moon/" ]; then
-  PMCACHESIZE=$(du -sh "$HOME/.cache/moonchild productions/pale moon/" | awk '{print $1}' | sed 's/$/B/')
+     PMCACHESIZE=$(du -sh "$HOME/.cache/moonchild productions/pale moon/" | awk '{print $1"B"}')
      _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from your Pale Moon browser cache")
 else _palemooncache=()
 fi
@@ -766,36 +769,36 @@ fi
 
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
-  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
+     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
 elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]] \
-  || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
-  _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
+     || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
+     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
 else _chnamehost=()
 fi
 
 # Check logs archives
 if [ "$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -maxdepth 100 -size +1k)" ]; then
-  LOGARCHIVESIZE=$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -exec du -csh '{}' + | tail -1 | awk '{print $1}' | sed 's/$/B/')
+     LOGARCHIVESIZE=$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -exec du -csh '{}' + | tail -1 | awk '{print $1"B"}')
      _logarchives=(FALSE "LOGARCHIVES" "Log Archives" "Cleanup" "System" "You can remove $LOGARCHIVESIZE worth of archived logs")
 else _logarchives=()
 fi
 
 # Check if any thumbnails exist
 if [ $(du -sk "$HOME/.cache/thumbnails/" | awk '{print $1}')  -gt 100  ]; then
-  THUMBCACHESIZE=$(du -sh "$HOME"/.cache/thumbnails/ | awk '{print $1}' | sed 's/$/B/')
+     THUMBCACHESIZE=$(du -sh "$HOME"/.cache/thumbnails/ | awk '{print $1"B"}')
      _thumbn=(FALSE "THUMBNAILS" "Thumbnail Cache" "Cleanup" "User" "You can remove $THUMBCACHESIZE from your thumbnail cache")
 else _thumbn=()
 fi
 
 # Check package cache 
 if [ "$(find /var/cache/apt/archives/ -maxdepth 1 -size +100k)" ]; then
-  APTCACHESIZE=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1}' | sed 's/$/B/' )
+     APTCACHESIZE=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1"B"}')
      _packagecache=(FALSE "PACKAGECACHE" "Packages Cache" "Cleanup" "System" "You can remove $APTCACHESIZE worth of files from the packages cache")
 else _packagecache=()
 fi
 
 # Check if preload is installed
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
+if [ -z "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
   if [ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
    else
@@ -805,16 +808,16 @@ else _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "<span fore
 fi
 
 # Check residual configuration files
-if [ ! -z  "$(dpkg -l | grep '^rc')"  ]; then
-  RESCONFIGQTY=$(dpkg -l | grep '^rc' | awk '{print $2}'| wc -w)
+if [ ! -z "$(dpkg -l | grep '^rc')"  ]; then
+     RESCONFIGQTY=$(dpkg -l | grep '^rc' | awk '{print $2}'| wc -w)
      _resconfig=(FALSE "RESIDCONFIG" "Residual Config Files" "Cleanup" "System" "There are $RESCONFIGQTY residual configuration files that can be removed")
 else _resconfig=()
 fi
 
 # Check if the seamonkey browser cache exists
-if [ -d  "$HOME/.cache/mozilla/seamonkey/" ]; then
-  SMCACHESIZE=$(du -sh "$HOME/.cache/mozilla/seamonkey/" | awk '{print $1}' | sed 's/$/B/')
-  _seamonkeycache=(FALSE "SEAMONKEYCACHE" "SeaMonkey Cache" "Cleanup" "User" "You can remove $SMCACHESIZE from your SeaMonkey browser cache")
+if [ -d "$HOME/.cache/mozilla/seamonkey/" ]; then
+     SMCACHESIZE=$(du -sh "$HOME/.cache/mozilla/seamonkey/" | awk '{print $1"B"}')
+     _seamonkeycache=(FALSE "SEAMONKEYCACHE" "SeaMonkey Cache" "Cleanup" "User" "You can remove $SMCACHESIZE from your SeaMonkey browser cache")
 else _seamonkeycache=()
 fi
 
@@ -825,15 +828,15 @@ else _seamonkeyprofile=()
 fi
 
 # Check the Trash
-if [  "$(ls -A "$HOME/.local/share/Trash/files/")" ]; then
-  TRASHCACHESIZE=$(du -sh "$HOME/.local/share/Trash/" | awk '{print $1}' | sed 's/$/B/')
+if [ "$(ls -A "$HOME/.local/share/Trash/files/")" ]; then
+     TRASHCACHESIZE=$(du -sh "$HOME/.local/share/Trash/" | awk '{print $1"B"}')
      _trashbin=(FALSE "TRASHBIN" "Trash Bin" "Cleanup" "User" "You can remove $TRASHCACHESIZE from the Trash bin")
 else _trashbin=()
 fi
 
 # Check vivaldi-stable cache
-if [  -d  "$HOME/.cache/vivaldi/" ]; then
-  VCSIZE=$(du -sh "$HOME/.cache/vivaldi/" | awk '{print $1}' | sed 's/$/B/')
+if [ -d "$HOME/.cache/vivaldi/" ]; then
+     VCSIZE=$(du -sh "$HOME/.cache/vivaldi/" | awk '{print $1"B"}')
      _vivaldicache=(FALSE "VIVALDICACHE" "Vivaldi Cache" "Cleanup" "User" "You can remove $VCSIZE from your Vivaldi browser cache")
 else _vivaldicache=()
 fi
@@ -845,7 +848,7 @@ else _vivaldiprofile=()
 fi
 
 # Check for zram
-if [ -z  "$VARZRAM" ]; then
+if [ -z "$VARZRAM" ]; then
   if [ "$VARZSWAP" == "Y" ] || [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
      _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" "Compressed RAM based block device for faster I/O")
    else
@@ -883,8 +886,8 @@ if [ $(cat /boot/config-`uname -r` | grep -i zswap | cut -d= -f2) == "y" ]; then
 fi
 
 # Check if waterfox browser cache exists
-if [  -d  "$HOME/.cache/waterfox/" ]; then
-  WFCACHESIZE=$(du -sh "$HOME/.cache/waterfox/"| awk '{print $1}'| sed 's/$/B/')
+if [ -d "$HOME/.cache/waterfox/" ]; then
+     WFCACHESIZE=$(du -sh "$HOME/.cache/waterfox/"| awk '{print $1"B"}')
      _waterfoxcache=(FALSE "WATERFOXCACHE" "Waterfox Cache" "Cleanup" "User" "You can remove $WFCACHESIZE from your Waterfox browser cache")
 else _waterfoxcache=()
 fi
@@ -897,7 +900,7 @@ fi
 
 # Whisker Menu Restore if Linux Lite 
 if [[ "$LLDENV" =~ "Lite" ]]; then
-  _whiskermrest=(FALSE "WHISKERMREST" "Whisker Menu Restore" "Fix" "User" "Restore Linux Lite Whisker Menu defaults")
+     _whiskermrest=(FALSE "WHISKERMREST" "Whisker Menu Restore" "Fix" "User" "Restore Linux Lite Whisker Menu defaults")
 else _whiskermrest=()
 fi
 } 
@@ -915,25 +918,30 @@ CHECK
 
 # Main dialog os version
 BITS=$(getconf LONG_BIT)
-if [ -f "/etc/linuxmint/info" ]; then 
 
-    if [[ "$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2)" =~ "PeppermintOS" ]]; then
-      _LMDES="$(cat /etc/linuxmint/info 2>&1 | grep 'DESCRIPTION' | cut -d\" -f2) ${BITS}-bit"
+if [ -f "$mintinfo" ]; then 
+    # check if peppermint
+    if [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
+      DISTRO="${PPMDENV} ${BITS}-bit"
     else
-      _LMDES="$(cat /etc/linuxmint/info 2>&1 | grep 'GRUB' | cut -d\= -f2)"
+      # assume linuxmint
+      DISTRO="$(grep -F 'GRUB' "$mintinfo" | cut -d\= -f2)"
     fi
-
-elif [ -f "/etc/llver" ]; then _LMDES="$(cat /etc/llver) ${BITS}-bit"
-elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then _LMDES="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
-elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]]; then  _LMDES="Ubuntu MATE $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
-else _LMDES="$(cat /etc/issue | cut -d\\ -f1)"; fi
+# check if linuxlite
+elif [ -f "$liteinfo" ]; then DISTRO="$(cat "$liteinfo") ${BITS}-bit"
+# check if ubuntu-budgie
+elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then DISTRO="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
+# check if ubuntu-mate
+elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]]; then  DISTRO="Ubuntu MATE $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
+# others
+else DISTRO="$(cat /etc/issue | cut -d\\ -f1)"; fi
 
 # Main dialog
 selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --borders=8 \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \
-                --text="<span font='Sans 9'>$_LMDES\n</span>
+                --text="<span font='Sans 9'>$DISTRO\n</span>
 <span font='Sans 9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
 \nYou can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
 "FALSE" "THEMING" "Appearance" "Install or Remove" "Customize" "A selection of popular desktop themes, icons and cursors" \
