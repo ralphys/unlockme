@@ -1,25 +1,36 @@
-#! /bin/bash
-# Name: UnlockMe Admin
-# Copyright 2017 © Ralphy Rhdez <rafaelrhd3z@gmail.com>
+#!/bin/bash
+# 
+# UnlockMe: Customize, tweak and clean your system
+# https://github.com/ralphys/unlockme/
+#
+# Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
 # Website - https://unlockforus.com
-# Dated - 18th April, 2017
-
+# 
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2, or (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License with your
 # system, in /usr/share/common-licenses/GPL-2.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# variable check editions
+# UnlockMe version - none :)
+# Script name: unlockme-admin
+
+# variables
+ SOFTUSR=$(< "/tmp/unlockusr")
+ APPNAME="UnlockMe"
+ DLGICON="/usr/share/unlockme/icons/ui/dlgicon.png"
+RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
+
+# variables - check editions
 mintinfo="/etc/linuxmint/info"
 liteinfo="/etc/llver"
-ppminfo=$mintinfo
+ ppminfo="$mintinfo"
 
 # architecture
 ARCH=$(uname -i)
@@ -33,226 +44,228 @@ if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
 if [ -n "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
 if [ -n "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
 
-# variables
-_SOFTUSR=$(cat "/tmp/unlockusr")
-APPNAME="UnlockMe"
-
 # common functions
-function UNLOCKME_LOGS() {
-_LOGS="/tmp/unlockme.log"
-touch "$_LOGS"; chown "$_SOFTUSR":"$_SOFTUSR" "$_LOGS"; chmod 600 "$_LOGS"
+unlockme_log() {
+_LOG="/tmp/unlockme.log"
+touch "$_LOG"; chown "$SOFTUSR":"$SOFTUSR" "$_LOG"; chmod 600 "$_LOG"
 }
 
 show_progress() {
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
-RUN_ICON() {
-_RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
-}
-
-VIEW_SAVE_LOG() {
-if [ ${_FAILURE} -eq "1" ]; then rm -f "$_LOGS"; else
-   zenity --text-info --width="750" --height="400" --cancel-label="Quit" --ok-label="Save..." --title=" $APPNAME - Log" --filename="$_LOGS" 2>/dev/null
-  if [ "$?" -eq "0" ]; then
-      # Save log
-      szSavePath=$(zenity --width="550" --height="380" --title=" Save log" --file-selection --filename="/home/$_SOFTUSR/$_LOGS" --file-filter='*.log' \
-                          --file-filter='All files | *' --save --confirm-overwrite 2>/dev/null)
-      sudo -u ${SUDO_USER:-$_SOFTUSR} cp "$_LOGS" "$szSavePath"; rm -f "$_LOGS"; else rm -f "$_LOGS"
-  fi
-fi
-}
-
-# common functions
 ask-logout-super() {
+
   zenity --question --window-icon="info" --width="260" --height="80" --title="  $APPNAME" \
          --text="\nChanges will take effect after next login.\n\n Would you like to logout now?" 2>/dev/null
-      if [ "$?" -eq "0" ]; then echo "# Logging out..."; srvs="$(service --status-all | egrep 'lightdm|mdm' | awk '{ print $4}')"
-        for i in "$srvs"; do systemctl restart $i; done
-      fi
+
+  if [[ "$?" = "0" ]]; then
+    echo "# Logging out..."
+
+    DisplayMgr="$(service --status-all | egrep 'lightdm|mdm' | awk '{ print $4}')"
+    for i in "$DisplayMgr"; do
+        systemctl restart $i
+    done
+  fi
 }
 
 check_inst() {
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while installing $_FNAME." 2>/dev/null
-      echo "#✘ $_FNAME installation failed." && sleep 1; continue
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then 
+    echo "# Error..." && sleep 1
+    zenity --error --width="240" --height="80" --title=" Error" \
+           --text="\nAn error occurred while installing ${_FNAME}." 2>/dev/null   
+    echo "#✘ ${_FNAME} installation failed." ; sleep 1
+    continue
   fi
 }
 
 check_remv() {
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="240" --height="80" --title=" Error" --text="\nAn error occurred while removing $_FNAME." 2>/dev/null
-      echo "#✘ $_FNAME uninstallation failed." && sleep 1; continue
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    echo "# Error..." && sleep 1
+    zenity --error --width="240" --height="80" --title=" Error" \
+           --text="\nAn error occurred while removing ${_FNAME}." 2>/dev/null
+    echo "#✘ ${_FNAME} uninstallation failed." ; sleep 1
+    continue
   fi
 }
 
 check_online2() {
-  check_internet=$(sudo -u ${SUDO_USER:-$_SOFTUSR} wget -q -t2 --spider https://www.google.com ; echo $?)
-  if [ "$check_internet" -ne "0" ]; then
-    zenity --question --icon-name="info" --width="360" --height="90" --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
-           --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to install $_FNAME package from the local cache if available.
-\nIf the package does not exist in the system cache, $_FNAME installation will fail." 2>/dev/null
+
+  check_internet=$(sudo -u ${SUDO_USER:-$SOFTUSR} wget -q -t2 --spider https://www.google.com ; echo $?)
+
+  if [[ "$check_internet" != "0" ]]; then
+    zenity --question --icon-name="info" --width="360" --height="90" \
+           --ok-label="Continue" --cancel-label="Cancel" --title="No internet connection" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n\nUnlockMe will attempt to \
+install ${_FNAME} package from the local cache if available. \
+If the package does not exist in the system cache, ${_FNAME} installation will fail." 2>/dev/null
   fi
 }
 
-# Get input from a previous file
-FRM="$@"
+# Get input from previous script
+ADMRUN="$@"
 
-# Check if the input is correct and populate array C
-
-echo $FRM | grep "AUTOREMOVE" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('AUTOREMOVE'); fi
-
-echo $FRM | grep "BYPASSPSWADMPKEXEC" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
-
-echo $FRM | grep "DNSCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('DNSCACHE'); fi
-
-echo $FRM | grep "IPV6" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('IPV6'); fi
-
-echo $FRM | grep "FIXDBXFCE2" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('FIXDBXFCE2'); fi
-
-echo $FRM | grep "LOGARCHIVES" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('LOGARCHIVES'); fi
-
-echo $FRM | grep "PACKAGECACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('PACKAGECACHE'); fi
-
-echo $FRM | grep "THEMING" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('THEMING'); fi
-
-echo $FRM | grep "SOFTINST" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('SOFTINST'); fi
-
-echo $FRM | grep "CHNAMEHOST" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('CHNAMEHOST'); fi
-
-echo $FRM | grep "MGMTSAVESESSION" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('MGMTSAVESESSION'); fi
-
-echo $FRM | grep "PRELOAD" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('PRELOAD'); fi
-
-echo $FRM | grep "RESIDCONFIG" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('RESIDCONFIG'); fi
-
-echo $FRM | grep "SCACHEPR" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('SCACHEPR'); fi
-
-echo $FRM | grep "SYSSWAP" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('SYSSWAP'); fi
-
-echo $FRM | grep "ZRAM" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('ZRAM'); fi
-
-echo $FRM | grep "ZSWAP" > /dev/null
-if [ $? = 0 ]; then ARRAYC+=('ZSWAP'); fi
+  if [[ $(grep "AUTOREMOVE" <<< "$ADMRUN") ]]; then ARRAYC+=('AUTOREMOVE'); fi
+  if [[ $(grep "BYPASSPSWADMPKEXEC" <<< "$ADMRUN") ]]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
+  if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
+  if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
+  if [[ $(grep "LOGARCHIVES" <<< "$ADMRUN") ]]; then ARRAYC+=('LOGARCHIVES'); fi
+  if [[ $(grep "PACKAGECACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('PACKAGECACHE'); fi
+  if [[ $(grep "THEMING" <<< "$ADMRUN") ]]; then ARRAYC+=('THEMING'); fi
+  if [[ $(grep "SOFTINST" <<< "$ADMRUN") ]]; then ARRAYC+=('SOFTINST'); fi
+  if [[ $(grep "CHNAMEHOST" <<< "$ADMRUN") ]]; then ARRAYC+=('CHNAMEHOST'); fi
+  if [[ $(grep "MGMTSAVESESSION" <<< "$ADMRUN") ]]; then ARRAYC+=('MGMTSAVESESSION'); fi
+  if [[ $(grep "PRELOAD" <<< "$ADMRUN") ]]; then ARRAYC+=('PRELOAD'); fi
+  if [[ $(grep "RESIDCONFIG" <<< "$ADMRUN") ]]; then ARRAYC+=('RESIDCONFIG'); fi
+  if [[ $(grep "SYSCACHEPR" <<< "$ADMRUN") ]]; then ARRAYC+=('SYSCACHEPR'); fi
+  if [[ $(grep "SYSSWAP" <<< "$ADMRUN") ]]; then ARRAYC+=('SYSSWAP'); fi
+  if [[ $(grep "ZRAM" <<< "$ADMRUN") ]]; then ARRAYC+=('ZRAM'); fi  
+  if [[ $(grep "ZSWAP" <<< "$ADMRUN") ]]; then ARRAYC+=('ZSWAP'); fi
 
 # Functions
 
 SOFTINST() {
-bash unlockme-apps 
+
+  bash unlockme-apps 
 }
 
 THEMING() {
-bash unlockme-appearance 
+
+  bash unlockme-appearance 
 }
 
 show_progress() {
+
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
 AUTOREMOVE() {
-echo "#Removing unneeded packages, please wait..."
-apt-get autoclean -y && apt-get autoremove -y
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-    zenity --error --width="260" --height="80" --title="    Error"
-           --text="\nAn error occurred while removing unneeded packages!" 2>/dev/null; return
+
+echo "#⚫ Removing unneeded packages, please wait..."
+apt-get autoclean -y ; apt-get autoremove -y
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    echo "# Error..." ; sleep 1
+    zenity --error --width="260" --height="80" --title=" Error" \
+           --text="\nAn error occurred while removing unneeded packages!" 2>/dev/null
+    return
   fi
+
 _DATE=$(date "+%Y-%m-%d %H")
-echo "0" > "/home/$_SOFTUSR/.local/share/.dryapt"
-echo "$_DATE" >> "/home/$_SOFTUSR/.local/share/.dryapt"
+echo "0" > "/home/${SOFTUSR}/.local/share/.dryapt"
+echo "$_DATE" >> "/home/${SOFTUSR}/.local/share/.dryapt"
 echo "#✔ Unneeded packages cleared" && sleep 1
 }
 
 BYPASSPSWADMPKEXEC() {
-echo "#Configuring pkexec password prompt..." && sleep .5
+
+echo "#⚫ Configuring pkexec password prompt..." ; sleep .5
+
 _WFILE0="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"
 _WFILE1="/usr/share/unlockme/set/ACTPKEXEC"
-if [ ! -f "$_WFILE0" ]; then
-  echo "#⚫ Bypassing pkexec password prompt for admins..." && sleep 2
+
+if [[ ! -f "$_WFILE0" ]]; then
+  echo "#⚫ Bypassing pkexec password prompt for admins..." ; sleep 2
   touch "$_WFILE0" 
-  printf '[No pkexec password prompt for sudoers]
+  printf \
+'[No pkexec password prompt for sudoers]
 Identity=unix-group:sudo
 Action=*
 ResultActive=yes' > "$_WFILE0"
-  touch $_WFILE1
-  if [ -f "$_WFILE0" ] && [ -f "$_WFILE1" ]; then
-    echo "#✔ pkexec bypass for admins applied." && sleep 2
+
+  touch "$_WFILE1"
+  if [[ -f "$_WFILE0" && -f "$_WFILE1" ]]; then
+    echo "#✔ pkexec bypass for admins applied." ; sleep 2
   else
-    echo "#Error..." && sleep .5 ; echo "#✘ An error occurred applying pkexec bypass." && sleep 2
+    echo "# Error..." ; sleep .5
+    echo "#✘ An error occurred applying pkexec bypass."; sleep 2
   fi
+
 else
   zenity --question --width="300" --title="pkexec password prompt" \
          --text="\nDo you want to enable pkexec password prompt for admins again?" 2>/dev/null
+
   if [ "$?" = "0" ]; then 
-    echo "#⚫ Restoring pkexec password prompt for admins..." && sleep 2
+    echo "#⚫ Restoring pkexec password prompt for admins..." ; sleep 2
     rm -f "$_WFILE0" "$_WFILE1"
-    if [ ! -f "$_WFILE0" ] && [ ! -f "$_WFILE1" ]; then
-      echo "#✔ pkexec for admins enabled." && sleep 2
+
+    if [[ ! -f "$_WFILE0" && ! -f "$_WFILE1" ]]; then
+      echo "#✔ pkexec for admins enabled." ; sleep 2
     else
-      echo "#Error..." && sleep .5 ; echo "#✘ An error occurred removing pkexec bypass." && sleep 2
+      echo "# Error..." ;sleep .5
+      echo "#✘ An error occurred removing pkexec bypass." ; sleep 2
     fi
   fi
 fi
 }
 
 CHNAMEHOST() {
+
 _HOSTNAME=$(hostname)
-echo "#Changing hostname. Please wait..." && sleep 1 ; echo "#Changing hostname... ${_HOSTNAME}"
+
+echo "#Changing hostname. Please wait..." ; sleep 1
+echo "#Changing hostname... ${_HOSTNAME}"
 
 # Change Hostname Cinnamon 
 if [[ "$DENV" =~ "Cinnamon" ]]; then
-        yad --question --window-icon="gtk-dialog-warning" --image="gtk-dialog-warning" --fixed --borders="8" --width="320" --height="140" \
-            --title="Warning" --button="No"\!gtk-close:1 --button="Yes"\!gtk-ok:0 \
-            --text="Please save any unsaved work before continuing. You will be\nautomatically logged off after changing the computer hostname.\n\nWould you like to proceed?"
 
-if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then continue ; fi
+   NO_AT_BRIDGE=1 yad --question --width="400" --height="140" --window-icon="gtk-dialog-warning" --image="gtk-dialog-warning"  \
+       --borders="8" --wrap --title="Warning" --button="No"\!gtk-close:1 --button="Yes"\!gtk-ok:0 \
+       --text="\nPlease save any unsaved work before continuing. You will be automatically logged off \
+after changing the computer hostname.\n\nWould you like to proceed?"
+
+  if [[ "$?" = "1" || "$?" = "252" ]]; then 
+    continue
+  fi
 
 while (true); do
   _NEW_HOSTNAME=$(zenity --entry --width="350" --window-icon="$_ICON" --ok-label="Change" --cancel-label="Cancel" --title=" Change Hostname" \
                          --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: LinuxBox) below \nand click 'Change' to proceed.
                          \nNote: The hostname must not be empty, or start with \nhashtags, or contain whitespaces or underscores.\n" --entry-text="${_HOSTNAME}" 2>/dev/null)
 
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    return
+  fi
 
   # If hostname is only blank spaces or starts with a hashtag, warn and loop
-  echo "$_NEW_HOSTNAME" | egrep "^[[:space:]]*$|^#|[[:space:]]|*_.*" >/dev/null
+  egrep "^[[:space:]]*$|^#|[[:space:]]|*_.*" <<< "$_NEW_HOSTNAME" >/dev/null
   
-    if [ $? = 0 ]; then
+    if [[ "$?" = "0" ]]; then
+
       zenity --warning --width="330" --height="60" --ok-label="Go Back" --title=" Hostname not changed" \
-             --text="\nThe new hostname must not be empty, or start with hashtags, or contain white spaces or underscores.\n\nThe hostname cannot be changed." 2>/dev/null; continue
+             --text="\nThe new hostname must not be empty, or start with hashtags, or contain white spaces or underscores.\n\nThe hostname cannot be changed." 2>/dev/null
+      continue
+    
     # If old hostname and new hostname are the same, warn and loop
-    elif [ "$_NEW_HOSTNAME" = "$_HOSTNAME" ]; then zenity --info --width="300" --height="60" --timeout="5" --ok-label="Back" \
-                                                          --title=" Hostname not changed" --text="\nNo new hostname was entered. Please try again." 2>/dev/null; continue
+    elif [[ "$_NEW_HOSTNAME" = "$_HOSTNAME" ]]; then 
+
+      zenity --info --width="300" --height="60" --timeout="5" --ok-label="Back" \
+             --title=" Hostname not changed" --text="\nNo new hostname was entered. Please try again." 2>/dev/null
+      continue
+
     else
-      echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " && sleep 1
+      echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
       echo "$_NEW_HOSTNAME" > /proc/sys/kernel/hostname
+
       sed -i 's/127.0.1.1.*/127.0.1.1\t'"$_NEW_HOSTNAME"'/g' /etc/hosts
       echo "$_NEW_HOSTNAME" > /etc/hostname
+
       # update netbios name = hostname in Samba smb.conf
       _SMBCONF="/etc/samba/smb.conf"
       sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
-      echo "#⚫ Updating services. Please wait..." && sleep 2
-      # restart/reload services
-      systemctl reload smbd && systemctl restart nmbd && systemctl restart network-manager && sleep 3; dhclient
 
-      if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+      echo "#⚫ Updating services. Please wait..." ; sleep 2
+      # restart/reload services
+      systemctl reload smbd && systemctl restart nmbd 
+      systemctl restart network-manager ; sleep 3 ; dhclient
+
+      if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+
         zenity --error --width="290" --height="60" --ok-label="Close" \
-               --title=" Error" --text="\nAn error occurred while changing the hostname." 2>/dev/null; return
+               --title=" Error" --text="\nAn error occurred while changing the hostname." 2>/dev/null
+        return
       else
         zenity --info --width="260" --height="60" --timeout="8" --ok-label="Close" \
                --title=" Hostname changed" --text="\nThe hostname has been successfully updated." 2>/dev/null
@@ -263,44 +276,67 @@ while (true); do
 fi
 
 # Change Hostname Xfce MATE LXce
-if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]] || [[ "$PPMD" =~ "PeppermintOS" ]] \
-  || [ -n  "$(which budgie-desktop)" ]; then
+if [[ "$DENV" =~ "Xfce" ]] || [[ "$DENV" =~ "MATE" ]] || [[ "$LLD" =~ "Lite" ]] || 
+   [[ "$PPMD" =~ "PeppermintOS" ]] || [[ -n  "$(which budgie-desktop)" ]]; then
   
 while (true); do
-_NEW_HOSTNAME=$(zenity --entry --width="350" --window-icon="$_ICON" --ok-label="Change" --title=" Change Hostname" \
-                 --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\nEnter the desired new hostname (e.g.: LinuxBox) below \nand click 'Change' to proceed.
-                 \nNote: The hostname must not be empty, or start with \nhashtags, or contain whitespaces or underscores.\n" --entry-text="${_HOSTNAME}" 2>/dev/null)
 
-if [ "${PIPESTATUS[0]}" -ne "0" ]; then return; fi
+_NEW_HOSTNAME=$(zenity --entry --width="350" --height="200" --window-icon="$_ICON" --ok-label="Change" --title=" Change Hostname" \
+                       --entry-text="${_HOSTNAME}" --text="Your computer's current hostname is: ' ${_HOSTNAME} '\n\
+Enter the desired new hostname (e.g.: LinuxBox) below to proceed.\n\n\
+Note: The hostname must not be empty, or start with hashtags, or\ncontain whitespaces or underscores.\n" 2>/dev/null)
+
+if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+  return
+fi
 
 # If hostname is only blank spaces or starts with a hashtag, warn and loop
-echo "$_NEW_HOSTNAME" | egrep "^[[:space:]]*$|^#|[[:space:]]|*_.*" >/dev/null
-  if [ $? = 0 ]; then
-    zenity --warning --width="330" --height="60" --ok-label="Go Back" --title=" Hostname not changed" \
-           --text="\nThe new hostname must not be empty, or start with hashtags, or contain white spaces or underscores.\n\nThe hostname cannot be changed." 2>/dev/null; continue
+egrep "^[[:space:]]*$|^#|[[:space:]]|*_.*" <<< "$_NEW_HOSTNAME" >/dev/null
+
+  if [[ "$?" = "0" ]]; then
+
+    zenity --warning --width="320" --height="60" --ok-label="Go Back" --title=" Hostname not changed" \
+           --text="The new hostname must not be empty, or start with hashtags, or contain white spaces or underscores.\n\n\
+The hostname cannot be changed." 2>/dev/null
+    continue
+
   # If old hostname and new hostname are the same, warn and loop
-  elif [ "$_NEW_HOSTNAME" = "$_HOSTNAME" ]; then zenity --info --width="300" --height="60" --timeout="5" --ok-label="Back" \
-    --title=" Hostname not changed" --text="\nNo new hostname was entered. Please try again." 2>/dev/null; continue
+  elif [[ "$_NEW_HOSTNAME" = "$_HOSTNAME" ]]; then
+
+    zenity --info --width="300" --height="60" --timeout="5" --ok-label="Back" \
+           --title=" Hostname not changed" --text="\nNo new hostname was entered. Please try again." 2>/dev/null
+    continue
   else
-    echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " && sleep 1
+    echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
     echo "$_NEW_HOSTNAME" > /proc/sys/kernel/hostname
+
     sed -i 's/127.0.1.1.*/127.0.1.1\t'"$_NEW_HOSTNAME"'/g' /etc/hosts
     echo "$_NEW_HOSTNAME" > /etc/hostname
+
     systemctl restart networking
-    cd /home/$_SOFTUSR; su $_SOFTUSR -c "xauth add $(xauth list | grep "$_HOSTNAME" | sed 's/'"$_HOSTNAME"'\//'"$_NEW_HOSTNAME"'\//g' | awk 'NR==1 {print}')"
+
+    cd "/home/${SOFTUSR}"
+    su $SOFTUSR -c "xauth add $(xauth list | grep "$_HOSTNAME" | sed 's/'"$_HOSTNAME"'\//'"$_NEW_HOSTNAME"'\//g' | awk 'NR==1 {print}')"
+
     # update netbios name = hostname in Samba smb.conf
     _SMBCONF="/etc/samba/smb.conf"
     sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
-    echo "#⚫ Updating services. Please wait..." && sleep 1
+
+    echo "#⚫ Updating services. Please wait..." ; sleep 1
     systemctl reload smbd && systemctl restart nmbd # restart/reload samba services
-    systemctl reload network-manager && sleep 3; dhclient
-    chown "$_SOFTUSR":"$_SOFTUSR" "/home/$_SOFTUSR/.Xauthority"
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    systemctl reload network-manager ; sleep 3 ; dhclient
+
+    chown "$SOFTUSR":"$SOFTUSR" "/home/${SOFTUSR}/.Xauthority"
+
+    if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+
       zenity --error --width="290" --height="60" --ok-label="Close" \
-             --title=" Error" --text="\nAn error occurred while changing the hostname." 2>/dev/null; return
+             --title=" Error" --text="\nAn error occurred while changing the hostname." 2>/dev/null
+      return
     else
-      zenity --info --width="320" --height="60" --timeout="8" --ok-label="Close" \
-             --title=" Hostname changed" --text="\nThe hostname has been successfully updated.\n\nClose and reopen any Terminal window you may have open to reflect changes." 2>/dev/null; return
+      zenity --info --width="320" --height="60" --timeout="8" --ok-label="Close" --title=" Hostname changed"  \
+             --text="\nThe hostname has been successfully updated.\n\nClose and reopen any Terminal window you may have open to reflect changes." 2>/dev/null
+       return
     fi
   fi
 done
@@ -309,15 +345,16 @@ fi
 
 # fix dropbox | Xfce tweak
 FIXDBXFCE2() {
+
   # set proper permissions for .dbus folder
-  echo "#⚫ Fixing folder permissions ~/.dbus ..." && sleep 1
-  chown "$_SOFTUSR":"$_SOFTUSR" "/home/$_SOFTUSR/.dbus" -R
+  echo "#⚫ Fixing folder permissions ~/.dbus ..." ; sleep 1
+  chown "$SOFTUSR":"$SOFTUSR" "/home/${SOFTUSR}/.dbus" -R
 
   # Fix dropbox application launcher
-  echo "#⚫ Fixing dropbox application launcher..." && sleep 1
+  echo "#⚫ Fixing dropbox application launcher..." ; sleep 1
   _DBAPPFL="/usr/share/applications/dropbox.desktop"
-  [ -f "$_DBAPPFL" ] && sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBAPPFL"
-  echo "#✔ Fixes applied." && sleep 1
+  [[ -f "$_DBAPPFL" ]] && sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBAPPFL"
+  echo "#✔ Fixes applied." ; sleep 1
 }
 
 # dnscache tweak
@@ -333,35 +370,38 @@ echo "#⚫ Configuring $_FNAME..."
 
   disable_dns_cache() {
 
-    echo "# Disabling DNS cache..." && sleep .5
+    echo "# Disabling DNS cache..." ; sleep .5
     rm -f "$_CACHE" "$_DNSSEC" "$_TTL"
-    echo "# Restarting Network Manager..." 
+
+    echo "#⚫ Restarting Network Manager..." 
     service network-manager restart ; sleep 2
     continue
   }
 
   disable_dnssec() {
+
     rm -f "$_DNSSEC" && /etc/init.d/networking force-reload
   }
 
   disable_ttl() {
+
     rm -f "$_TTL" && /etc/init.d/networking force-reload
   }
 
 # check 
-if [ -f "$_CACHE" ]; then
+if [[ -f "$_CACHE" ]]; then
   _cachestatus="TRUE" _cachetxt="<span foreground='green'>DNS Cache Enabled</span>"
 else
  _cachestatus="FALSE" _cachetxt="Enable DNS Cache"
 fi
 
-if [ -f "$_DNSSEC" ]; then 
+if [[ -f "$_DNSSEC" ]]; then 
   _dnssecstatus="TRUE" _dnssectxt="<span foreground='green'>DNSSEC Validation Enabled</span>"
 else 
   _dnssecstatus="FALSE" _dnssectxt="Enable DNSSEC Validation"
 fi
 
-if [ -f "$_TTL" ]; then 
+if [[ -f "$_TTL" ]]; then 
   _ttlstatus="TRUE" _ttltxt="<span foreground='green'>TTL Cache Increased</span>"
 else 
   _ttlstatus="FALSE" _ttltxt="Increase TTL Cache"
@@ -376,51 +416,63 @@ otherwise protect and encrypt your dns requests with DNSCrypt.\n
   Your upstream DNS provider must support DNSSEC,
   otherwise you will lose connectivity.\n"
 
-answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=360 --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" \
-               --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection \
+answd=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --center --borders=8 --width=420 --height=360 --window-icon="$RUN_ICON" \
+               --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection --image="$DLGICON" \
                --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
                --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
                ${_cachestatus} "cachestatus" "$_cachetxt" \
                ${_dnssecstatus} "dnssecstatus" "$_dnssectxt" \
                ${_ttlstatus} "ttlstatus" "$_ttltxt")
-
 execute=$?
-DNSCACHE="$(echo $answd)"
+DNSCACHE="$answd"
 
 # exit on Close or X
-if [ "$execute" -eq "1" ] || [ "$execute" -eq "252" ]; then break; fi
+if [[ "$execute" = "1" || "$execute" = "252" ]]; then
+  break
+fi
 
 # flush dns cache
-if [ "$execute" -eq "2" ]; then 
+if [[ "$execute" = "2" ]]; then 
+
   echo "# Flushing DNS cache..."
-  if [ -n  "$(dpkg -l | grep -E '^ii' | grep '\snscd\s')" ]; then
+  if [[ -n  "$(dpkg -l | grep '\snscd\s')" ]]; then
     /etc/init.d/nscd restart ; sleep 3
   else
     service network-manager restart ; sleep 3
   fi
-  echo "#✔ DNS cache flushed." && sleep 1
+  echo "#✔ DNS cache flushed." ; sleep 1
   continue
 fi
 
 # message when no option is selected
-if [ "$execute" -eq "0" ] && [ -z "$DNSCACHE" ] && [ ! -f "$_CACHE" ]; then 
-  zenity --info --timeout=5 --width="260" --ok-label="Got it" --title="$_FNAME" --text="\nNo option select. Please select at least one option." 2>/dev/null
+if [[ "$execute" = "0" && -z "$DNSCACHE" && ! -f "$_CACHE" ]]; then 
+  zenity --info --timeout=5 --width="280" --ok-label="Got it" --title="$_FNAME" \
+         --text="\nNo option select. Please select at least one option." 2>/dev/null
   continue
 fi
 
 # disable dns cache
-if [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ]; then
+if [[ -z "$(egrep 'cachestatus' <<< ${DNSCACHE})" ]]; then
 
-  if [ -f "/etc/NetworkManager/dnsmasq.d/cache" ] && [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ]; then disable_dns_cache; fi
+  if [[ -f "/etc/NetworkManager/dnsmasq.d/cache" && \
+        -z "$(egrep 'cachestatus' <<< ${DNSCACHE})" ]]; then
+    disable_dns_cache
+  fi
 
-  if [ -z "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -n "$(echo "$DNSCACHE" | egrep 'dnssecstatus')" ] || [ -n "$(echo "$DNSCACHE" | egrep 'ttlstatus')" ] ; then
-    echo "#  DNS Cache is not enabled." && sleep 1
+  if [[ -z "$(egrep 'cachestatus' <<< ${DNSCACHE})" && \
+        -n "$(egrep 'dnssecstatus' <<< ${DNSCACHE})" || -n "$(egrep 'ttlstatus' <<< ${DNSCACHE})" ]]; then
+    echo "#  DNS Cache is not enabled." ; sleep 1
     continue
   fi
 else
 
-if [ -n "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -z "$(echo "$DNSCACHE" | egrep 'dnssecstatus')" ]; then disable_dnssec ; fi
-if [ -n "$(echo "$DNSCACHE" | egrep 'cachestatus')" ] && [ -z "$(echo "$DNSCACHE" | egrep 'ttlstatus')" ]; then disable_ttl ; fi
+  if [[ -n "$(egrep 'cachestatus' <<< ${DNSCACHE})" && -z "$(egrep 'dnssecstatus' <<< ${DNSCACHE})" ]]; then
+    disable_dnssec
+  fi
+
+  if [[ -n "$(egrep 'cachestatus' <<< ${DNSCACHE})" && -z "$(egrep 'ttlstatus' <<< ${DNSCACHE})" ]]; then
+    disable_ttl
+  fi
 fi
 
 # apply selections
@@ -428,9 +480,10 @@ fi
   if [[ "$DNSCACHE" =~ "cachestatus" ]]; then 
 
     # enable dns cache
-    if [ ! -f "$_CACHE" ];then touch "$_CACHE"
-      echo "#⚫ Enabling DNS cache..."
-      printf 'cache-size=1000' > "$_CACHE" && sleep 1
+    if [[ ! -f "$_CACHE" ]]; then
+
+      touch "$_CACHE" ; echo "#⚫ Enabling DNS cache..."
+      printf 'cache-size=1000' > "$_CACHE" ; sleep 1
     fi
   fi
 
@@ -438,11 +491,12 @@ fi
   if [[ "$DNSCACHE" =~ "dnssecstatus" ]]; then
 
     # enable dnssec
-    if [ ! -f "$_DNSSEC" ]; then touch "$_DNSSEC"
-      echo "#⚫ Enabling DNSSEC..." 
-      printf 'conf-file=/usr/share/dnsmasq-base/trust-anchors.conf
+    if [[ ! -f "$_DNSSEC" ]]; then
+      touch "$_DNSSEC" ; echo "#⚫ Enabling DNSSEC..." 
+      printf \
+'conf-file=/usr/share/dnsmasq-base/trust-anchors.conf
 dnssec
-dnssec-check-unsigned' > "$_DNSSEC" && sleep 1
+dnssec-check-unsigned' > "$_DNSSEC" ; sleep 1
     fi
   fi
 
@@ -450,16 +504,19 @@ dnssec-check-unsigned' > "$_DNSSEC" && sleep 1
   if [[ "$DNSCACHE" =~ "ttlstatus" ]]; then
 
     # increase TTL
-    if [ ! -f "$_TTL" ]; then touch "$_TTL"
-      echo "#⚫ Increasing TTL..." 
-      printf 'neg-ttl=300
+    if [[ ! -f "$_TTL" ]]; then
+      touch "$_TTL" ; echo "#⚫ Increasing TTL..." 
+      printf \
+'neg-ttl=300
 max-ttl=43200
 min-cache-ttl=3600
-max-cache-ttl=86400' > "$_TTL" && sleep 1
+max-cache-ttl=86400' > "$_TTL" ; sleep 1
     fi
   fi
-  echo "#⚫ Restarting Network Manager..." 
-  service network-manager restart ; sleep 2
+
+echo "#⚫ Restarting Network Manager..." 
+service network-manager restart ; sleep 2
+
 done
 }
 
@@ -470,26 +527,31 @@ IPV6() {
 _SYSFL="/etc/sysctl.conf"
 _PROCSYS="/proc/sys/net/ipv6/conf/all/disable_ipv6"
 
-echo "#Configuring IPv6..." && sleep .5
+echo "# Configuring IPv6..." ; sleep .5
 
-if grep -q -F '1' "$_PROCSYS"; then
+if [[ $(< "$_PROCSYS") = "1" ]]; then
   
   # enable IPv6
   echo "#⚫ Enabling IPv6..."
   sed -i '/.*net.ipv6.conf.all.disable_ipv6.*/d' "$_SYSFL" 
 
   # when IPv6 is enabled, remove IPv4 preference
-  grep -q -Fx 'precedence ::ffff:0:0/96  100' /etc/gai.conf && sed -i '/precedence ::ffff:0:0\/96  100/s/^/#/g' "/etc/gai.conf" && sleep .5
-  sysctl -w net.ipv6.conf.all.disable_ipv6=0
-  sysctl -p && sleep .5
+  grep -q -Fx 'precedence ::ffff:0:0/96  100' "/etc/gai.conf" && \
+  sed -i '/precedence ::ffff:0:0\/96  100/s/^/#/g' "/etc/gai.conf" ; sleep .5
 
-  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do nmcli connection modify "$nets" ipv6.method "auto"; done
+  sysctl -w net.ipv6.conf.all.disable_ipv6=0
+  sysctl -p ; sleep .5
+
+  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do
+    nmcli connection modify "$nets" ipv6.method "auto"
+  done
+
   nmcli con reload
 
-    if [ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" -eq 0 ] && [ "$(cat ${_PROCSYS})" -eq 0 ]; then
-      echo "#✔ IPv6 has been enabled." && sleep 2
+    if [[ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" = "0" && "$(< ${_PROCSYS})" = "0" ]]; then
+      echo "#✔ IPv6 has been enabled." ; sleep 2
     else
-      echo "#✘ An error occurred while enabling IPv6." && sleep 2
+      echo "#✘ An error occurred while enabling IPv6." ; sleep 2
     fi
 else
   # disable IPv6
@@ -502,75 +564,87 @@ else
   fi
 
   # when IPv6 is disabled, prefer IPv4
-  grep -q -Fx '#precedence ::ffff:0:0/96  100' /etc/gai.conf && sed -i '/precedence ::ffff:0:0\/96  100/s/^#//g' "/etc/gai.conf" && sleep .5
-  sysctl -w net.ipv6.conf.all.disable_ipv6=1
-  sysctl -p && sleep .5
+  grep -q -Fx '#precedence ::ffff:0:0/96  100' "/etc/gai.conf" && \
+  sed -i '/precedence ::ffff:0:0\/96  100/s/^#//g' "/etc/gai.conf" ; sleep .5
 
-  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do nmcli connection modify "$nets" ipv6.method "ignore"; done
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1
+  sysctl -p ; sleep .5
+
+  for nets in "$(nmcli connection show | tail -n1 | awk '{NF-=3}1')"; do
+    nmcli connection modify "$nets" ipv6.method "ignore"
+  done
+
   nmcli con reload
 
-    if [ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" -ge 1 ] && [ "$(cat ${_PROCSYS})" -eq 1 ]; then
-      echo "#✔ IPv6 has been disabled." && sleep 2
+    if [[ "$(grep -c 'net.ipv6.conf.all.disable_ipv6' ${_SYSFL})" > "0" && "$(< ${_PROCSYS})" = "1" ]]; then
+      echo "#✔ IPv6 has been disabled." ; sleep 2
     else
-      echo "#✘ An error occurred while disabling IPv6." && sleep 2
+      echo "#✘ An error occurred while disabling IPv6." ; sleep 2
     fi
 fi
 }
 
 # delete log archives tweak
 LOGARCHIVES() {
-echo "#⚫ Deleting archived logs..." && sleep 1
+
+echo "#⚫ Deleting archived logs..." ; sleep 1
 find /var/log \( -name '*.gz' -o -name '*.0' -o -name '*.1' \) -exec rm -rf {} \;
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-    zenity --error --width="260" --height="80" --title="    Error" --text="\nAn error occurred while deleting archived logs!" 2>/dev/null; return
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then echo "# Error..." ; sleep 1
+    zenity --error --width="260" --height="80" --title=" Error" \
+           --text="\nAn error occurred while deleting archived logs!" 2>/dev/null
+    return
   fi
-echo "#✔ Archived logs cleared." && sleep 1
+echo "#✔ Archived logs cleared." ; sleep 1
 }
 
 MGMTSAVESESSION() {
-    echo "# Manage Save Session..." && sleep .5
-    kiosk_dir=/etc/xdg/xfce4/kiosk
-    kioskrc=/etc/xdg/xfce4/kiosk/kioskrc
-    APPNAME="Manage Save Session"
-    _imgheader="/usr/share/unlockme/icons/ui/logout-screen.png"
 
-    if [ -d $kiosk_dir ]; then
+echo "# Manage Save Session..." ; sleep .5
+
+kiosk_dir="/etc/xdg/xfce4/kiosk"
+kioskrc="/etc/xdg/xfce4/kiosk/kioskrc"
+APPNAME="Manage Save Session"
+_imgheader="/usr/share/unlockme/icons/ui/logout-screen.png"
+
+    if [[ -d "$kiosk_dir" ]]; then
     # check whether kioskrc and its settings exist
-        if [ -f $kioskrc ]; then
-            grep -q -F '[xfce4-panel]' $kioskrc || echo '[xfce4-panel]' >> $kioskrc
-            grep -q -F 'CustomizePanel' $kioskrc || echo 'CustomizePanel=ALL' >> $kioskrc
-            grep -q -F '[xfce4-session]' $kioskrc || echo '[xfce4-session]' >> $kioskrc
-            grep -q -F 'CustomizeSplash' $kioskrc || echo 'CustomizeSplash=ALL' >> $kioskrc
-            grep -q -F 'CustomizeChooser' $kioskrc || echo 'CustomizeChooser=ALL' >> $kioskrc
-            grep -q -F 'CustomizeLogout' $kioskrc || echo 'CustomizeLogout=ALL' >> $kioskrc
-            grep -q -F 'CustomizeCompatibility' $kioskrc || echo 'CustomizeCompatibility=%sudo' >> $kioskrc
-            grep -q -F 'CustomizeSecurity' $kioskrc || echo 'CustomizeSecurity=NONE' >> $kioskrc
-            grep -q -F 'Shutdown' $kioskrc || echo 'Shutdown=ALL' >> $kioskrc
-            grep -q -F 'SaveSession' $kioskrc || echo 'SaveSession=ALL' >> $kioskrc
+        if [[ -f "$kioskrc" ]]; then
+            grep -q -F '[xfce4-panel]' "$kioskrc" || echo '[xfce4-panel]' >> "$kioskrc"
+            grep -q -F 'CustomizePanel' "$kioskrc" || echo 'CustomizePanel=ALL' >> "$kioskrc"
+            grep -q -F '[xfce4-session]' "$kioskrc" || echo '[xfce4-session]' >> "$kioskrc"
+            grep -q -F 'CustomizeSplash' "$kioskrc" || echo 'CustomizeSplash=ALL' >> "$kioskrc"
+            grep -q -F 'CustomizeChooser' "$kioskrc" || echo 'CustomizeChooser=ALL' >> "$kioskrc"
+            grep -q -F 'CustomizeLogout' "$kioskrc" || echo 'CustomizeLogout=ALL' >> "$kioskrc"
+            grep -q -F 'CustomizeCompatibility' "$kioskrc" || echo 'CustomizeCompatibility=%sudo' >> "$kioskrc"
+            grep -q -F 'CustomizeSecurity' "$kioskrc" || echo 'CustomizeSecurity=NONE' >> "$kioskrc"
+            grep -q -F 'Shutdown' "$kioskrc" || echo 'Shutdown=ALL' >> "$kioskrc"
+            grep -q -F 'SaveSession' "$kioskrc" || echo 'SaveSession=ALL' >> "$kioskrc"
         else # if kioskrc and its settings don't exist, create defaults
-            (umask 133;touch $kioskrc && chown root:root $kiosk_dir -R)
-            printf "[xfce4-panel]\nCustomizePanel=ALL\n\n[xfce4-session]\nCustomizeSplash=ALL
+            (umask 133;touch "$kioskrc" && chown root:root "$kiosk_dir" -R)
+            printf \
+"[xfce4-panel]\nCustomizePanel=ALL\n\n[xfce4-session]\nCustomizeSplash=ALL
 CustomizeChooser=ALL\nCustomizeLogout=ALL\nCustomizeCompatibility=%%sudo
-CustomizeSecurity=NONE\nShutdown=ALL\nSaveSession=ALL\n" >> $kioskrc
+CustomizeSecurity=NONE\nShutdown=ALL\nSaveSession=ALL\n" >> "$kioskrc"
         fi
     else
-        mkdir $kiosk_dir
-        (umask 133;touch $kioskrc && chown root:root $kiosk_dir -R)
-        printf "[xfce4-panel]\nCustomizePanel=ALL\n\n[xfce4-session]\nCustomizeSplash=ALL
+        mkdir "$kiosk_dir"
+        (umask 133;touch "$kioskrc" && chown root:root "$kiosk_dir" -R)
+        printf \
+"[xfce4-panel]\nCustomizePanel=ALL\n\n[xfce4-session]\nCustomizeSplash=ALL
 CustomizeChooser=ALL\nCustomizeLogout=ALL\nCustomizeCompatibility=%%sudo
 CustomizeSecurity=NONE\nShutdown=ALL\nSaveSession=ALL\n" >> $kioskrc
     fi
-# main loop
-while (true); do
-echo "# Manage Save Session..."
-grep -q "SaveSession=ALL" $kioskrc && echo $?
-  if [ $? = 0 ]; then selector1="TRUE"; else selector1="FALSE"; fi
-grep -q "SaveSession=NONE" $kioskrc && echo $?
-  if [ $? = 0 ]; then selector3="TRUE"; else selector3="FALSE"; fi
-grep -q "SaveSession=%sudo" $kioskrc && echo $?
-  if [ $? = 0 ]; then selector2="TRUE"; else selector2="FALSE"; fi
 
-# main dialog
+# mgmtsavesession main loop
+while (true); do
+
+echo "# Manage Save Session..."
+grep 'SaveSession=ALL' < "$kioskrc" && selector1="TRUE" || selector1="FALSE"
+grep 'SaveSession=NONE' < "$kioskrc" && selector3="TRUE" || selector3="FALSE"
+grep 'SaveSession=%sudo' < "$kioskrc" && selector2="TRUE" || selector2="FALSE"
+
+# mgmtsavesession main dialog
 dialog='\nYou have probably noticed the "Save session for future logins"
 option in the shutdown dialog.\n
 Some users may inadvertently save their sessions on logout
@@ -579,96 +653,117 @@ applications popping up during login.\n
 As Administrator you can enable, limit or disable the ability
 to save sessions on logout.\n'
 
-answd=$(yad --list --radiolist --dclick-action= --fixed --image="$_imgheader" --title="$APPNAME" --window-icon="$_RUN_ICON" \
-              --width="580" --height="350" --text="$dialog" --no-selection --borders=8 --center \
-              --button="gtk-close:1" --button="gtk-apply:0" --print-column=2 --borders="5" \
+answd=$(NO_AT_BRIDGE=1 yad --list --radiolist --dclick-action= --title="$APPNAME" --window-icon="$RUN_ICON" \
+              --text="$dialog" --fixed --no-selection --borders="8" --center --width="580" --height="350" \
+              --image="$_imgheader" --button="gtk-close:1" --button="gtk-apply:0" --print-column=2 --separator="" \
               --column="▼":RD --column="ANSW":HD --column="Save Session Options":TEXT \
-              $selector1 "30" "Enable for all users" \
-              $selector2 "20" "Enable for administrators" \
-              $selector3 "10" "Disable for all users")
+              ${selector1} "30" "Enable for all users" \
+              ${selector2} "20" "Enable for administrators" \
+              ${selector3} "10" "Disable for all users")
 stop=$?
-answ="$(echo $answd | cut -d'|' -f1)"
+answ="$answd"
 
 # exit on Close or X
-if [ "$stop" -eq "1" ] || [ "$stop" -eq "252" ]; then break; fi
+if [[ "$stop" = "1" || "$stop" = "252" ]]; then
+  break
+fi
 
 # prompt when no option is selected
-if [[ $answ -eq "0" ]]; then
-    zenity  --info --title="$APPNAME" --text="\nYou did not select an option. Please try again." 2>/dev/null; continue
+if [[ "$answ" = "0" ]]; then
+  zenity  --info --title="$APPNAME" --text="\nYou did not select an option. Please try again." 2>/dev/null
+  continue
 fi
 
 # disables Save Session for all users
-if [[ $answ -eq "10" ]]; then
-  if grep -q "SaveSession=NONE" $kioskrc; then
-    echo "#⚫ Disabling Save Session for all users..." && sleep .5 && echo "#⚫ No changes needed." && sleep 1
+if [[ "$answ" = "10" ]]; then
+
+  if grep 'SaveSession=NONE' < "$kioskrc"; then
+    echo "#⚫ Disabling Save Session for all users..." ; sleep .5 
+    echo "#⚫ No changes needed." ; sleep 1
   else
-    sed -i 's/SaveSession=.*/SaveSession=NONE/' $kioskrc
-    echo '#⚫ Disabling Save Session for all users...' && sleep .5 && echo "#✔ Disabling Save Session for all users." && sleep 1
+    sed -i 's/SaveSession=.*/SaveSession=NONE/' "$kioskrc"
+    echo '#⚫ Disabling Save Session for all users...' ; sleep .5 
+    echo "#✔ Disabling Save Session for all users." ; sleep 1
     ask-logout-super
   fi
 # enable Save Session for admins only
-elif [[ $answ -eq "20" ]]; then
-  if grep -q "SaveSession=%sudo" $kioskrc; then
-    echo "#⚫ Enabling Save Session for admins only..." && sleep .5 && echo "#⚫ No changes needed." && sleep 1
+elif [[ "$answ" = "20" ]]; then
+
+  if grep 'SaveSession=%sudo' < "$kioskrc"; then
+    echo "#⚫ Enabling Save Session for admins only..." ; sleep .5 
+    echo "#⚫ No changes needed." ; sleep 1
   else
-    sed -i 's/SaveSession=.*/SaveSession=%sudo/' $kioskrc
-    echo '#⚫ Enabling Save Session for admins only...' && sleep .5 && echo "#✔ Enabling Save Session for admins only." && sleep 1
+    sed -i 's/SaveSession=.*/SaveSession=%sudo/' "$kioskrc"
+    echo "#⚫ Enabling Save Session for admins only..." ; sleep .5 
+    echo "#✔ Enabling Save Session for admins only." ; sleep 1
     ask-logout-super
   fi
 # enable Save Session for all users
-elif [[ $answ -eq "30" ]]; then
-  if grep -q "SaveSession=ALL" $kioskrc; then
-    echo "#⚫ Enabling Save Session for all users..." && sleep .5 && echo "#⚫ No changes needed." && sleep 1
+elif [[ "$answ" = "30" ]]; then
+
+  if grep 'SaveSession=ALL' < "$kioskrc"; then
+    echo "#⚫ Enabling Save Session for all users..." ; sleep .5 
+    echo "#⚫ No changes needed." ; sleep 1
   else
-    sed -i 's/SaveSession=.*/SaveSession=ALL/' $kioskrc
-    echo '#⚫ Enabling Save Session for all users...' && sleep .5 && echo "#✔ Enabling Save Session for all users." && sleep 1
+    sed -i 's/SaveSession=.*/SaveSession=ALL/' "$kioskrc"
+    echo '#⚫ Enabling Save Session for all users...' ; sleep .5 
+    echo "#✔ Enabling Save Session for all users." ; sleep 1
     ask-logout-super
   fi
-else continue;
+else 
+  continue
 fi
 done
 }
 
 PACKAGECACHE() {
-    echo "#⚫ Cleaning packages cache..." && sleep 1
-    apt-get clean
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-        zenity --error --width="260" --height="80" --title="    Error" \
-               --text="\nAn error occurred while cleaning the packages cache." 2>/dev/null
+
+echo "#⚫ Cleaning packages cache..." ; sleep 1
+apt-get clean
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    echo "# Error..." ; sleep 1
+    zenity --error --width="260" --height="80" --title=" Error" \
+           --text="\nAn error occurred while cleaning the packages cache." 2>/dev/null
         return
-    fi
-    echo "#✔ Packages cache cleared." && sleep 1
+  fi
+  echo "#✔ Packages cache cleared." ; sleep 1
 }
 
 # preload tweak
 PRELOAD() {
 
-_FNAME=" Preload"
+_FNAME="Preload"
 
-echo "#⚫ Getting $_FNAME status..." && sleep .5
+echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
 
 # preload loop
 while (true); do
-echo "#⚫ Configuring Preload..."
+echo "#⚫ Configuring ${_FNAME}..."
 
 # check if preload is installed
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
+if [[ -z "$(dpkg -l | grep -F 'preload')" ]]; then
+
   # if not installed, then prompt user for installation
-  zenity --question --width="340" --height="80" --title="    $APPNAME" \
+  zenity --question --width="340" --height="80" --title=" $APPNAME" \
          --text="\nPreload is currently not installed in your system.\n Would you like to install preload now?" 2>/dev/null
-   if [ "$?" != "0" ]; then break; fi
+  if [[ "$?" != "0" ]]; then
+    break
+  fi
   
   # check internet connection
   check_online2
 
-  if [ "$?" -eq "0" ]; then
+  if [[ "$?" = "0" ]]; then
 
     # install preload
-    echo "#⚫ Installing $_FNAME..." && sleep 1 ; apt-get install preload -y | show_progress ; check_inst
-    echo "#✔ Preload successfully installed." && sleep 1 ; return
+    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+    apt-get install preload -y | show_progress ; check_inst
+
+    echo "#✔ ${_FNAME} successfully installed." ; sleep 1 ; return
 
   else # when user refuses installation, exit out
-    exit 0
+    break
   fi
 fi
 
@@ -677,32 +772,39 @@ if ps ax | grep -v grep | grep "preload" > /dev/null; then _status="Running"; el
 
 # preload status dialog
 if [[ "$_status" =~ "Running" ]]; then
-  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='green'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  BTXT="\n<span font='Bold 10'>Preload Status</span>: <span foreground='green'>${_status}</span>\n\n*\
+ <span font='9'>${_FNAME} service is always started during boot up</span>"
   YBTN=" Stop ${_FNAME}"
 else
-  BTXT="\n<span font='Sans Bold 10'>Preload Status</span>: <span foreground='red'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  BTXT="\n<span font='Bold 10'>Preload Status</span>: <span foreground='red'>${_status}</span>\n\n*\
+ <span font='9'>${_FNAME} service is always started during boot up</span>"
   YBTN=" Start ${_FNAME}"
 fi
 
 # preload Main dialog
 echo "# Configuring $_FNAME..."
-PRLOAD=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" --window-icon="$_RUN_ICON" --title="$APPNAME" \
-           --text-align="center" --text="$BTXT" ; echo $?)
-
+PRLOAD=$(NO_AT_BRIDGE=1 yad --width="365" --height="150" --text-align="center" --text="$BTXT" --fixed \
+                            --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" \
+                            --window-icon="$RUN_ICON" --title="$APPNAME" ; echo $?)
 case $PRLOAD in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
-            echo "#⚫ Stopping $_FNAME..." & service preload stop && sleep .5
+            echo "#⚫ Stopping $_FNAME..." & service preload stop ; sleep .5
           else
-            echo "#⚫ Starting $_FNAME..." & service preload start && sleep .5
+            echo "#⚫ Starting $_FNAME..." & service preload start ; sleep .5
         fi
         ;;
     1)  return
         ;;
     2)  # remove preload
-          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
-            if [ "$?" -eq "0" ]; then
-              echo "#⚫ Removing $_FNAME..." && sleep .5 ; service preload stop && apt-get remove --purge preload -y | show_progress ; check_remv
-              echo "#✔ $_FNAME successfully removed." && sleep 2 ; return
+          zenity --question --width="300" --title=" $APPNAME" \
+                 --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
+            
+            if [[ "$?" = "0" ]]; then
+              echo "#⚫ Removing ${_FNAME}..." ; sleep .5
+              service preload stop 
+              apt-get remove --purge preload -y | show_progress ; check_remv
+              echo "#✔ $_FNAME successfully removed." ; sleep 2
+              return
             fi
         ;;
     *)  return ;;
@@ -712,17 +814,23 @@ done
 
 # residual config files tweak
 RESIDCONFIG() {
-echo "#⚫ Removing residual configuration files..." && sleep 1
-dpkg --purge `dpkg -l | grep '^rc' | awk '{print $2}'`
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
+
+echo "#⚫ Removing residual configuration files..." ; sleep 1
+
+dpkg --purge $(dpkg -l | grep '^rc' | awk '{print $2}')
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    echo "# Error..." ; sleep 1
+
     zenity --error --width="260" --height="80" --title="    Error" \
-           --text="\nAn error occurred while removing residual configuration files." 2>/dev/null; return
+           --text="\nAn error occurred while removing residual configuration files." 2>/dev/null
+    return
   fi
-echo "#✔ Residual configuration files cleared" && sleep 1
+echo "#✔ Residual configuration files cleared" ; sleep 1
 }
 
 # kernel cache pressure tweak
-SCACHEPR() {
+SYSCACHEPR() {
 
 echo "# Configuring kernel cache pressure..."
 
@@ -733,177 +841,216 @@ _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
 
 # Main dialog
-VALCP=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" --width="740" --height="540" --borders="8" \
+VALCP=$(NO_AT_BRIDGE=1 yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="540" --borders="8" \
             --fixed --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title=" Kernel Cache Pressure" \
             --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
-            --text="<span font='Sans Bold 10'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
+            --text="<span font='Bold 11'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
 \nBasically, this is access data about the filesystem. It is generally very costly to look up and also\nvery frequently requested, so it's an excellent thing for your system to cache.
 \nAt the default value (100), the kernel will attempt to reclaim dentries and inodes at a 'fair' rate\nwith respect to pagecache and swapcache reclaim.
 \nDecreasing cache pressure causes the kernel to prefer to retain dentry and inode caches. 
 Increasing cache pressure beyond 100 causes the kernel to prefer to reclaim dentries and inodes.
-\n<span font='Sans Bold 10'>Recommended Value</span>\n
+\n<span font='Bold 11'>Recommended Value</span>\n
 vfs_cache_pressure = 50
 * Increasing cache pressure significantly beyond 100 may have negative performance impact.
-\n\n  ▼ <span font='Sans 12'> Set Cache Pressure</span>")
+\n\n  ▼ <span font='Bold 12'> Set Cache Pressure</span>")
 
   case $? in
-      0) if [ "$_CACHEPR" = "$VALCP" ]; then echo "# Already $VALCP. No changes needed..." && sleep 1; continue; fi
-      sysctl vm.vfs_cache_pressure=$VALCP
-          grep -q -F 'vm.vfs_cache_pressure' $_SYSFL || echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
-          echo "#⚫ Applying cache pressure value..." && sleep 1
-          if [ -n $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]; then echo "#⚫ Updating cache pressure value..." && sleep 1
+      0)  if [[ "$_CACHEPR" = "$VALCP" ]]; then
+            echo "# Already $VALCP. No changes needed..." ; sleep 1 ; continue
+          fi
+
+          # set sysctl cache_pressure value
+          sysctl vm.vfs_cache_pressure=$VALCP
+
+          if grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL"; then
+            echo "#⚫ Applying cache pressure value..." ; sleep 1
+            echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
+          fi
+
+          
+          if [[ -n $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]]; then 
+            echo "#⚫ Updating cache pressure value..." ; sleep 1
             sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
           fi
       
-          if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
-              zenity --error --width="320" --height="80" --title="    Error" \
-                     --text="\nAn error occurred applying new values." 2>/dev/null; continue
+          if [[ "${PIPESTATUS[0]}" != "0" ]]; then echo "# Error..." ; sleep 1
+              zenity --error --width="320" --height="80" --title=" Error" \
+                     --text="\nAn error occurred applying new values." 2>/dev/null
+              continue
           else
               zenity --info --width="360" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
-                   --text="\nNew cache pressure value has been successfully applied." 2>/dev/null
+                     --text="\nNew cache pressure value has been successfully applied." 2>/dev/null
                 sysctl -p
-          fi
-          ;;
-
-    2)  if [ "$_CACHEPR" = "100" ]; then echo "#⚫ Already $VALCP. No changes needed..." && sleep 1; continue; fi
+          fi ;;
+    1) break ;;
+    2)  if [[ "$_CACHEPR" = "100" ]]; then
+          echo "#⚫ Already $VALCP. No changes needed..." ; sleep 1
+          continue
+        fi
 
       # reset cache pressure
         echo "#⚫ Reseting cache pressure value..."
-        grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL" && sed -i '/.*vm.vfs_cache_pressure.*/d' "$_SYSFL"
-          sysctl vm.vfs_cache_pressure=100 && sysctl -p && sleep 1
-        ;;
 
-      *) break ;;
+        grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL" && sed -i '/.*vm.vfs_cache_pressure.*/d' "$_SYSFL"
+        sysctl vm.vfs_cache_pressure=100 && sysctl -p ; sleep 1 ;;
+  252) break ;; 
+   -1) echo "# An unexpected error has occurred." ;;
   esac
 done
 }
 
 # kernel swappiness tweak
 SYSSWAP() {
+
 # sysctl.conf variable
 _SYSFL="/etc/sysctl.conf"
-  # check for preload function
 
-# kernel swappiness main window loop
+# kernel swappiness main dialog loop
 while (true); do
+
 echo "#⚫ Configuring swappiness..."
-_SWPNSS="$(cat /proc/sys/vm/swappiness)"
+_SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog
-_MDIALOGTXT="<span font='Sans Bold 10'>\nSwappiness</span>\n
+_MDIALOGTXT="<span font='Bold 11'>\nSwappiness</span>\n
 The Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
 A high value improves file-system performance, while aggressively swapping less active processes
 out of physical memory. A low value avoids swapping processes out of memory, which usually
 decreases latency, at the cost of I/O performance.
 \nUbuntu system\'s default value is 60. Systems with more than adequate RAM for any expected 
 task may want to drastically lower the setting.
-\n<span font='Sans Bold 10'>Recommended Swappiness Values</span>\n
+\n<span font='Bold 11'>Recommended Swappiness Values</span>\n
 - Swappiness = 10  Recommended when sufficient RAM exists in a system
 - Swappiness = 60  Default system value
 - Swappiness = 100 The kernel will swap aggressively
-\n<span font='Sans Bold 10'>Calculate your Swap Formula</span>
+\n<span font='Bold 11'>Calculate your Swap Formula</span>
 \nfree -m (total) / 100 = A   (Total system memory divided by 100 equals A)
 A * 10 = B   (A, times 10, equals B)
 B   (the amount -in Megabytes- of free RAM left in the system before swapping)
-\n  ▼ <span font='Sans 12'> Set System Swappiness</span>"
+\n  ▼ <span font='12'> Set System Swappiness</span>"
 
-VALUE=$(yad --image="/usr/share/unlockme/icons/ui/run160.png" --window-icon="$_RUN_ICON" --width="740" --height="590" --fixed --center \
-            --title="Adjust system Swappiness"  --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+VALUE=$(NO_AT_BRIDGE=1 yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="590" --fixed --center \
+            --title="Adjust system Swappiness" --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
             --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
   case $? in
 
        0) # If system's current swappiness equals new set value, don't make unnecessary changes
-          if [ "$_SWPNSS" = "$VALUE" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
+          if [[ "$_SWPNSS" = "$VALUE" ]]; then
+            echo "#⚫ Already ${VALUE}. No changes needed..." ; sleep 1
+            continue
+          fi
 
           # set sysctl swappiness value   
-          sysctl vm.swappiness=$VALUE
+          sysctl vm.swappiness="$VALUE"
 
-          if grep -q -F 'vm.swappiness' "$_SYSFL"; then echo "#⚫ Updating swappiness value..." && sleep 1
+          if grep -q -F 'vm.swappiness' "$_SYSFL"; then
+            echo "#⚫ Updating swappiness value..." ; sleep 1
             sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL"   
-          else echo "#⚫ Applying new swappiness value..." && sleep 1
-            sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" && sleep 1
+          else
+            echo "#⚫ Applying new swappiness value..." ; sleep 1
+            sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" ; sleep 1
           fi
       
-          if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#Error..." && sleep 1
+          if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+              echo "# Error..." ; sleep 1
+
               zenity --error --width="320" --height="80" --title="    Error" \
-                     --text="\nAn error occurred applying new values." 2>/dev/null; continue
+                     --text="\nAn error occurred applying new values." 2>/dev/null
+              continue
           else
               zenity --info --width="320" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
                      --text="\nNew swappiness value has been successfully applied." 2>/dev/null
               sysctl -p
           fi ;;
        1) break ;;
-       2) if [ "$_SWPNSS" = "60" ]; then echo "#⚫ Already $VALUE. No changes needed..." && sleep 1; continue; fi
-          echo "#⚫ Reseting swappiness value..." ; grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
-          sysctl vm.swappiness=60 && sysctl -p && sleep 1 ;;
+       2) if [[ "$_SWPNSS" = "60" ]]; then
+              echo "#⚫ Already ${VALUE}. No changes needed..." ; sleep 1
+              continue
+          fi
+
+          echo "#⚫ Reseting swappiness value..." 
+          grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
+          sysctl vm.swappiness=60 && sysctl -p ; sleep 1 ;;
      252) break ;;
       -1) echo "# An unexpected error has occurred." ;;
   esac
-done  
+done 
 }
 
 # zram tweak
 ZRAM() {
 
 _FNAME="zRAM"
-echo "#⚫ Getting $_FNAME status..." && sleep .5
+echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
 
 # the loop
 while (true); do
-echo "#⚫ Configuring $_FNAME..."
+echo "#⚫ Configuring ${_FNAME}..."
 
 # check if zram is installed
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep zram-config)" ]; then
+if [[ -z  "$(dpkg -l | grep 'zram-config')" ]]; then
   
   # if not installed, prompt user for installation
-  (zenity --question --width="340" --height="80" --title=" $APPNAME" \
-         --text="\nzRAM is currently not enabled in your system.\nWould you like to enable zRAM support now?" 2>/dev/null)
+  zenity --question --width="340" --height="80" --title=" $APPNAME" \
+         --text="\nzRAM is currently not enabled in your system.\nWould you like to enable zRAM support now?" 2>/dev/null
 
-    if [ "$?" != "0" ]; then break ; fi # exit on cancel
+    if [[ "$?" != "0" ]]; then
+      break
+    fi # exit on cancel
 
-  # Check Internet access
+  # check internet access
   check_online2
+
   # install zram
-  if [ "$?" -eq "0" ]; then
-    echo "#⚫ Installing $_FNAME..." && sleep 1
+  if [[ "$?" = "0" ]]; then
+    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
     apt-get install zram-config -y | show_progress ; check_inst
-    echo "#✔ zRAM successfully installed." & systemctl start zram-config && sleep 2 ; return
-  else exit 0 # when user refuses installation, exit out zRAM Tweak
+    echo "#✔ zRAM successfully installed." & systemctl start zram-config ; sleep 2
+    return
+  else 
+    exit 0 # when user refuses installation, exit out zRAM Tweak
   fi
 fi
 
 # check if zRAM service is running and assign variables
-if [ -e /dev/zram0 ]; then _status="Running" ; else _status="Stopped" ; fi
+[[ -e /dev/zram0 ]] && _status="Running" || _status="Stopped"
 
 # zRAM Status Main dialog
-echo "# Configuring $_FNAME..."
+echo "# Configuring ${_FNAME}..."
 if [[ "$_status" =~ "Running" ]]; then
-  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='green'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  BTXT="\n<span font='Bold 10'>zRAM Status</span>: <span foreground='green'>${_status}</span>\n\n*\
+ <span font='9'>${_FNAME} service is always started during boot up</span>"
   YBTN=" Stop ${_FNAME}"
 else
-  BTXT="\n<span font='Sans Bold 10'>zRAM Status</span>: <span foreground='red'>${_status}</span>\n\n* <span font='Sans 9'>${_FNAME} service is always started during boot up</span>"
+  BTXT="\n<span font='Bold 10'>zRAM Status</span>: <span foreground='red'>${_status}</span>\n\n*\
+ <span font='9'>${_FNAME} service is always started during boot up</span>"
   YBTN=" Start ${_FNAME}"
 fi
 
 # zRAM Main dialog
-sZRAM=$(yad --width="365" --fixed --height="150" --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" --window-icon="$_RUN_ICON" --title="$APPNAME" \
-               --text-align="center" --text="$BTXT" ; echo $?)
+sZRAM=$(NO_AT_BRIDGE=1 yad --width="365" --fixed --height="150" --window-icon="$RUN_ICON" --title="$APPNAME" \
+                           --button=" Uninstall":2 --button="$YBTN"\!gtk-apply:0 --button="gtk-close:1" \
+                           --text-align="center" --text="$BTXT" ; echo $?)
   case $sZRAM in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
-            echo "#⚫ Stopping $_FNAME..." & service zram-config stop && sleep .5
+            echo "#⚫ Stopping $_FNAME..." & service zram-config stop ; sleep .5
           else
-            echo "#⚫ Starting $_FNAME..." & service zram-config start && sleep .5
+            echo "#⚫ Starting $_FNAME..." & service zram-config start ; sleep .5
         fi
         ;;
     1)  return
         ;;
     2)  # Remove zram
-          zenity --question --width="300" --title=" $APPNAME" --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
-            if [ "$?" -eq "0" ]; then
-              echo "#⚫ Removing $_FNAME..." && sleep .5 ; service zram-config stop && apt-get remove --purge zram-config -y | show_progress ; check_remv
-              echo "#✔ zRAM successfully removed." && sleep 2 ; return
-            fi
+        zenity --question --width="300" --title=" $APPNAME" \
+               --text="\nAre you sure you want to remove ${_FNAME}?" 2>/dev/null
+        if [[ "$?" = "0" ]]; then
+          echo "#⚫ Removing $_FNAME..." ; sleep .5
+          service zram-config stop 
+          apt-get remove --purge zram-config -y | show_progress ; check_remv
+          echo "#✔ zRAM successfully removed." ; sleep 2
+          return
+        fi
         ;;
     *)  return ;;
   esac
@@ -911,97 +1058,102 @@ done
 }
 
 # zswap tweak
+
 ZSWAP() {
 
 _FNAME="zSWAP"
-echo "#⚫ Getting $_FNAME status..." && sleep .5
+echo "#⚫ Getting $_FNAME status..." ; sleep .5
 
 # if zswap is not enable; enable it
 if grep -q 'N' "/sys/module/zswap/parameters/enabled"; then
   echo "# Configuring zSWAP..."
+
   # prompt for confirmation
   zenity --question --width="340" --height="120" --title="$_FNAME" \
          --text="\nzSWAP is not currently enabled in the system. Would you like to enable zSWAP?" 2>/dev/null
-  if [ $? = 0 ]; then
+  
+  if [[ "$?" = "0" ]]; then
     # enable zswap
-    echo "#⚫ Enabling zSWAP..." && sleep 1
+    echo "#⚫ Enabling zSWAP..." ; sleep 1
 
     # enable lz4 (for faster compression/decompression)
-    echo "#⚫ Enabling lz4 lz4_compress..." && sleep 2
+    echo "#⚫ Enabling lz4 lz4_compress..." ; sleep 2
+
     modprobe -v lz4 lz4_compress | show_progress
-    printf '# Begin ZSWAP UnlockMe - DO NOT EDIT
+    printf \
+'# Begin ZSWAP UnlockMe - DO NOT EDIT
 lz4
 lz4_compress
 # ZSWAP UnlockMe' >> /etc/initramfs-tools/modules
-    echo "#⚫ Updating initramfs..." && sleep 1
+
+    echo "#⚫ Updating initramfs..." ; sleep 1
     update-initramfs -u | show_progress
 
-    echo "#⚫ Updating kernel boot parameters..."   
+    echo "#⚫ Updating kernel boot parameters..." 
+
     # grub GRUB_CMDLINE_LINUX_DEFAULT var replacement
     VARZSWAPREPLACE=$(grep 'GRUB_CMDLINE_LINUX_DEFAULT' "/etc/default/grub" | sed 's/\"/ /2' |
     sed 's/$/zswap\.enabled=1 zswap\.compressor=lz4 zswap\.max_pool_percent=20 zswap\.zpool=z3fold"/')
 
     # enabling zswap kernel parameters
-    sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT.*|$VARZSWAPREPLACE|" /etc/default/grub ; sleep 2
+    sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT.*|$VARZSWAPREPLACE|" "/etc/default/grub" ; sleep 2
 
     # update grub
-    echo "#⚫ Updating grub..." && sleep 1
+    echo "#⚫ Updating grub..." ; sleep 1
     update-grub 2>&1 | show_progress
+
     echo "#✔ zSWAP has been enabled." && sleep 1
 
     zenity --question --width="340" --height="120" --title=" $_FNAME" \
            --text="\nYou must restart the computer for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
-           if [ $? = 0 ]; then systemctl reboot; fi
+    if [[ "$?" = "0" ]]; then 
+      systemctl reboot
+    fi
   fi
 else
   echo "# Configuring zSWAP..."
+
   # prompt for removal confirmation
   zenity --question --width="360" --height="120" --title="$_FNAME" \
          --text="\nzSWAP is currently enabled in the system. Would you like to disable zSWAP?" 2>/dev/null
-  if [ $? = 0 ]; then
+
+  if [[ "$?" = "0" ]]; then
     # disable zswap
-    echo "#⚫ Disabling zSWAP..." && sleep 1
+    echo "#⚫ Disabling zSWAP..." ; sleep 1
     sed -i -e '/UnlockMe/,+3d' /etc/initramfs-tools/modules ; sleep 1
 
-    echo "#⚫ Updating initramfs..." && sleep 1
+    echo "#⚫ Updating initramfs..." ; sleep 1
     update-initramfs -u | show_progress
 
-    echo "#⚫ Updating kernel boot parameters..." && sleep 1
+    echo "#⚫ Updating kernel boot parameters..." ; sleep 1
     # delete zswap kernel parameters
-    sed -i 's/[ \t]zswap\.enabled=1//g ; s/[ \t]zswap\.compressor=lz4//g ; s/[ \t]zswap\.max_pool_percent=20//g ; s/[ \t]zswap\.zpool=z3fold//g' /etc/default/grub
+    sed -i 's/[ \t]zswap\.enabled=1//g ; s/[ \t]zswap\.compressor=lz4//g ; s/[ \t]zswap\.max_pool_percent=20//g ; s/[ \t]zswap\.zpool=z3fold//g' "/etc/default/grub"
 
     # update grub
-    echo "#⚫ Updating grub..." && sleep 1
+    echo "#⚫ Updating grub..." ; sleep 1
     update-grub 2>&1 | show_progress
-    echo "#✔ zSWAP has been disabled." && sleep 1
+    echo "#✔ zSWAP has been disabled." ; sleep 1
 
     zenity --question --width="320" --height="120" --title=" $_FNAME" \
            --text="\nYou must restart the computer for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
-           if [ $? = 0 ]; then systemctl reboot; fi
+    if [[ "$?" = "0" ]]; then
+      systemctl reboot
+    fi
   fi
 fi
+continue
 }
 
 ## Arrays execution
-RUN_ICON
-x=0
-for k in "${!ARRAYC[@]}"; do  x=$(( $x + 1 )); done  # Get the total number of selected items in the array
-TOTAL_LINES=$x
 printf '%s \n' "${ARRAYC[@]}"|
-while read  line; do
-    $line     # Execute functions one by one
-    if [ $? = 1 ]; then
-      zenity --info --title=" $_LT" --text="Error:\n${line}" 2>/dev/null
-    fi
-  let i++
-  (( PERCENTAGE = 100 \* ${i} / ${TOTAL_LINES} ))
-    echo "$PERCENTAGE"
-    if [ "$PERCENTAGE" == "100" ]; then
-      echo "#Done"
-      sleep 1
-    fi
-done | yad --text-align=center --borders=10 --no-buttons --progress --pulsate --auto-close --auto-kill --width="340" --height="110" \
-           --fixed --center --skip-taskbar --undecorated --text="<span font='Sans 13'>\nUnlockMe</span>"
+while read line; do
+  "$line" 2>/dev/null    # Execute functions one at a time
+  if [[ "$?" = "1" ]]; then
+    zenity --error --width="260" --title="UnlockMe" --text="An error occurred while executing:\n\n ${line}" 2>/dev/null
+    exit 1
+  fi
+done | NO_AT_BRIDGE=1 yad --text-align=center --progress --pulsate --auto-close --auto-kill --width="340" --height="110" \
+           --fixed --center --borders="10" --skip-taskbar --undecorated --no-buttons --text="<span font='13'>\nUnlockMe</span>"
 
-unset ARAYC
-unset FRM
+unset ARRAYC
+unset ADMRUN

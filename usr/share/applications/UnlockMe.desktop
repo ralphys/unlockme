@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=UnlockMe
-Comment=Customize, tweaks and clean your system
+Comment=Customize, tweak and clean your system
 Exec=unlockme-main
 Icon=unlockme
 Terminal=false

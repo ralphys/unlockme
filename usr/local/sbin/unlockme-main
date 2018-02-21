@@ -1,26 +1,27 @@
-#! /bin/bash
-# Name: UnlockMe
-# Copyright 2017 © Ralphy Rhdez <rafaelrhd3z@gmail.com>
+#!/bin/bash
+# 
+# UnlockMe: Customize, tweak and clean your system
+# https://github.com/ralphys/unlockme/
+#
+# Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
 # Website - https://unlockforus.com
-# Dated - 18th April, 2017
-
+# 
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2, or (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License with your
 # system, in /usr/share/common-licenses/GPL-2.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# locale support
-export LANG=C
-export LANG=C.UTF-8
-export TEXTDOMAINDIR=/usr/share/locale/
-export TEXTDOMAIN=unlockme
+# UnlockMe version - none :)
+# Script name: unlockme-main
+
+sys_locale="${LANG:-C}"
 
 # variable edition
 mintinfo="/etc/linuxmint/info"
@@ -36,9 +37,13 @@ LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # check requirements
-if [ -z  "$(dpkg -l | grep -E '^ii' | grep 'yad\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'git\s')" ] || [ -z  "$(dpkg -l | grep -E '^ii' | grep 'apt-transport-https')" ]; then
-zenity --question --icon-name="info" --window-icon="info" --width=340 --height=120 --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
-       --text="\nThe following requirements will be downloaded and installed as needed:\n
+if [[ -z  "$(dpkg -l | grep '\syad\s')" ]] || 
+   [[ -z  "$(dpkg -l | grep '\sgit\s')" ]] || 
+   [[ -z  "$(dpkg -l | grep '\sapt-transport-https\s')" ]]; then
+
+   zenity --question --icon-name="info" --window-icon="info" --width=340 --height=120 \
+          --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
+          --text="\nThe following requirements will be downloaded and installed as needed:\n
 ⚫ apt-transport-https
 ⚫ autoconf
 ⚫ automake
@@ -47,40 +52,49 @@ zenity --question --icon-name="info" --window-icon="info" --width=340 --height=1
 ⚫ pkg-config
 ⚫ yad" 2>/dev/null
 
-if [ "$?" -ne "0" ]; then exit 0; else :; fi
+if [[ "$?" != "0" ]]; then exit 0; else :; fi
   bash unlock-req-install
-  if [ "$?" -ne "0" ]; then exit 0; else :; fi
+  if [[ "$?" != "0" ]]; then exit 0; else :; fi
 fi
 
 # start splash
-yad --width=340 --height=110 --info --skip-taskbar --undecorated --no-buttons --timeout=1 \
-    --text-align=center --text='\n\n\n<span font="Sans 14">Getting Ready</span>\n<span font="Sans 11"> \n  please wait...\n</span>' & 
+NO_AT_BRIDGE=1 yad --width="340" --height="110" --info --skip-taskbar --undecorated --no-buttons --timeout="1" --text-align=center \
+                   --text='\n\n\n<span font="14">Getting Ready</span>\n<span font="11"> \n  please wait...\n</span>' & 
 
 # linuxlite specific | failsafe not to use default linuxlite yad package
-if [[ "$LLDENV" == "Lite" ]]; then cat /etc/apt/preferences | grep -q "yad"
-    if [ $? != 0 ]; then bash unlock-req-install; fi
+if [[ "$LLDENV" == "Lite" ]]; then grep -q "yad" < /etc/apt/preferences
+    
+    if [[ "$?" != "0" ]]; then
+     bash unlock-req-install
+    fi
 fi
 
 # function - clean up common files
 _CLEANUP() {
-  [ -e /tmp/unlockme.log ] && rm -f /tmp/unlockme.log # log file
-  [ -e "$TMPLTF" ] && rm -f "$TMPLTF"
-  [ -e /tmp/aptx ] && rm -f /tmp/aptx
-  [ -e /tmp/UnlockDS ] && rm -f /tmp/UnlockDS         # desktop session file
+  [[ -e /tmp/unlockme.log ]] && rm -f /tmp/unlockme.log # log file
+  [[ -e "$TMPLTF" ]] && rm -f "$TMPLTF"
+  [[ -e /tmp/aptx ]] && rm -f /tmp/aptx
+  [[ -e /tmp/UnlockDS ]] && rm -f /tmp/UnlockDS         # desktop session file
 }
 
 # function - remove browser profile 
 rm_browser_profile() {
 
-  echo "#⚫ Removing $_BROWSERNAME browser profile..." && sleep .2
-  zenity --question --width="300" --window-icon="warning" --icon-name="gtk-dialog-warning" --title="Browser profile removal" \
-         --text="\nAre you sure you want to remove $_BROWSERNAME profile?\n\nThis action cannot be reverted." 2>/dev/null;
+  echo "#⚫ Removing ${_BROWSERNAME} browser profile..." && sleep .2
+  zenity --question --width="360" --window-icon="warning" --icon-name="gtk-dialog-warning" \
+         --title="Browser profile removal" \
+         --text="\nAre you sure you want to remove ${_BROWSERNAME} profile?\n\nThis action cannot be reverted." 2>/dev/null;
 
-  if [ "$?" -eq "0" ]; then rm -rf "$_BROWSERPROFILE"
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="260" --height="80" --title=" Error" --text="\nAn error occurred while removing $_BROWSERNAME browser profile!" 2>/dev/null; return
+  if [[ "$?" = "0" ]]; then 
+    rm -rf "$_BROWSERPROFILE"
+    
+    if [[ "${PIPESTATUS[0]}" != "0" ]]; then 
+      echo "# Error..." && sleep 1
+
+      zenity --error --width="260" --height="80" --title=" Error" \
+             --text="\nAn error occurred while removing ${_BROWSERNAME} browser profile!" 2>/dev/null; return
     fi
-    echo "#✔ $_BROWSERNAME browser profile removed." && sleep 1.5
+    echo "#✔ ${_BROWSERNAME} browser profile removed." && sleep 1.5
   else
     continue
   fi
@@ -89,22 +103,25 @@ rm_browser_profile() {
 # function - remove browser cache 
 rm_browser_cache() {
 
-  echo "#⚫ Removing $_BROWSERNAME browser cache..." && sleep 1 ; rm -rf "$_BROWSERCACHEDIR"
+  echo "#⚫ Removing $_BROWSERNAME browser cache..." && sleep 1 
+    rm -rf "{$_BROWSERCACHEDIR}"
+
     if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="260" --height="80" --title=" Error" --text="\nAn error occurred while removing $_BROWSERNAME browser cache!" 2>/dev/null; return
+      zenity --error --width="260" --height="80" --title=" Error" \
+             --text="\nAn error occurred while removing ${_BROWSERNAME} browser cache!" 2>/dev/null; return
     fi
-  echo "#✔ $_BROWSERNAME browser cache cleared." && sleep 1
+  echo "#✔ ${_BROWSERNAME} browser cache cleared." && sleep 1
 }
 
 # Autoclean module check
-_DRYAPT="$HOME/.local/share/.dryapt"
+_DRYAPT="${HOME}/.local/share/.dryapt"
 _NOWDT=$(date "+%Y-%m-%d %H")
 _CHKMD=$(stat "$_DRYAPT" 2>/dev/null | grep 'Change' | awk '{print $2,$3}' | cut -c 1-13)
-_CHKMDAPT=$(cat "$_DRYAPT" 2>/dev/null | tail -n+2)
-if [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -gt 0 ]; then :
-elif [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -eq 0 ]; then
-  if [ "$_CHKMD" == "$_CHKMDAPT" ]; then :; fi
-  if [ "$_CHKMDAPT" != "$_NOWDT" ]; then bash -c "/usr/local/sbin/dryapt" & fi
+_CHKMDAPT=$(tail -n+2 < ${_DRYAPT})
+if [[ -f "$_DRYAPT" ]] && [[ "$(head -n+1 < ${_DRYAPT})" > 0 ]]; then :
+elif [[ -f "$_DRYAPT" ]] && [[ "$(head -n+1 < ${_DRYAPT})" = 0 ]]; then
+  if [[ "$_CHKMD" == "$_CHKMDAPT" ]]; then :; fi
+  if [[ "$_CHKMDAPT" != "$_NOWDT" ]]; then bash -c "/usr/local/sbin/dryapt" & fi
 else bash -c "/usr/local/sbin/dryapt" &
 fi
 
@@ -115,41 +132,41 @@ BLOCKHOSTS() {
 
 # function remove Chrome cache 
 CHROMECACHE() {
-  _BROWSERNAME="Google Chrome" _BROWSERCACHEDIR="$HOME/.cache/google-chrome/" ; rm_browser_cache
+  _BROWSERNAME="Google Chrome" _BROWSERCACHEDIR="${HOME}/.cache/google-chrome/" ; rm_browser_cache
 }
 
 # function remove Chrome profile 
 CHROMEPROFILE() {
-  _BROWSERNAME="Google Chrome" _BROWSERPROFILE="$HOME/.config/google-chrome/" ; rm_browser_profile
+  _BROWSERNAME="Google Chrome" _BROWSERPROFILE="${HOME}/.config/google-chrome/" ; rm_browser_profile
 }
 
 # function remove Chromium Cache 
 CHROMIUMCACHE() {
-  _BROWSERNAME="Chromium" _BROWSERCACHEDIR="$HOME/.cache/chromium/" ; rm_browser_cache
+  _BROWSERNAME="Chromium" _BROWSERCACHEDIR="${HOME}/.cache/chromium/" ; rm_browser_cache
 }
 
 # function remove Chromium profile 
 CHROMIUMPROFILE() {
-  _BROWSERNAME="Chromium" _BROWSERPROFILE="$HOME/.config/chromium/" ; rm_browser_profile
+  _BROWSERNAME="Chromium" _BROWSERPROFILE="${HOME}/.config/chromium/" ; rm_browser_profile
 }
 
 
 # function remove Firefox Cache 
 FIREFOXCACHE() {
-  _BROWSERNAME="Firefox" _BROWSERCACHEDIR="$HOME/.cache/mozilla/firefox/" ; rm_browser_cache
+  _BROWSERNAME="Firefox" _BROWSERCACHEDIR="${HOME}/.cache/mozilla/firefox/" ; rm_browser_cache
 }
 
 # function remove Firefox profile 
 FFOXPROFILE() {
-  _BROWSERNAME="Firefox" _BROWSERPROFILE="$HOME/.mozilla/firefox/" ; rm_browser_profile
+  _BROWSERNAME="Firefox" _BROWSERPROFILE="${HOME}/.mozilla/firefox/" ; rm_browser_profile
 }
 
 # function fix dropbox | cinnamon
 FIXDBCIN() {
-  _LGFILE="/home/$_SOFTUSR/.local/share/.fixdbcin"
-  _ASTF="/home/$_SOFTUSR/.config/autostart/unlockme-dropbox.desktop"
+  _LGFILE="/home/${_SOFTUSR}/.local/share/.fixdbcin"
+  _ASTF="/home/${_SOFTUSR}/.config/autostart/unlockme-dropbox.desktop"
   
-  if [ ! -f "$_LGFILE" ]; then
+  if [[ ! -f "$_LGFILE" ]]; then
    # Fix dropbox autostart 
     echo "#⚫ Updating Dropbox autostart..." && sleep 2
     cp -f /usr/share/unlockme/tools/unlockme-dropbox.desktop "$_ASTF"
@@ -157,7 +174,7 @@ FIXDBCIN() {
     touch "$_LGFILE" && echo "#✔ Dropbox autostart updated." && sleep 1.5
   else
     echo "#⚫ Removing UnlockMe Dropbox autostart..." && sleep 2
-    rm -f "$_ASTF" && rm -f "$_LGFILE"
+    rm -f "$_ASTF" "$_LGFILE"
     echo "#✔ UnlockMe Dropbox autostart removed." && sleep 1.5
   fi
 }
@@ -166,104 +183,124 @@ FIXDBCIN() {
 FIXDBXFCE() {
 
   stop_dropbox() {
-    dropbox stop ; [ ! -z "$(pgrep dropbox)" ] && killall -9 dropbox
+    dropbox stop ; [[ -n "$(pgrep dropbox)" ]] && killall -9 dropbox
   }
 
   echo "#⚫ Terminating dropbox instances..." && sleep 1 ; stop_dropbox
 
   # Fix dropbox autostart 
   echo "#⚫ Fixing application autostart..." && sleep 1
-    _DBATFL="/home/$_SOFTUSR/.config/autostart/dropbox.desktop"
+    _DBATFL="/home/${_SOFTUSR}/.config/autostart/dropbox.desktop"
   
-  if [ -f "$_DBATFL" ]; then sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBATFL"; else echo "# Starting dropbox..." && sleep 1 ; stop_dropbox ; fi
+  if [[ -f "$_DBATFL" ]]; then
+    sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBATFL"
+  else 
+    echo "# Starting dropbox..." && sleep 1 ; stop_dropbox
+  fi
 
   echo "# ready..."
   # Elevate privileges for required fix
   FIXDPADM="FIXDBXFCE2" ; export FIXDPADM && pkexec unlockme-admin "$FIXDPADM"
 
-  if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "#⚫ User aborted..." && sleep 1; continue; fi
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+    echo "#⚫ User aborted..." && sleep 1 ; continue
+  fi
 
   # Finally start dropbox
   echo "#⚫ Starting Dropbox..." && sleep 1
   dbus-launch dropbox start -i
 }
 
+# icon theme installer
+ICONTHEME() {
+  echo "# Icon Theme Installer" && bash icon-theme 
+}
+
 # function remove Midori Cache 
 MIDORICACHE() {
-  _BROWSERNAME="Midori" _BROWSERCACHEDIR="$HOME/.cache/midori/" ; rm_browser_cache
+  _BROWSERNAME="Midori" _BROWSERCACHEDIR="${HOME}/.cache/midori/" ; rm_browser_cache
 }
 
 # function remove Midori profile 
 MIDORIPROFILE() {
-  _BROWSERNAME="Midori" _BROWSERPROFILE="$HOME/.config/midori/" ; rm_browser_profile
+  _BROWSERNAME="Midori" _BROWSERPROFILE="${HOME}/.config/midori/" ; rm_browser_profile
 }
 
 # function remove Opera cache
 OPERACACHE() {
-  _BROWSERNAME="Opera" _BROWSERCACHEDIR="$HOME/.cache/opera/Cache/" ; rm_browser_cache
+  _BROWSERNAME="Opera" _BROWSERCACHEDIR="${HOME}/.cache/opera/Cache/" ; rm_browser_cache
 }
 
 # function remove Opera profile 
 OPERAPROFILE() {
-  _BROWSERNAME="Opera" _BROWSERPROFILE="$HOME/.config/opera/" ; rm_browser_profile
+  _BROWSERNAME="Opera" _BROWSERPROFILE="${HOME}/.config/opera/" ; rm_browser_profile
 }
 
 # function remove Pale Moon cache
 PALEMOONCACHE() {
-  _BROWSERNAME="Pale Moon" _BROWSERCACHEDIR="$HOME/.cache/moonchild productions/pale moon/" ; rm_browser_cache
+  _BROWSERNAME="Pale Moon" _BROWSERCACHEDIR="${HOME}/.cache/moonchild productions/pale moon/" ; rm_browser_cache
 }
 
 # function remove Pale Moon profile 
 PALEMOONPROFILE() {
-  _BROWSERNAME="Pale Moon" _BROWSERPROFILE="$HOME/.moonchild productions/" ; rm_browser_profile
+  _BROWSERNAME="Pale Moon" _BROWSERPROFILE="${HOME}/.moonchild productions/" ; rm_browser_profile
 }
 
 # function remove SeaMonkey cache 
 SEAMONKEYCACHE() {
-  _BROWSERNAME="SeaMonkey" _BROWSERCACHEDIR="$HOME/.cache/mozilla/seamonkey/" ; rm_browser_cache
+  _BROWSERNAME="SeaMonkey" _BROWSERCACHEDIR="${HOME}/.cache/mozilla/seamonkey/" ; rm_browser_cache
 }
 
 # function remove SeaMonkey profile 
 SEAMONKEYPROFILE() {
-  _BROWSERNAME="SeaMonkey" _BROWSERPROFILE="$HOME/.mozilla/seamonkey/" ; rm_browser_profile
+  _BROWSERNAME="SeaMonkey" _BROWSERPROFILE="${HOME}/.mozilla/seamonkey/" ; rm_browser_profile
 }
 
 # function delete thumbnail cache
 THUMBNAILS() {
-  echo "#⚫ Deleting Thumbnail Cache..." && sleep 1 ; rm -rf "$HOME"/.cache/thumbnails/*
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="260" --height="80" --title=" Error" --text="\nAn error occurred while deleting Thumbnail Cache!" 2>/dev/null; return
+  echo "#⚫ Deleting Thumbnail Cache..." && sleep 1
+    rm -rf ${HOME}/.cache/thumbnails/*
+
+    if [[ "${PIPESTATUS[0]}" != "0" ]]; then 
+      echo "# Error..." && sleep 1
+      zenity --error --width="260" --height="80" --title=" Error" \
+             --text="\nAn error occurred while deleting Thumbnail Cache!" 2>/dev/null; return
     fi
   echo "#✔ Thumbnail Cache cleared." && sleep 1
 }
 
 # function empty trash bin
 TRASHBIN() {
-  echo "#⚫ Emptying the Trash bin..." && sleep 1 ; rm -rf "$HOME"/.local/share/Trash/files/*
-    if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
-      zenity --error --width="260" --height="80" --title=" Error" --text="\nAn error occurred while emptying the Trash bin!" 2>/dev/null; return
+  echo "#⚫ Emptying the Trash bin..." && sleep 1 
+    rm -rf ${HOME}/.local/share/Trash/files/*
+
+    if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+      echo "# Error..." && sleep 1
+      
+      zenity --error --width="260" --height="80" --title=" Error" \
+             --text="\nAn error occurred while emptying the Trash bin!" 2>/dev/null; return
     fi
   echo "#✔ Trash bin emptied." && sleep 1
 }
 
 # function remove Vivaldi Cache 
 VIVALDICACHE() {
-  _BROWSERNAME="Vivaldi" _BROWSERCACHEDIR="$HOME/.cache/vivaldi/" ; rm_browser_cache
+  _BROWSERNAME="Vivaldi" _BROWSERCACHEDIR="${HOME}/.cache/vivaldi/" ; rm_browser_cache
 }
 
 # function remove Vivaldi profile 
 VIVALDIPROFILE() {
-  _BROWSERNAME="Vivaldi" _BROWSERPROFILE="$HOME/.config/vivaldi/" ; rm_browser_profile
+  _BROWSERNAME="Vivaldi" _BROWSERPROFILE="${HOME}/.config/vivaldi/" ; rm_browser_profile
 }
 
 # function remove Waterfox Cache 
 WATERFOXCACHE() {
-  _BROWSERNAME="Waterfox" _BROWSERCACHEDIR="$HOME/.cache/waterfox/" ; rm_browser_cache
+  _BROWSERNAME="Waterfox" _BROWSERCACHEDIR="${HOME}/.cache/waterfox/" ; rm_browser_cache
 }
 
 # function remove Waterfox profile 
 WATERFOXPROFILE() {
-  _BROWSERNAME="Waterfox" _BROWSERPROFILE="$HOME/.waterfox/" ; rm_browser_profile
+  _BROWSERNAME="Waterfox" _BROWSERPROFILE="${HOME}/.waterfox/" ; rm_browser_profile
 }
 
 # function whisker menu restore | linuxlite
@@ -274,21 +311,25 @@ WHISKERMREST() {
   echo "# $_APPNAME..." & sleep .5
 
   copy_files() {
+    
     # restore Linux Lite Custom menu
     echo "#⚫ Restoring Whisker menu files..." & sleep .8
-      cp -f /etc/skel/.config/menus/xfce-applications.menu $HOME/.config/menus/
+      cp -f /etc/skel/.config/menus/xfce-applications.menu ${HOME}/.config/menus/
     echo "#✔ Whisker menu files restored." & sleep .5
+    
     # restore Linux Lite Default application shortcuts
     echo "#⚫ Restoring Lite default application shortcuts..." & sleep .8
-      cp -rf /etc/skel/.local/share/applications/* $HOME/.local/share/applications/
+      cp -rf /etc/skel/.local/share/applications/* ${HOME}/.local/share/applications/
     echo "#✔ Lite default applications shortcuts restored." & sleep .5
-    # restore whiskermenu
+
+    # restore whiskermenu 
     echo "#⚫ Restoring Whisker menu..." & sleep .8
-      cp -f /etc/skel/.config/xfce4/panel/whiskermenu-1.rc $HOME/.config/xfce4/panel/
+      cp -f /etc/skel/.config/xfce4/panel/whiskermenu-1.rc ${HOME}/.config/xfce4/panel/
     echo "#✔ Whisker menu restored." & sleep .5
+    
     # allow removing items from the whisker menu
     echo "#⚫ Fixing Items removal from Whisker menu..." & sleep .8
-      sed -i 's!/etc/skel!~!g' $HOME/.config/menus/xfce-applications.menu
+      sed -i 's!/etc/skel!~!g' ${HOME}/.config/menus/xfce-applications.menu
     echo "#✔ Remove Items from Whisker menu fixed." & sleep .5
   }
 
@@ -300,30 +341,38 @@ WHISKERMREST() {
   }
 
   # read Favorites items
-  _WMFILE="$HOME/.config/xfce4/panel/whiskermenu-1.rc"
+  _WMFILE="${HOME}/.config/xfce4/panel/whiskermenu-1.rc"
   echo "#⚫ Reading Favorites items..." & sleep .1
   USER_FAVORITES=$(grep -F 'favorites=' $_WMFILE | head -n+1)
+  
   # read Recent items
   echo "#⚫ Reading Recently Used items..." & sleep .1
   USER_RECENT=$(grep -F 'recent=' $_WMFILE | head -n+1)
+  
   # read Menu icon
   echo "#⚫ Reading Menu icon..." & sleep .1
   USER_MICON=$(grep -F 'button-icon=' $_WMFILE | head -n+1)
+  
   # read Menu title
   echo "#⚫ Reading Menu title..." & sleep .1
   USER_MTITLE=$(grep -F 'button-title=' $_WMFILE | head -n+1)
+  
   # read Menu item icon size
   echo "#⚫ Reading Item icon size..." & sleep .1
   USER_MICSIZE=$(grep -F 'item-icon-size=' $_WMFILE | head -n+1)
+  
   # read Menu categry icon size
   echo "#⚫ Reading Category icon size..." & sleep .1
   USER_MCATSIZE=$(grep -F 'category-icon-size=' $_WMFILE | head -n+1)
+  
   # read Menu hierarchy
   echo "#⚫ Reading menu hierarchy..." & sleep .1
   USER_MHIERARCHY=$(grep -F 'load-hierarchy=' $_WMFILE)
+  
   # read Menu opacity
   echo "#⚫ Reading menu opacity..." & sleep .1
   USER_MOPACITY=$(grep -F 'menu-opacity=' $_WMFILE)
+  
   # read Menu width and height
   echo "#⚫ Reading menu width and height..." & sleep .1
   USER_MWIDTH=$(grep -F 'menu-width' $_WMFILE)
@@ -333,15 +382,27 @@ WHISKERMREST() {
   echo "# $_APPNAME..."
 
   # read and save selections
-  if [ ! -d "$HOME/.config/UnlockMe" ]; then mkdir -p "$HOME/.config/UnlockMe"; else :; fi
-  LWMRFILE="$HOME/.config/UnlockMe/LWMR"
+  if [[ ! -d "${HOME}/.config/UnlockMe" ]]; then
+    mkdir -p "${HOME}/.config/UnlockMe"
+  else :
+  fi
+
+  LWMRFILE="${HOME}/.config/UnlockMe/LWMR"
+  
   # Defaults FALSE
   DEF_FALSE=(keep_favorites keep_recent keep_micsize keep_mcatsize keep_menu_icon keep_menu_title)
-  for def_false in "${DEF_FALSE[@]}"; do eval $def_false='"FALSE"'; done
+  
+  for def_false in "${DEF_FALSE[@]}"; do
+    eval $def_false='"FALSE"'
+  done
+  
   # Defaults TRUE
-  if [ ! -f "$LWMRFILE" ]; then 
+  if [[ ! -f "$LWMRFILE" ]]; then 
+
     DEF_TRUE=(keep_mhierarchy keep_opacity keep_wxhy)
-    for def_true in "${DEF_TRUE[@]}"; do eval $def_true='"TRUE"'; done
+    for def_true in "${DEF_TRUE[@]}"; do
+      eval $def_true='"TRUE"'
+    done
   fi 
   # Remember user selection
   if [ -s "$LWMRFILE" ]; then cp -f "$LWMRFILE" "$LWMRFILE".bak; LWMR_EVAL=$(cat "$LWMRFILE" | sed 's/|/ /g')
@@ -349,10 +410,14 @@ WHISKERMREST() {
   fi
 
   # main dialog
-  OPT=$(yad --list --checklist --fixed --width="550" --height="350" --title="$_APPNAME" --window-icon=$APP_ICON --image=/usr/share/pixmaps/unlockme-wm.png --image-on-top --button="Cancel"\!gtk-cancel:1 --button="Proceed"\!gtk-apply:0 \
-             --text="<span font='Sans 11'>\n    Choose reset preferences from the options below:</span>\n" --column="Pick" --column="OPTS" --column="Items" --column="Description" \
+  OPT=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --width="640" --height="440" --title="$_APPNAME" \
+             --window-icon=$APP_ICON --image=/usr/share/pixmaps/unlockme-wm.png --image-on-top \
+             --button="Cancel"\!gtk-cancel:1 --button="Proceed"\!gtk-apply:0 \
+             --text="<span font='11'>\n    Choose reset preferences from the options below:</span>\n" \
+             --column="Pick" --column="OPTS" --column="Items" --column="Description" \
              --dclick-action= --no-selection --hide-column="2" --print-column="2" --wrap-width=370 \
-             "${keep_favorites}" "keep_favorites" "Favorites" "Help Manual and Install Updates will be restored. All other items in your Favorites will be kept when this option is selected." \
+             "${keep_favorites}" "keep_favorites" "Favorites" "Help Manual and Install Updates will be restored. \
+All other items in your Favorites will be kept when this option is selected." \
              "${keep_recent}" "keep_recent" "Recently Used" "Keep your current Recently Used items" \
              "${keep_opacity}" "keep_opacity" "Background Opacity" "Keep your current Background Opacity preference" \
              "${keep_mcatsize}" "keep_mcatsize" "Category icon size" "Keep your current Category icon size preference" \
@@ -362,31 +427,71 @@ WHISKERMREST() {
              "${keep_menu_title}" "keep_menu_title" "Menu title" "Keep your current Whisker menu title" \
              "${keep_wxhy}" "keep_wxhy" "Width and height" "Keep the menu's current width and height")
 
-  if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then mv "$LWMRFILE".bak "$LWMRFILE"; echo "# User aborted..." & sleep .5 ; return; fi
+  if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then 
+    mv "$LWMRFILE".bak "$LWMRFILE"
+    echo "# User aborted..." ; sleep .5
+    return
+  fi
+
   # begin restore
   echo "#⚫ Restoring Whisker Menu files..."
   copy_files
+  
   # preserve favorites items
-  if [[ "$OPT" =~ "keep_favorites" ]]; then echo "#✔ Updating user's Favorites items..." & sleep .8 ; sed -i '1 c\'$USER_FAVORITES'' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_favorites" ]]; then
+    echo "#✔ Updating user's Favorites items..." ; sleep .8 
+    sed -i '1 c\'$USER_FAVORITES'' "$_WMFILE"
+  fi
+  
   # preserve recently used items if selected
-  if [[ "$OPT" =~ "keep_recent" ]]; then echo "#✔ Updating user's Recently Used items..." & sleep .8 ; sed -i '2 c\'$USER_RECENT'' "$_WMFILE"; else sed -i '2 c\recent=' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_recent" ]]; then
+    echo "#✔ Updating user's Recently Used items..." ; sleep .8
+    sed -i '2 c\'$USER_RECENT'' "$_WMFILE"
+  else
+    sed -i '2 c\recent=' "$_WMFILE"
+  fi
+
   # preserve current menu title if selected
-  if [[ "$OPT" =~ "keep_menu_title" ]]; then sed -i "3 c\\$USER_MTITLE" "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_menu_title" ]]; then
+    sed -i "3 c\\$USER_MTITLE" "$_WMFILE"
+  fi
+
   # preserve menu icon if selected
-  if [[ "$OPT" =~ "keep_menu_icon" ]]; then sed -i '4 c\'$USER_MICON'' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_menu_icon" ]]; then
+    sed -i '4 c\'$USER_MICON'' "$_WMFILE"
+  fi
+
   # preserve item icon size if selected
-  if [[ "$OPT" =~ "keep_micsize" ]]; then sed -i 's/item-icon-size=.*/'$USER_MICSIZE'/' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_micsize" ]]; then
+    sed -i 's/item-icon-size=.*/'$USER_MICSIZE'/' "$_WMFILE"
+  fi
+
   # preserve category icon size if selected
-  if [[ "$OPT" =~ "keep_mcatsize" ]]; then sed -i 's/category-icon-size=.*/'$USER_MCATSIZE'/' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_mcatsize" ]]; then
+    sed -i 's/category-icon-size=.*/'$USER_MCATSIZE'/' "$_WMFILE"
+  fi
+
   # Defaults
   # menu hierarchy
-  if [[ "$OPT" =~ "keep_mhierarchy" ]]; then sed -i 's/load-hierarchy=.*/'$USER_MHIERARCHY'/' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_mhierarchy" ]]; then
+    sed -i 's/load-hierarchy=.*/'$USER_MHIERARCHY'/' "$_WMFILE"
+  fi
+
   # menu opacity
-  if [[ "$OPT" =~ "keep_opacity" ]]; then sed -i 's/menu-opacity=.*/'$USER_MOPACITY'/' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_opacity" ]]; then
+    sed -i 's/menu-opacity=.*/'$USER_MOPACITY'/' "$_WMFILE"
+  fi
+
   # menu width and height
-  if [[ "$OPT" =~ "keep_wxhy" ]]; then sed -i 's/menu-width=.*/'$USER_MWIDTH'/' "$_WMFILE"; sed -i 's/menu-height=.*/'$USER_MHEIGHT'/' "$_WMFILE"; fi
+  if [[ "$OPT" =~ "keep_wxhy" ]]; then
+    sed -i 's/menu-width=.*/'$USER_MWIDTH'/' "$_WMFILE"
+    sed -i 's/menu-height=.*/'$USER_MHEIGHT'/' "$_WMFILE"
+  fi
+
   # do not keep anything
-  if [[ -z "$OPT" ]]; then sed -i '2 c\recent=' "$_WMFILE"; fi
+  if [[ -z "$OPT" ]]; then
+    sed -i '2 c\recent=' "$_WMFILE"
+  fi
   echo "$OPT" > "$LWMRFILE"
   # restart panel for changes to take effect
   restart_panel
@@ -400,209 +505,147 @@ ARRAYS() {
 ARRAYA=()    # Array for non-admin tasks
 ARRAYB=()    # Array for admin tasks
 
-################## ARRAY A #########################
+# array A definitions
+ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FIREFOXCACHE FFOXPROFILE FIXDBCIN \
+           FIXDBXFCE ICONTHEME MIDORICACHE MIDORIPROFILE OPERACACHE OPERAPROFILE PALEMOONCACHE PALEMOONPROFILE \
+           PRELOAD SEAMONKEYCACHE SEAMONKEYPROFILE SYSSWAP THUMBNAILS TRASHBIN VIVALDICACHE \
+           VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
 
-echo "$selection" | grep "BLOCKHOSTS" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('BLOCKHOSTS'); fi
+# array B definitions
+ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING SOFTINST LOGARCHIVES CHNAMEHOST \
+           PACKAGECACHE RESIDCONFIG SYSCACHEPR NULL)
 
-echo "$selection" | grep "CHROMECACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('CHROMECACHE'); fi
+ SELECTRUN=${#selection[@]}
 
-echo "$selection" | grep "CHROMEPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('CHROMEPROFILE'); fi
+# construct arrays from user selection
+for (( i=0; i<${SELECTRUN}+1; i++ ))
+ do
+  grep -q "${selection[${i}]}" <<< "${ARRAYADEF[@]}" && ARRAYA+=("${selection[${i}]}")
+  grep -q "${selection[${i}]}" <<< "${ARRAYBDEF[@]}" && ARRAYB+=("${selection[${i}]}")
 
-echo "$selection" | grep "CHROMIUMCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('CHROMIUMCACHE'); fi
+  # remove selections
+  # remove preload from array
+  if grep -q 'PRELOAD' <<< "${selection[${i}]}"; then
 
-echo "$selection" | grep "CHROMIUMPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('CHROMIUMPROFILE'); fi
+      # if kernel swappiness is set in /etc/sysctl.conf display info  
+      if [[ -n "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]]; then
 
-echo "$selection" | grep "FIREFOXCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('FIREFOXCACHE'); fi
+      # remove
+      REMOVE="PRELOAD"
+      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
 
-echo "$selection" | grep "FFOXPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('FFOXPROFILE'); fi
-
-echo "$selection" | grep "FIXDBCIN" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('FIXDBCIN'); fi  
-
-echo "$selection" | grep "FIXDBXFCE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('FIXDBXFCE'); fi
-
-echo "$selection" | grep "MIDORICACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('MIDORICACHE'); fi
-
-echo "$selection" | grep "MIDORIPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('MIDORIPROFILE'); fi
-
-echo "$selection" | grep "OPERACACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('OPERACACHE'); fi
-
-echo "$selection" | grep "OPERAPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('OPERAPROFILE'); fi
-
-echo "$selection" | grep "PALEMOONCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('PALEMOONCACHE'); fi
-
-echo "$selection" | grep "PALEMOONPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('PALEMOONPROFILE'); fi
-
-echo "$selection" | grep "SEAMONKEYCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('SEAMONKEYCACHE'); fi
-
-echo "$selection" | grep "SEAMONKEYPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('SEAMONKEYPROFILE'); fi
-
-echo "$selection" | grep "THUMBNAILS" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('THUMBNAILS'); fi
-
-echo "$selection" | grep "TRASHBIN" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('TRASHBIN'); fi
-
-echo "$selection" | grep "VIVALDICACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('VIVALDICACHE'); fi
-
-echo "$selection" | grep "VIVALDIPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('VIVALDIPROFILE'); fi
-
-echo "$selection" | grep "WATERFOXCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('WATERFOXCACHE'); fi
-
-echo "$selection" | grep "WATERFOXPROFILE" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('WATERFOXPROFILE'); fi
-
-echo "$selection" | grep "WHISKERMREST" > /dev/null
-if [ $? = 0 ]; then ARRAYA+=('WHISKERMREST'); fi
-
-################## ARRAY B #########################
-
-echo "$selection" | grep "AUTOREMOVE" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('AUTOREMOVE'); fi
-
-echo "$selection" | grep "BYPASSPSWADMPKEXEC" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('BYPASSPSWADMPKEXEC'); fi
-
-echo "$selection" | grep "DNSCACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('DNSCACHE'); fi
-
-echo "$selection" | grep "IPV6" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('IPV6'); fi
-
-echo "$selection" | grep "THEMING" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('THEMING'); fi
-
-echo "$selection" | grep "SOFTINST" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('SOFTINST'); fi
-
-echo "$selection" | grep "LOGARCHIVES" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('LOGARCHIVES'); fi
-
-echo "$selection" | grep "CHNAMEHOST" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('CHNAMEHOST'); fi
-
-echo "$selection" | grep "MGMTSAVESESSION" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('MGMTSAVESESSION'); fi
-
-echo "$selection" | grep "PACKAGECACHE" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('PACKAGECACHE'); fi
-
-echo "$selection" | grep "PRELOAD" > /dev/null
-if [ $? = 0 ]; then
-  if [ -n "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]; then
-    zenity --warning --width="380" --title="Custom kernel swappiness detected" --window-icon="info" --icon-name="info" \
-           --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload. \
+        zenity --warning --width="380" --window-icon="info" --icon-name="info" \
+               --title="Custom kernel swappiness detected" \
+               --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload. \
 \n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
 It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness set in the system while also using Preload. \
 \n\nYou can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n" 2>/dev/null
-  else
-    ARRAYB+=('PRELOAD')
+      else
+        ARRAYB+=('PRELOAD')
+      fi
   fi
-fi
 
-echo "$selection" | grep "RESIDCONFIG" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('RESIDCONFIG'); fi
+  # remove kernel swappiness from array
+  if grep -q 'SYSSWAP' <<< "${selection[${i}]}"; then
+    
+      # if preload is installed display info
+      if [[ -n "$(dpkg -l | grep -F '\spreload\s')" ]]; then
 
-echo "$selection" | grep "SCACHEPR" > /dev/null
-if [ $? = 0 ]; then ARRAYB+=('SCACHEPR'); fi 
+      # remove
+      REMOVE="SYSSWAP"
+      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
 
-echo "$selection" | grep "SYSSWAP" > /dev/null
-if [ $? = 0 ]; then
-  # if preload is installed display info
-  if which preload > /dev/null; then
-    zenity --warning --width="380" --title="preload daemon detected" --window-icon="info" --icon-name="info" \
-           --text="\nYou must remove Preload from the system before manually adjusting kernel swappiness. \
+        zenity --warning --width="420" --title="preload daemon detected" --window-icon="info" --icon-name="info" \
+               --text="\nYou must remove Preload from the system before manually adjusting kernel swappiness. \
 \n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
 It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness defined while also running Preload. \
 \nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
 \n\n~$ <b>sudo apt-get remove preload -y</b> \n" 2>/dev/null
-  else
-    ARRAYB+=('SYSSWAP')
-  fi
-fi 
+      else
+        ARRAYB+=('SYSSWAP')  
+      fi
+  fi 
 
-echo "$selection" | grep "ZRAM" > /dev/null
-if [ $? = 0 ]; then 
-  # if zswap is installed display info
-  if [ "$VARZSWAP" == "Y" ] || [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
-    zenity --warning --width="340" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
-           --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
-\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null 
-  else
-    ARRAYB+=('ZRAM')
-  fi
-fi
+  # remove zram from array
+  if grep -q 'ZRAM' <<< "${selection[${i}]}"; then
+    
+      # if zswap is installed display info
+      if [[ "$VARZSWAP" == "Y" || -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
 
-echo "$selection" | grep "ZSWAP" > /dev/null
-if [ $? = 0 ]; then 
-  # check for pending restart
-  if [[ "$VARZSWAP" == "Y" && -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]] || [[ "$VARZSWAP" == "N" && -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
-    zenity --question --width="360" --height="120" --title=" Pending Restart" \
-           --text="\nThe computer must be restarted for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
-    if [ $? = 0 ]; then systemctl reboot; else continue; fi
+        # remove
+        REMOVE="ZRAM"
+        ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
+
+        zenity --warning --width="340" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
+               --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
+\n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
+      else
+        ARRAYB+=('ZRAM')
+      fi
   fi
 
-  # if zram is installed display info
-  if [ "$VARZRAM" == "ii" ]; then
-    zenity --warning --width="360" --height="80" --title=" zRAM detected" --window-icon="info" --icon-name="info" \
-           --text="\nzRAM is currently enabled in your system. zRAM and zSWAP must not be enabled at the same time. \
-\n\nPlease disable zRAM before enabling zSWAP." 2>/dev/null
-  else
-    ARRAYB+=('ZSWAP')
+  # remove zswap from array
+  if grep -q 'ZSWAP' <<< "${selection[${i}]}"; then
+    
+    # check for pending restart
+    if [[ "$VARZSWAP" == "Y" && -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]] || [[ "$VARZSWAP" == "N" && -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+      
+      # display restart pending message
+      zenity --question --width="360" --height="120" --title=" Pending Restart" \
+             --text="\nThe computer must be restarted for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
+
+      # restart if acknowledged  
+        if [[ "$?" = "0" ]]; then
+          systemctl reboot
+        else
+          continue
+        fi
+    fi
+
+    # if zram is installed display info
+    if [[ "$VARZRAM" == "ii" ]]; then
+
+      # remove
+      REMOVE="ZSWAP"
+      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
+
+      zenity --warning --width="360" --height="80" --title=" zRAM detected" --window-icon="info" --icon-name="info" \
+             --text="\nzRAM is currently enabled in your system. zRAM and zSWAP must not be enabled at the same time.\n\n\
+Please disable zRAM before enabling zSWAP." 2>/dev/null
+    else
+      ARRAYB+=('ZSWAP')
+    fi
   fi
-fi
+done
 }
 
 RUN() {
 # Check if ARRAYA is empty. If empty, skip the execution
-if [ ${#ARRAYA[@]} -ne 0 ]; then
-    x=0
-    for k in "${!ARRAYA[@]}"; do  x=$(( $x + 1 )); done  # Get the total number of selected items in array A
-    TOTAL_LINES=$x
-    printf '%s \n' "${ARRAYA[@]}"|
-    while read  line; do
-      $line     # Execute functions one at a time
-      if [ $? = 1 ]; then
-        zenity --error --title="UnlockMe" --text="\nThere was an error while executing:\n ${line}" 2>/dev/null
-        exit 1
-      fi
-      let i++
-        (( PERCENTAGE = 100 \* ${i} / ${TOTAL_LINES} ))
-        echo "$PERCENTAGE"
-        if [ "$PERCENTAGE" == "100" ]; then
-          echo "# Done"
-          sleep 1
-        fi
-    done | yad --text-align=center --borders=10 --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill \
-               --skip-taskbar --fixed --center --width="340" --height="110" --text="\n<span font='Sans 13'>UnlockMe</span>"
+
+if [[ "${#ARRAYA[@]}" != "0" ]]; then
+
+  printf '%s \n' "${ARRAYA[@]}"|
+  while read line; do
+    "$line" 2>/dev/null    # Execute functions one at a time
+    if [[ "$?" = "1" ]]; then
+      zenity --error --width="260" --title="UnlockMe" --text="An error occurred while executing:\n\n ${line}" 2>/dev/null
+      exit 1
+    fi
+    done | NO_AT_BRIDGE=1 yad --text-align="center" --borders="10" --no-buttons --undecorated \
+                              --fixed --progress --pulsate --auto-close --auto-kill \
+                              --skip-taskbar --center --width="340" --height="110" \
+                              --text="\n<span font='13'>UnlockMe</span>"
 fi
 
 # Check whether ARRAYB is empty and skip execution if so
-if [ ${#ARRAYB[@]} -ne 0 ]; then
+if [[ "${#ARRAYB[@]}" != "0" ]]; then
    case $? in
-    0) pkexec unlockme-admin "${ARRAYB[@]}";;
-    1) return
+    0) pkexec unlockme-admin "${ARRAYB[@]}"
+  ;;
+    1) return 
+  ;;
   esac
 fi
 }
@@ -610,7 +653,7 @@ fi
 # Execute checks
 CHECK() {
 
-VARZSWAP="$(cat /sys/module/zswap/parameters/enabled)"                  # zswap variable
+VARZSWAP="$(< /sys/module/zswap/parameters/enabled)"                    # zswap variable
 VARZRAM="$(dpkg -l | grep -E '^ii' | grep zram-config | cut -d' ' -f1)" # zram variable
 
 # Manage Save Session
@@ -620,62 +663,62 @@ else _mgmtsavesession=()
 fi
 
 # Check Autoremove packages
-if [ -f "$_DRYAPT" ] && [ "$(cat "$_DRYAPT" | head -n+1)" -gt 0 ]; then
-     _DRYAPTVAL=$(cat "$_DRYAPT" | head -n+1)
+if [[ -f "$_DRYAPT" ]] && [[ "$(< "$_DRYAPT" | head -n+1)" -gt 0 ]]; then
+     _DRYAPTVAL=$(< "$_DRYAPT" | head -n+1)
      _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
 else _autoremove=()
 fi
 
 # Check for blockhosts
-if [ $(wc -l /etc/NetworkManager/dnsmasq.d/blacklist 2>/dev/null | awk '{print $1}') -gt "1" ]; then
-      blocked_count=$(wc -l /etc/NetworkManager/dnsmasq.d/blacklist 2>/dev/null | awk '{print $1}')
+if [[ -s /etc/NetworkManager/dnsmasq.d/blacklist ]]; then
+      blocked_count=$(wc -l /etc/NetworkManager/dnsmasq.d/blacklist | cut -d\/ -f1)
      _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "<span foreground='green'>${blocked_count} undesirable hosts blacklisted - (select to modify)</span>")
 else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware and tracking domains")
 fi
 
 # Check for bypass pkexec password prompt
-if [ ! -f "/usr/share/unlockme/set/ACTPKEXEC" ]; then
+if [[ ! -f "/usr/share/unlockme/set/ACTPKEXEC" ]]; then
      _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "Bypass pkexec password prompt for admin accounts")
 else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - (select to remove)</span>")
 fi
 
 # Check if the google-chrome browser cache exists
-if [ -d  "$HOME/.cache/google-chrome/" ]; then
-     GCCACHESIZE=$(du -sh "$HOME/.cache/google-chrome/" | awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/google-chrome/" ]]; then
+     GCCACHESIZE=$(du -sh "${HOME}/.cache/google-chrome/" | awk '{print $1"B"}')
      chromecache=(FALSE "CHROMECACHE" "Chrome Cache" "Cleanup" "User" "You can remove $GCCACHESIZE from your Chrome browser cache")
 else chromecache=()
 fi
 
 # Check if google-chrome browser profile exists
-if [ -d "$HOME/.config/google-chrome" ]; then
+if [[ -d "${HOME}/.config/google-chrome" ]]; then
      _chromeprofile=(FALSE "CHROMEPROFILE" " -- Chrome Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Chrome browser profile</span>")
 else _chromeprofile=()
 fi
 
 # Check if the chromium browser cache exists
-if [ -d  "$HOME/.cache/chromium/" ]; then
-     CHRCACHESIZE=$(du -sh "$HOME/.cache/chromium/" | awk '{print $1"B"}')
+if [[ -d  "${HOME}/.cache/chromium/" ]]; then
+     CHRCACHESIZE=$(du -sh "${HOME}/.cache/chromium/" | awk '{print $1"B"}')
      chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
 else chromiumcache=()
 fi
 
 # Check if chromium browser profile exists
-if [ -d "$HOME/.config/chromium/" ]; then
+if [[ -d "${HOME}/.config/chromium/" ]]; then
      _chromiumprofile=(FALSE "CHROMIUMPROFILE" " -- Chromium Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Chromium browser profile</span>")
 else _chromiumprofile=()
 fi
 
 # Check for dns cache tweak
-if [ ! -f "/etc/NetworkManager/dnsmasq.d/cache" ]; then
+if [[ ! -f "/etc/NetworkManager/dnsmasq.d/cache" ]]; then
      _dnscache=(FALSE "DNSCACHE" "Enable DNS Cache" "Management" "System" "Enable DNS Cache")
 else _dnscache=(FALSE "DNSCACHE" "DNS Cache" "Management" "System" "<span foreground='green'>DNS Cache Enabled - (select to modify)</span>")
 fi
 
 # check for dropbox Cinnamon Fix
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
-  if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\sdropbox\s')" ]; then _fixdpcin=()
+  if [[ -z "$(dpkg -l | grep '\s\sdropbox\s')" ]]; then _fixdpcin=()
   else 
-    if [ ! -f "/home/$_SOFTUSR/.local/share/.fixdbcin" ]; then
+    if [[ ! -f "/home/$_SOFTUSR/.local/share/.fixdbcin" ]]; then
       _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "Fix Dropbox Autostart in Cinnamon")
       else _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "<span foreground='green'>Applied - (select to remove)</span>") 
     fi
@@ -684,42 +727,52 @@ fi
 
 # check for dropbox - Xfce|Budgie Fix
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; then
-  if [[ "$LMDENV" =~ "Xfce" ]]; then applyfix="Xfce"; else if [[ $(lsb_release -sc) = "xenial" ]] && [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; then applyfix="Budgie"; fi ; fi   
-  if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then _fixdbxfce=()
+  if [[ "$LMDENV" =~ "Xfce" ]]; then
+      applyfix="Xfce"
+  else
+    if [[ $(lsb_release -sc) = "xenial" ]] && [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; then
+      applyfix="Budgie"
+    fi
+  fi   
+  if [ -z  "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')" ]; then
+      _fixdbxfce=()
   else 
-    if [ "$(grep -F 'Exec=dbus-launch' /usr/share/applications/dropbox.desktop)" ] && [ "$(grep -F 'Exec=dbus-launch' /home/$_SOFTUSR/.config/autostart/dropbox.desktop)" ]; then _fixdbxfce=()
-      else _fixdpxfce=(FALSE "FIXDBXFCE" "Dropbox Systray Fix" "Repair" "User" "Fix Dropbox System tray icon and menu - $applyfix ")
+    if [ "$(grep -F 'Exec=dbus-launch' /usr/share/applications/dropbox.desktop)" ] && \
+       [ "$(grep -F 'Exec=dbus-launch' /home/$_SOFTUSR/.config/autostart/dropbox.desktop)" ]; then
+      _fixdbxfce=()
+    else 
+      _fixdpxfce=(FALSE "FIXDBXFCE" "Dropbox Systray Fix" "Repair" "User" "Fix Dropbox System tray icon and menu - $applyfix ")
     fi
   fi
 fi
 
 # Check if firefox browser cache exists
-if [  -d  "$HOME/.cache/mozilla/" ]; then
-     FFCACHESIZE=$(du -sh "$HOME/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
+if [[ -d  "${HOME}/.cache/mozilla/" ]]; then
+     FFCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
      firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
 else firefoxcache=()
 fi
 
 # Check if firefox browser profile exists
-if [ -d "$HOME/.mozilla/firefox/" ]; then
+if [[ -d "${HOME}/.mozilla/firefox/" ]]; then
      _ffoxprofile=(FALSE "FFOXPROFILE" " -- Firefox Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Firefox browser profile</span>")
 else _ffoxprofile=()
 fi
 
 # Check enable / disable IPv6 tweak
-if grep -q -F '1' "/proc/sys/net/ipv6/conf/all/disable_ipv6"; then
+if [[ $(< /proc/sys/net/ipv6/conf/all/disable_ipv6) = "1" ]]; then
      _ipv6=(FALSE "IPV6" "Enable IPv6" "Management" "System" "<span foreground='green'>IPv6 has been disabled - Select to Enable IPv6</span>")
 else _ipv6=(FALSE "IPV6" "Disable IPv6" "Management" "System" "Disable IPv6")
 fi
 
 # check for kernel cache pressure
-if [ $(cat /proc/sys/vm/vfs_cache_pressure) -ne "100" ]; then
-     _scachepr=(FALSE "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom kernel cache pressure applied - (select to modify)</span>")
-else _scachepr=(FALSE "SCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Controls how the kernel reclaims memory used for caching")
+if [[ $(< /proc/sys/vm/vfs_cache_pressure) != "100" ]]; then
+     _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom kernel cache pressure applied - (select to modify)</span>")
+else _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Controls how the kernel reclaims memory used for caching")
 fi
 
 # check for kernel swappiness
-if [ $(cat /proc/sys/vm/swappiness) -eq "60" ]; then
+if [[ $(< /proc/sys/vm/swappiness) = "60" ]]; then
   if which preload > /dev/null; then
        _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness ¡¡" "" "" "Kernel setting that controls how often the swap file is used")
   else _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "Kernel setting that controls how often the swap file is used")
@@ -729,40 +782,40 @@ else
 fi
 
 # Check if  midori browser cache exists
-if [  -d  "$HOME/.cache/midori/" ]; then
-     MDCACHESIZE=$(du -sh "$HOME/.cache/midori/" | awk '{print $1"B"}')
+if [[ -d  "${HOME}/.cache/midori/" ]]; then
+     MDCACHESIZE=$(du -sh "${HOME}/.cache/midori/" | awk '{print $1"B"}')
      _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from your Midori browser cache")
 else _midoricache=()
 fi
 
 # Check if midori browser profile exists
-if [ -d "$HOME/.config/midori/" ]; then
+if [[ -d "${HOME}/.config/midori/" ]]; then
      _midoriprofile=(FALSE "MIDORIPROFILE" " -- Midori Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Midori browser profile</span>")
 else _midoriprofile=()
 fi
 
 # Check if  opera browser cache exists
-if [  -d  "$HOME/.cache/opera/Cache/" ]; then
-     OPCACHESIZE=$(du -sh "$HOME/.cache/opera/Cache/" | awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/opera/Cache/" ]]; then
+     OPCACHESIZE=$(du -sh "${HOME}/.cache/opera/Cache/" | awk '{print $1"B"}')
      _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from your Opera browser cache")
 else _operacache=()
 fi
 
 # Check if opera browser profile exists
-if [ -d "$HOME/.config/opera/" ]; then
+if [[ -d "${HOME}/.config/opera/" ]]; then
      _operaprofile=(FALSE "OPERAPROFILE" " -- Opera Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Opera browser profile</span>")
 else _operaprofile=()
 fi
 
 # Check if  Pale Moon browser cache exists
-if [  -d  "$HOME/.cache/moonchild productions/pale moon/" ]; then
-     PMCACHESIZE=$(du -sh "$HOME/.cache/moonchild productions/pale moon/" | awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/moonchild productions/pale moon/" ]]; then
+     PMCACHESIZE=$(du -sh "${HOME}/.cache/moonchild productions/pale moon/" | awk '{print $1"B"}')
      _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from your Pale Moon browser cache")
 else _palemooncache=()
 fi
 
 # Check if Pale Moon browser profile exists
-if [ -d "$HOME/.moonchild productions/" ]; then
+if [[ -d "${HOME}/.moonchild productions/" ]]; then
      _palemoonprofile=(FALSE "PALEMOONPROFILE" " -- Pale Moon Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Pale Moon browser profile</span>")
 else _palemoonprofile=()
 fi
@@ -770,36 +823,36 @@ fi
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
      _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
-elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || [[ "$PPMDENV" =~ "PeppermintOS" ]] \
-     || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
+elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || 
+     [[ "$PPMDENV" =~ "PeppermintOS" ]] || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
      _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
 else _chnamehost=()
 fi
 
 # Check logs archives
-if [ "$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -maxdepth 100 -size +1k)" ]; then
+if [[ "$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -maxdepth 100 -size +1k)" ]]; then
      LOGARCHIVESIZE=$(find /var/log -type f \( -iname \*.gz -o -iname \*.0 -o -iname \*.1 \) 2>/dev/null -exec du -csh '{}' + | tail -1 | awk '{print $1"B"}')
      _logarchives=(FALSE "LOGARCHIVES" "Log Archives" "Cleanup" "System" "You can remove $LOGARCHIVESIZE worth of archived logs")
 else _logarchives=()
 fi
 
 # Check if any thumbnails exist
-if [ $(du -sk "$HOME/.cache/thumbnails/" | awk '{print $1}')  -gt 100  ]; then
-     THUMBCACHESIZE=$(du -sh "$HOME"/.cache/thumbnails/ | awk '{print $1"B"}')
+if [[ $(du -sk "${HOME}/.cache/thumbnails/" | awk '{print $1}') > 100 ]]; then
+     THUMBCACHESIZE=$(du -sh "${HOME}"/.cache/thumbnails/ | awk '{print $1"B"}')
      _thumbn=(FALSE "THUMBNAILS" "Thumbnail Cache" "Cleanup" "User" "You can remove $THUMBCACHESIZE from your thumbnail cache")
 else _thumbn=()
 fi
 
 # Check package cache 
-if [ "$(find /var/cache/apt/archives/ -maxdepth 1 -size +100k)" ]; then
+if [[ "$(find /var/cache/apt/archives/ -maxdepth 1 -size +100k)" ]]; then
      APTCACHESIZE=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1"B"}')
      _packagecache=(FALSE "PACKAGECACHE" "Packages Cache" "Cleanup" "System" "You can remove $APTCACHESIZE worth of files from the packages cache")
 else _packagecache=()
 fi
 
 # Check if preload is installed
-if [ -z "$(dpkg -l | grep -E '^ii' | grep preload)" ]; then
-  if [ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ];then
+if [[ -z "$(dpkg -l | grep '\spreload\s')" ]]; then
+  if [[ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
    else
      _preload=(FALSE "PRELOAD" "Preload Apps ¡¡" "" "" "Fetch commonly used apps into RAM for faster startup times")
@@ -808,48 +861,48 @@ else _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "<span fore
 fi
 
 # Check residual configuration files
-if [ ! -z "$(dpkg -l | grep '^rc')"  ]; then
+if [[ -n "$(dpkg -l | grep '^rc')" ]]; then
      RESCONFIGQTY=$(dpkg -l | grep '^rc' | awk '{print $2}'| wc -w)
      _resconfig=(FALSE "RESIDCONFIG" "Residual Config Files" "Cleanup" "System" "There are $RESCONFIGQTY residual configuration files that can be removed")
 else _resconfig=()
 fi
 
 # Check if the seamonkey browser cache exists
-if [ -d "$HOME/.cache/mozilla/seamonkey/" ]; then
-     SMCACHESIZE=$(du -sh "$HOME/.cache/mozilla/seamonkey/" | awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/mozilla/seamonkey/" ]]; then
+     SMCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/seamonkey/" | awk '{print $1"B"}')
      _seamonkeycache=(FALSE "SEAMONKEYCACHE" "SeaMonkey Cache" "Cleanup" "User" "You can remove $SMCACHESIZE from your SeaMonkey browser cache")
 else _seamonkeycache=()
 fi
 
 # Check if seamonkey browser profile exists
-if [ -d "$HOME/.mozilla/seamonkey/" ]; then
+if [[ -d "${HOME}/.mozilla/seamonkey/" ]]; then
      _seamonkeyprofile=(FALSE "SEAMONKEYPROFILE" " -- SeaMonkey Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove SeaMonkey browser profile</span>")
 else _seamonkeyprofile=()
 fi
 
 # Check the Trash
-if [ "$(ls -A "$HOME/.local/share/Trash/files/")" ]; then
-     TRASHCACHESIZE=$(du -sh "$HOME/.local/share/Trash/" | awk '{print $1"B"}')
+if [[ "$(ls -A "${HOME}/.local/share/Trash/files/")" ]]; then
+     TRASHCACHESIZE=$(du -sh "${HOME}/.local/share/Trash/" | awk '{print $1"B"}')
      _trashbin=(FALSE "TRASHBIN" "Trash Bin" "Cleanup" "User" "You can remove $TRASHCACHESIZE from the Trash bin")
 else _trashbin=()
 fi
 
 # Check vivaldi-stable cache
-if [ -d "$HOME/.cache/vivaldi/" ]; then
-     VCSIZE=$(du -sh "$HOME/.cache/vivaldi/" | awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/vivaldi/" ]]; then
+     VCSIZE=$(du -sh "${HOME}/.cache/vivaldi/" | awk '{print $1"B"}')
      _vivaldicache=(FALSE "VIVALDICACHE" "Vivaldi Cache" "Cleanup" "User" "You can remove $VCSIZE from your Vivaldi browser cache")
 else _vivaldicache=()
 fi
 
 # Check if vivaldi browser profile exists
-if [ -d "$HOME/.config/vivaldi" ]; then
+if [[ -d "${HOME}/.config/vivaldi" ]]; then
      _vivaldiprofile=(FALSE "VIVALDIPROFILE" " -- Vivaldi Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Vivaldi browser profile</span>")
 else _vivaldiprofile=()
 fi
 
 # Check for zram
-if [ -z "$VARZRAM" ]; then
-  if [ "$VARZSWAP" == "Y" ] || [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
+if [[ -z "$VARZRAM" ]]; then
+  if [[ "$VARZSWAP" == "Y" ]] || [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
      _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" "Compressed RAM based block device for faster I/O")
    else
      _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "Compressed RAM based block device for faster I/O")
@@ -859,15 +912,15 @@ fi
 
 # Check for zswap
 # check kernel for zswap
-if [ $(cat /boot/config-`uname -r` | grep -i zswap | cut -d= -f2) == "y" ]; then
+if [[ $(cat /boot/config-$(uname -r) | grep -i zswap | cut -d= -f2) == "y" ]]; then
   # if zswap is not enabled
-  if [ "$VARZSWAP" == "N" ]; then
+  if [[ "$VARZSWAP" == "N" ]]; then
     # if zram is installed
-    if [ -n "$VARZRAM" ]; then
+    if [[ -n "$VARZRAM" ]]; then
        _zswap=(FALSE "ZSWAP" "zSWAP ¡¡" "" "" "Efficient use of RAM and disk based swap. Minimizes Disk I/O")
     else
         # if zswap is not enabled but grub value exists
-        if [ "$VARZSWAP" == "N" ] && [ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then 
+        if [[ "$VARZSWAP" == "N" ]] && [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then 
             _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "" "" "Efficient use of RAM and disk based swap. Minimizes Disk I/O")
         else
           # zswap default
@@ -875,7 +928,7 @@ if [ $(cat /boot/config-`uname -r` | grep -i zswap | cut -d= -f2) == "y" ]; then
         fi
     fi
   else 
-      if [ "$VARZSWAP" == "Y" ] && [ -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]; then
+      if [[ "$VARZSWAP" == "Y" ]] && [[ -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
        # pending reboot for removal
         _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "Performance" "System" "<span foreground='green'>zSWAP is currently enabled - (select to modify)</span>")
       else
@@ -886,14 +939,14 @@ if [ $(cat /boot/config-`uname -r` | grep -i zswap | cut -d= -f2) == "y" ]; then
 fi
 
 # Check if waterfox browser cache exists
-if [ -d "$HOME/.cache/waterfox/" ]; then
-     WFCACHESIZE=$(du -sh "$HOME/.cache/waterfox/"| awk '{print $1"B"}')
+if [[ -d "${HOME}/.cache/waterfox/" ]]; then
+     WFCACHESIZE=$(du -sh "${HOME}/.cache/waterfox/"| awk '{print $1"B"}')
      _waterfoxcache=(FALSE "WATERFOXCACHE" "Waterfox Cache" "Cleanup" "User" "You can remove $WFCACHESIZE from your Waterfox browser cache")
 else _waterfoxcache=()
 fi
 
 # Check if waterfox browser profile exists
-if [ -d "$HOME/.waterfox" ]; then
+if [[ -d "${HOME}/.waterfox" ]]; then
      _waterfoxprofile=(FALSE "WATERFOXPROFILE" " -- Waterfox Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Waterfox browser profile</span>")
 else _waterfoxprofile=()
 fi
@@ -907,11 +960,17 @@ fi
 
 # Main loop
 while (true); do
+
 _APPNAME="UnlockMe"
 _SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
 TMPLTF="/tmp/unlockusr"
+
 echo "$DESKTOP_SESSION" > /tmp/UnlockDS ; chmod 600 /tmp/UnlockDS
-if [ ! -f "$TMPLTF" ]; then echo "$_SOFTUSR" > "$TMPLTF"; chmod 600 "$TMPLTF"; else :; fi
+if [[ ! -f "$TMPLTF" ]]; then
+  echo "$_SOFTUSR" > "$TMPLTF"
+  chmod 600 "$TMPLTF"
+else :
+fi
 
 # first run the checks
 CHECK
@@ -919,7 +978,7 @@ CHECK
 # Main dialog os version
 BITS=$(getconf LONG_BIT)
 
-if [ -f "$mintinfo" ]; then 
+if [[ -f "$mintinfo" ]]; then 
     # check if peppermint
     if [[ "$PPMDENV" =~ "PeppermintOS" ]]; then
       DISTRO="${PPMDENV} ${BITS}-bit"
@@ -927,23 +986,31 @@ if [ -f "$mintinfo" ]; then
       # assume linuxmint
       DISTRO="$(grep -F 'GRUB' "$mintinfo" | cut -d\= -f2)"
     fi
-# check if linuxlite
-elif [ -f "$liteinfo" ]; then DISTRO="$(cat "$liteinfo") ${BITS}-bit"
-# check if ubuntu-budgie
-elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then DISTRO="Ubuntu Budgie $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
-# check if ubuntu-mate
-elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') = 'ubuntu-mate' ]]; then  DISTRO="Ubuntu MATE $(cat /etc/issue | awk '{print $2,$3}' | head -n1) ${BITS}-bit"
-# others
-else DISTRO="$(cat /etc/issue | cut -d\\ -f1)"; fi
 
-# Main dialog
-selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --borders=8 \
+# check if linuxlite
+elif [[ -f "$liteinfo" ]]; then
+  DISTRO="$(< "$liteinfo") ${BITS}-bit"
+
+# check if ubuntu-budgie
+elif grep -q 'Ubuntu' /etc/issue && [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
+  DISTRO="Ubuntu Budgie $(awk '{print $2,$3}' < /etc/issue | head -n1) ${BITS}-bit"
+
+# check if ubuntu-mate
+elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') == 'ubuntu-mate' ]]; then
+  DISTRO="Ubuntu MATE $(awk '{print $2,$3}' < /etc/issue | head -n1) ${BITS}-bit"
+
+# others
+else DISTRO="$(cut -d\\ -f1 < /etc/issue)"
+fi
+
+# main dialog
+selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --borders=8 --separator=" " \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \
-                --text="<span font='Sans 9'>$DISTRO\n</span>
-<span font='Sans 9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
-\nYou can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
+                --text="<span font='9'>${DISTRO}\n</span> 
+<span font='9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
+You can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
 "FALSE" "THEMING" "Appearance" "Install or Remove" "Customize" "A selection of popular desktop themes, icons and cursors" \
 "FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Install and remove selected commonly used applications" \
 "${_autoremove[@]}" \
@@ -956,7 +1023,7 @@ selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$
 "${_fixdpxfce[@]}" \
 "${firefoxcache[@]}" \
 "${_chnamehost[@]}" \
-"${_scachepr[@]}" \
+"${_syscachepr[@]}" \
 "${_sysswap[@]}" \
 "${_logarchives[@]}" \
 "${_mgmtsavesession[@]}" \
@@ -985,12 +1052,14 @@ selection=$(yad --list --checklist --width="880" --height="580" --window-icon="$
 "${_vivaldiprofile[@]}" \
 "${_waterfoxprofile[@]}")
 
-if [ "${PIPESTATUS[0]}" -ne "0" ]; then _CLEANUP; exit 0 ; fi # If Quit or (X) is clicked then exit
+if [[ "$?" = "1" || "$?" = "252" ]]; then _CLEANUP; exit 0 ; fi # If Quit or (X) is clicked then exit
 
-echo "$selection" | grep '[a-zA-Z0-9]' # Check if anything is selected
-if [ "${PIPESTATUS[1]}" -ne "0" ]; then
+grep -q '[a-zA-Z0-9]' <<< "$selection"
+
+if [ "$?" -ne "0" ]; then
   zenity --info --ok-label="Go Back" --width="260" --height="80" --title=" $_APPNAME" \
-         --text="\n<b>No tasks were selected for execution</b> \n\nPlease try again selecting a at least one task." 2>/dev/null; continue
+         --text="\n<b>No tasks were selected for execution</b> \n\nPlease try again selecting a at least one task." 2>/dev/null
+  continue
 fi
 
 ARRAYS # Separate selected items into arrays A and B

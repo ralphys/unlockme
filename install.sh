@@ -1,5 +1,11 @@
 #!/bin/bash
-# with love from ralphy
+# with love from Ralphy
+#
+# UnlockMe: Customize, tweak and clean your system
+# https://github.com/ralphys/unlockme/
+#
+# Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
+# UnlockMe Installer 
 
 if [ $EUID -ne 0 ]; then
 	clear
@@ -12,7 +18,7 @@ _DTGIT="/tmp/unlockme" _ADMUSER=$(sudo -u ${SUDO_USER:-$USER} whoami)
 _SOURCE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # if temp dir exists; remove it
-[ -d "$_DTGIT" ] && rm -rf "$_DTGIT"
+[[ -d "$_DTGIT" ]] && rm -rf "$_DTGIT"
 
 clear
 echo -e "\n UnlockMe Installer"
@@ -66,7 +72,7 @@ function install_unlockme () {
 if which git > /dev/null; then
 	install_unlockme
 else
-	if [ -d "$_SOURCE/usr/local/sbin" ] && [ -e "$_SOURCE/usr/share/unlockme/icons" ]; then
+	if [[ -d "${_SOURCE}/usr/local/sbin" && -e "${_SOURCE}/usr/share/unlockme/icons" ]]; then
 		echo -e "  Installing from current folder" && install_unlockme
 	else 
 		install_git ; install_unlockme
