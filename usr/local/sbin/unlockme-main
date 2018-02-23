@@ -21,7 +21,9 @@
 # UnlockMe version - none :)
 # Script name: unlockme-main
 
-sys_locale="${LANG:-C}"
+# locale
+export LANG=C
+export LANG=C.UTF-8
 
 # variable edition
 mintinfo="/etc/linuxmint/info"
@@ -1006,7 +1008,7 @@ else DISTRO="$(cut -d\\ -f1 < /etc/issue)"
 fi
 
 # main dialog
-selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --borders=8 --separator=" " \
+selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --separator=" " \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \

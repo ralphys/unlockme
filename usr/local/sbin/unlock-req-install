@@ -20,6 +20,10 @@
 #
 # Script name: unlock-req-install
 
+# locale
+export LANG=C
+export LANG=C.UTF-8
+
 _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
 LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)

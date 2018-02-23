@@ -13,6 +13,10 @@
 #
 # Expectation: These unified hosts files should serve all devices, regardless of OS.
 
+# locale
+export LANG=C
+export LANG=C.UTF-8
+
 _APPNAME="Blacklist Generator"
 dialog0="\n${_APPNAME} is running unprivileged
 \nYou won't be able to apply the resulting blacklist to

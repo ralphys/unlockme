@@ -2,6 +2,10 @@
 
 # Variables and settings
 
+# locale
+export LANG=C
+export LANG=C.UTF-8
+
 URILIST="$@" # gets list of URIs from stdin
 MAXDLS="5" # set maximum number of simultaneous downloads
 USAGE="$0 <space-delimited URLs>"
