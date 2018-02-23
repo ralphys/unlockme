@@ -39,12 +39,30 @@ DENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk
 LLD=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMD=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
-# Kill off any package managers that may be running
-if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
-if [ -n "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
-if [ -n "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
-
 # common functions
+
+check_running_package_manager() {
+
+# check for any package managers that may be running
+if [[ "$(pidof synaptic)" ]] || 
+   [[ $(pidof apt | wc -w) != "0" || $(pidof apt-get | wc -w) != "0" ]]; then
+
+   zenity --question --cancel-label="No" --ok-label="Continue" --title="Are you installing Updates?" \
+          --width="360" --height="120" --window-icon="warning" --icon-name="gtk-dialog-warning" \
+          --text="\nA Package Manager process (Synaptic or APT) is currently running. \
+Those processes will be terminated before continuing.\n\nWould you like to proceed?" 2>/dev/null
+
+  if [[ "$?" != "0" ]]; then ${opt_procedure[@]}
+  else
+    echo "#⚫ Terminating processes..." ; sleep 1
+    killall -9 synaptic
+    killall -9 apt
+    killall -9 apt-get
+    sleep 1
+  fi
+fi
+}
+
 unlockme_log() {
 _LOG="/tmp/unlockme.log"
 touch "$_LOG"; chown "$SOFTUSR":"$SOFTUSR" "$_LOG"; chmod 600 "$_LOG"
@@ -124,7 +142,7 @@ ADMRUN="$@"
   if [[ $(grep "ZRAM" <<< "$ADMRUN") ]]; then ARRAYC+=('ZRAM'); fi  
   if [[ $(grep "ZSWAP" <<< "$ADMRUN") ]]; then ARRAYC+=('ZSWAP'); fi
 
-# Functions
+# common functions
 
 SOFTINST() {
 
@@ -141,9 +159,14 @@ show_progress() {
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
+# tweak - remove unnedded packages
 AUTOREMOVE() {
 
 echo "#⚫ Removing unneeded packages, please wait..."
+
+# check for running package manager
+opt_procedure="continue" ; check_running_package_manager
+
 apt-get autoclean -y ; apt-get autoremove -y
 
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then
@@ -159,6 +182,7 @@ echo "$_DATE" >> "/home/${SOFTUSR}/.local/share/.dryapt"
 echo "#✔ Unneeded packages cleared" && sleep 1
 }
 
+# tweak - bypass pkexec password prompt for admins
 BYPASSPSWADMPKEXEC() {
 
 echo "#⚫ Configuring pkexec password prompt..." ; sleep .5
@@ -201,6 +225,7 @@ else
 fi
 }
 
+# tweak - change hostname
 CHNAMEHOST() {
 
 _HOSTNAME=$(hostname)
@@ -716,9 +741,14 @@ fi
 done
 }
 
+# tweak - clean up package cache
 PACKAGECACHE() {
 
 echo "#⚫ Cleaning packages cache..." ; sleep 1
+
+# check for running package manager
+opt_procedure="continue" ; check_running_package_manager
+
 apt-get clean
 
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then
@@ -751,6 +781,9 @@ if [[ -z "$(dpkg -l | grep -F 'preload')" ]]; then
     break
   fi
   
+  # check for running package manager
+  opt_procedure="break 2" ; check_running_package_manager
+
   # check internet connection
   check_online2
 
@@ -798,6 +831,9 @@ case $PRLOAD in
     2)  # remove preload
           zenity --question --width="300" --title=" $APPNAME" \
                  --text="\nAre you sure you want to remove ${_FNAME?}?" 2>/dev/null
+
+          # check for running package manager
+          opt_procedure="continue" ; check_running_package_manager
             
             if [[ "$?" = "0" ]]; then
               echo "#⚫ Removing ${_FNAME}..." ; sleep .5
@@ -999,6 +1035,9 @@ if [[ -z  "$(dpkg -l | grep 'zram-config')" ]]; then
       break
     fi # exit on cancel
 
+  # check for running package manager
+  opt_procedure="break 2" ; check_running_package_manager
+
   # check internet access
   check_online2
 
@@ -1045,6 +1084,11 @@ sZRAM=$(NO_AT_BRIDGE=1 yad --width="365" --fixed --height="150" --window-icon="$
         zenity --question --width="300" --title=" $APPNAME" \
                --text="\nAre you sure you want to remove ${_FNAME}?" 2>/dev/null
         if [[ "$?" = "0" ]]; then
+
+          #check for running package manager
+          opt_procedure="continue" ; check_running_package_manager
+
+          # uninstall zram
           echo "#⚫ Removing $_FNAME..." ; sleep .5
           service zram-config stop 
           apt-get remove --purge zram-config -y | show_progress ; check_remv
