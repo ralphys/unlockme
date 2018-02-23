@@ -213,7 +213,8 @@ FIXDBXFCE() {
 
 # icon theme installer
 ICONTHEME() {
-  echo "# Icon Theme Installer" && bash icon-theme 
+  echo "# Icon Theme Installer"
+  bash icon-theme
 }
 
 # function remove Midori Cache 
@@ -518,7 +519,7 @@ ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING S
  SELECTRUN=${#selection[@]}
 
 # construct arrays from user selection
-for (( i=0; i<${SELECTRUN}+1; i++ ))
+for (( i=0; i<${SELECTRUN}; i++ ))
  do
   grep -q "${selection[${i}]}" <<< "${ARRAYADEF[@]}" && ARRAYA+=("${selection[${i}]}")
   grep -q "${selection[${i}]}" <<< "${ARRAYBDEF[@]}" && ARRAYB+=("${selection[${i}]}")
@@ -655,6 +656,7 @@ CHECK() {
 
 VARZSWAP="$(< /sys/module/zswap/parameters/enabled)"                    # zswap variable
 VARZRAM="$(dpkg -l | grep -E '^ii' | grep zram-config | cut -d' ' -f1)" # zram variable
+FILEPKEXEC="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"  # pkexec.pkla file
 
 # Manage Save Session
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
@@ -677,7 +679,7 @@ else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System"
 fi
 
 # Check for bypass pkexec password prompt
-if [[ ! -f "/usr/share/unlockme/set/ACTPKEXEC" ]]; then
+if [[ ! -f "/usr/share/unlockme/set/ACTPKEXEC" && ! -f "$FILEPKEXEC" ]]; then
      _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "Bypass pkexec password prompt for admin accounts")
 else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - (select to remove)</span>")
 fi
@@ -1056,7 +1058,7 @@ if [[ "$?" = "1" || "$?" = "252" ]]; then _CLEANUP; exit 0 ; fi # If Quit or (X)
 
 grep -q '[a-zA-Z0-9]' <<< "$selection"
 
-if [ "$?" -ne "0" ]; then
+if [[ "$?" != "0" ]]; then
   zenity --info --ok-label="Go Back" --width="260" --height="80" --title=" $_APPNAME" \
          --text="\n<b>No tasks were selected for execution</b> \n\nPlease try again selecting a at least one task." 2>/dev/null
   continue

@@ -1,23 +1,24 @@
 #!/bin/bash
-# Name: Install yad package script
-# About yad: Yet Another Dialog - dialogs for shell
-# https://www.ubuntuupdates.org/package/webupd8/xenial/main/base/yad
-
-# Copyright 2017 © Ralphy Rhdez <rafaelrhd3z@gmail.com>
+#
+# UnlockMe: Customize, tweak and clean your system
+# https://github.com/ralphys/unlockme/
+#
+# Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
 # Website - https://unlockforus.com
-# Dated - 18th April, 2017
-
+# 
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2, or (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License with your
 # system, in /usr/share/common-licenses/GPL-2.  If not, see
 # <http://www.gnu.org/licenses/>.
+#
+# Script name: unlock-req-install
 
 _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
@@ -26,17 +27,17 @@ LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)
 check_internet=$(wget -q -t2 --spider https://www.google.com ; echo $?) 
 
 check_connection() {
-  if [ "$check_internet" != 0 ]; then
+  if [[ "$check_internet" != "0" ]]; then
     zenity --info --width="360" --height="120" --ok-label="Close" --title=" No internet connection" \
-           --text="\n<b>Your computer is not connected to the internet</b> \n\nRequired packages may not be installed.\n\nPlease check your Internet connection and try again."
-    log_install "the computer is not connected to the internet."
+           --text="\nYour computer is not connected to the internet.\n\n\
+Required packages will fail to download and install. Please check the internet connection and try again." 2>/dev/null
     exit 1
   fi
 }
 
 check_connection
 
-if [ $EUID -ne 0 ]; then
+if [[ "$EUID" != "0" ]]; then
   pkexec $0; exit 0
 case $? in
   0) exit 0 ;;
@@ -44,48 +45,78 @@ case $? in
   esac
 fi
 
-# Kill off any package managers that may be running
+# check for any package managers that may be running
 (
-if [ "$(pidof synaptic)" ]; then killall -9 synaptic; fi
-if [ -n "$(pgrep gdebi-gtk)" ]; then killall -9 gdebi-gtk; fi
-if [ -n "$(pgrep mintUpdate)" ]; then killall -9 mintUpdate; fi
+if [[ "$(pidof synaptic)" ]] || 
+   [[ $(pidof apt | wc -w) != "0" || $(pidof apt-get | wc -w) != "0" ]]; then
+
+   zenity --question --cancel-label="Quit" --ok-label="Continue" --title="Are you installing Updates?" \
+          --width="360" --height="120" --text="\nA Package Manager process (Synaptic or APT) is currently running. \
+Those processes will be terminated before continuing.\n\nWould you like to proceed?" 2>/dev/null
+
+  if [[ "$?" != "0" ]]; then exit 0
+  else
+    killall -9 synaptic
+    killall -9 apt
+    killall -9 apt-get
+  fi
+fi
 
 # add webupd8 repo
-if [ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]; then
-    add-apt-repository ppa:nilarimogard/webupd8 -y
+if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]]; then
+  add-apt-repository ppa:nilarimogard/webupd8 -y
 fi
-) | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
+
+) | zenity --progress --pulsate --window-icon="$_APPICON" --width="400" --height="80" \
+           --auto-close --no-cancel --title=" $_APPNAME" --text=" Getting ready..." 2>/dev/null
 
 # replace Linux Lite default yad package
 if [[ "$LLDENV" = "Lite 3" ]]; then
+
+  #linuxlite specific
+  zenity --question --title="yad package info" --width="400" \
+         --text="Linux Lite specific:\n\n\
+By default, Linux Lite uses its own yad package version from its own repository.\n\n\
+UnlockMe uses a different yad package which contains several fixes for ubuntu-based distributions \
+not included in Lite's package. To use the UnlockMe App the package in your system will be replaced.\n\n\
+Would you like to continue?" 2>/dev/null
+    
+    if [[ "$?" != "0" ]]; then killall -9 unlockme-main ; exit 1; fi
+
   if [ ! -f "/etc/apt/preferences" ]; then
     touch /etc/apt/preferences
-    printf 'Package: yad
+    printf \
+'Package: yad
 Pin: origin ppa.launchpad.net
 Pin-Priority: 501' > /etc/apt/preferences
   else
-    cat /etc/apt/preferences | egrep "yad"
+    grep -q 'yad' < /etc/apt/preferences
     if [ $? != 0 ]; then
-      printf '%s\nPackage: yad
+      printf \
+'%s\nPackage: yad
 Pin: origin ppa.launchpad.net
 Pin-Priority: 501' >> /etc/apt/preferences
     fi
   fi
 
   check_connection
-  apt-get remove --allow-remove-essential --purge yad -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
+  apt-get remove --allow-remove-essential --purge yad -y 2>&1 |
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'  |
+  zenity --progress --pulsate --width="400" --height="80" --window-icon="$_APPICON" \
+         --auto-close --no-cancel --title=" $_APPNAME" --text=" Removing yad..." 2>/dev/null                     
 fi
 
-apt-get update 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="80" --title="$_APPNAME - Updating cache" \
-                        --text="  Updating software sources. Please wait..." 2>/dev/null
+apt-get update 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="80" \
+       --title="$_APPNAME - Updating cache" --text="  Updating software sources. Please wait..." 2>/dev/null
 
-apt-get install yad apt-transport-https autoconf automake pkg-config git curl -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
-                 zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="60" --title="$_APPNAME - Installing requirements" \
-                        --text="⚫ Installing requirements..." 2>/dev/null
+apt-get install yad apt-transport-https autoconf automake pkg-config git curl -y 2>&1 |
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+  zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="60" \
+         --title="$_APPNAME - Installing requirements" --text="⚫ Installing requirements..." 2>/dev/null
 
 if [[ "$LLDENV" =~ "Lite 3" ]]; then
-  apt-get install lite-sources lite-updatesnotify -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' | zenity --progress --pulsate --window-icon="$_APPICON" \
-           --auto-close --no-cancel --width="400" --height="80" --title=" $_APPNAME" --text=" Reinstalling lite-sources lite-updatesnotify..." 2>/dev/null 
+  apt-get install lite-sources lite-updatesnotify -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
+  zenity --progress --pulsate --window-icon="$_APPICON" --width="400" --height="80" --title=" $_APPNAME" \
+         --auto-close --no-cancel --text=" Reinstalling lite-sources lite-updatesnotify..." 2>/dev/null 
 fi

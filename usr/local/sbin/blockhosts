@@ -1,10 +1,16 @@
 #!/bin/bash
-## With love from Ralphy - https://unlockforus.com
-
-#######################################################################################
-## SOURCES based on StevenBlack hosts list. See https://github.com/StevenBlack/hosts ##
-#######################################################################################
-
+#
+# Script name: blockhosts
+#
+# UnlockMe: Customize, tweak and clean your system
+# https://github.com/ralphys/unlockme/
+#
+# Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
+# Website - https://unlockforus.com
+#
+# Blacklisy sources based on StevenBlack hosts list. 
+# See https://github.com/StevenBlack/hosts 
+#
 # Expectation: These unified hosts files should serve all devices, regardless of OS.
 
 _APPNAME="Blacklist Generator"
@@ -12,9 +18,9 @@ dialog0="\n${_APPNAME} is running unprivileged
 \nYou won't be able to apply the resulting blacklist to
 the system; you'll be prompted to save it instead.\n"
 
-if [ $EUID -ne 0 ]; then
+if [[ $EUID != 0 ]]; then
 
-	yad --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders=8 --title="$_APPNAME" --text="$dialog0" --on-top \
+	yad --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders="8" --title="$_APPNAME" --text="$dialog0" --on-top \
 		--fixed --button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0 2>/dev/null
 	
 	case "$?" in
@@ -23,31 +29,31 @@ if [ $EUID -ne 0 ]; then
 		*) exit 0 ;;
 	esac
 else 
-	if [ -f "/etc/NetworkManager/dnsmasq.d/blacklist" ]; then
+	if [[ -f "/etc/NetworkManager/dnsmasq.d/blacklist" ]]; then
 		zenity --question --width="300" --height="120" --title="Active blacklist found" \
 			   --text="\nAn active blacklist is currently enable in the system. Would you like to remove it?" 2>/dev/null
 
-		if [[ "$?" -eq "0" ]]; then 
-			(
+		if [[ "$?" = "0" ]]; then 
+		
 			echo "# Removing active blacklist..." 
-			rm -f "/etc/NetworkManager/dnsmasq.d/blacklist" && sleep 2
+			rm -f "/etc/NetworkManager/dnsmasq.d/blacklist" ; sleep 2
 			echo "# Restarting Network Manager..." 
 			service network-manager restart ; sleep 3
-			echo "# Blacklist removed." && sleep 1 ) | yad --progress --pulsate --width=340 --height=110 --title="Progress Status" --text="" --center --no-buttons \
-														   --skip-taskbar --undecorated --no-cancel --percentage=0 --auto-close --auto-kill
-			exit 0
+			echo "# Blacklist removed." && sleep 1 
+												  
+			continue
 		fi
 	fi
 fi
 
 (
-TMPFILE="/tmp/blacklist.process" ## temporary blacklist file
-GENFILEB="/tmp/blacklist.custom" ## custom config
-[ ! -e "$GENFILEB" ] && touch "$GENFILEB"
-GENFILEW="/tmp/whitelist.custom" ## custom config
-[ ! -e "$GENFILEW" ] && touch "$GENFILEW"
+TMPFILE="/tmp/blacklist.process" 				# temporary blacklist file
+GENFILEB="/tmp/blacklist.custom" 				# custom config
+[[ ! -e "$GENFILEB" ]] && touch "$GENFILEB"
+GENFILEW="/tmp/whitelist.custom" 				# custom config
+[[ ! -e "$GENFILEW" ]] && touch "$GENFILEW"
 bgenfile="/tmp/blacklist.conf"
-[ -e "$bgenfile" ] && rm -f "$bgenfile"
+[[ -e "$bgenfile" ]] && rm -f "$bgenfile"
 
 clean_up() {
 	rm -f $TMPFILE $GENFILEB $GENFILEW $bgenfile
@@ -55,10 +61,16 @@ clean_up() {
 
 # function Save generated file 
 save_file() {
-	szSavePath=$(zenity --title=" Save Generated file" --width="550" --height="380" --file-selection --filename="$HOME/blacklist.conf" \
-                              --window-icon="$_ICON" --file-filter='*.conf' --file-filter='All files | *' --save --confirm-overwrite 2>/dev/null)
-    if [ "${PIPESTATUS}" -ne "0" ]; then clean_up; exit 0; fi
-    if [ "$?" -eq "0" ]; then mv "$bgenfile" "$szSavePath"; clean_up ; fi
+
+	szSavePath=$(zenity --file-selection --title=" Save Generated file" --width="550" --height="380" \
+						--filename="${HOME}/blacklist.conf" --window-icon="$_ICON" --file-filter='*.conf' \
+                        --file-filter='All files | *' --save --confirm-overwrite 2>/dev/null)
+    if [[ "${PIPESTATUS}" != "0" ]]; then 
+    	clean_up; exit 0
+    fi
+    if [[ "$?" = "0" ]]; then
+    	mv "$bgenfile" "$szSavePath"; clean_up
+    fi
 }
 
 gen_blacklist() {
@@ -69,9 +81,11 @@ echo "# Processing sources..." ; sleep .5
 SOURCES=""
 SOURCES="$@"
 
-# Blacklist additional sites (add inside quotes, space-separated)
-BLACKLIST="$(cat $GENFILEB)"
-WHITELIST="$(cat $GENFILEW)"
+# Blacklist additional sites
+BLACKLIST="$(< $GENFILEB)"
+
+# Whitelist additional sites
+WHITELIST="$(< $GENFILEW)"
 
 echo "20"
 echo "# Starting Source lists download..." ; sleep 1
@@ -83,8 +97,9 @@ done
 echo "30"
 echo "# Downloading selected Source lists..."
 echo -n "" > "$TMPFILE"
-for s in $SOURCES; do
-{ (wget $s -O - || logger "Failed: $s") | tr -d "\r" | sed -e '/^[[:alnum:]:]/!d' | awk '{print $2}' | sed -e '/^localhost$/d' >> $TMPFILE
+
+for s in ${SOURCES}; do
+	{ (wget $s -O - || logger "Failed: $s") | tr -d "\r" | sed -e '/^[[:alnum:]:]/!d' | awk '{print $2}' | sed -e '/^localhost$/d' >> $TMPFILE
 } & done
 
 wait
@@ -94,39 +109,41 @@ sleep 3
 echo "40"
 echo "# Verifying download..." ; sleep .5
 
-if [ -s "$TMPFILE" ]; then sleep 1
+if [[ -s "$TMPFILE" ]]; then sleep 1
 	echo "50"
 	echo "# Success: Download completed" ; sleep .7
 else
 	echo " Failed: Download unsuccessful, aborting... :("
-	rm -f $TMPFILE $GENFILEB $GENFILEW > /dev/null
+	rm -f "$TMPFILE" "$GENFILEB" "$GENFILEW" > /dev/null
 	exit 1
 fi
 
 echo "60"
 echo "# Generating blacklist.conf file...." ; sleep .7
 
-for b in $BLACKLIST; do
-	echo "$b" >> $TMPFILE
+for b in ${BLACKLIST}; do
+	echo "$b" >> "$TMPFILE"
 done
+
 echo "70"
 echo "# Adding custom blacklist records... done" ; sleep .5
 
-for w in $WHITELIST; do
-	sed -i -e "/$w/d" $TMPFILE
+for w in ${WHITELIST}; do
+	sed -i -e "/$w/d" "$TMPFILE"
 done
+
 echo "80"
 echo "# Adding custom whitelist records... done" ; sleep .5
 
-sed -i -e "/0\.0\.0\.0/d" $TMPFILE
-
+sed -i -e "/0\.0\.0\.0/d" "$TMPFILE"
 
 # unbound formatting 
 if [[ "$_DNSSERV" == "UNBOUND" ]]; then
 	echo "85"
 	echo "# Configuring records for unbound..."
-	sort -u $TMPFILE -o $TMPFILE
-	cat $TMPFILE | awk '{print "local-zone: \""$1"\" redirect\nlocal-data: \""$1" A 0.0.0.0\""}' > "$bgenfile" ; sleep 2
+	sort -u "$TMPFILE" -o "$TMPFILE"
+
+	cat "$TMPFILE" | awk '{print "local-zone: \""$1"\" redirect\nlocal-data: \""$1" A 0.0.0.0\""}' > "$bgenfile" ; sleep 2
 fi
 
 # dnsmasq formatting
@@ -134,8 +151,9 @@ if [[ "$_DNSSERV" == "DNSMASQ" ]]; then
 	echo "85"
 	echo "# Configuring records for dnsmasq..." 
 
-sort -u $TMPFILE -o $TMPFILE
-cat $TMPFILE | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile" ; sleep 2
+	sort -u "$TMPFILE" -o "$TMPFILE"
+
+	cat "$TMPFILE" | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile" ; sleep 2
 
 	# clean list errors in domain names - e.g.: domain..net instead of domain.net
 		echo "90"
@@ -152,9 +170,10 @@ cat $TMPFILE | awk '{print "address=/"$0"/0.0.0.0/"}' > "$bgenfile" ; sleep 2
 		echo "98"
 		grep -q -Fx 'address=/.com/0.0.0.0/' "$bgenfile" && sed -i '/address=\/\.com\/\0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
 		no_tld=$(rev $bgenfile | cut -c9- | rev | cut -d\= -f2 | sed -n '/\./!p')
-		for incomplete in $no_tld; do
-			echo "# Incompleted TLD ${incomplete}..." && sleep .5
-			sed -i "$incomplete"'d' "$bgenfile"
+		
+		for tld in ${no_tld}; do
+			echo "# Cleaning wrong TLD record ${tld}..." ; sleep .5
+			sed -i "$tld"'d' "$bgenfile"
 		done
 fi
 
@@ -165,10 +184,11 @@ fail_dialog="<b> Don't panic</b>. Your internet connectivity failed after applyi
 This is usually caused by errors in one or more additional lists that $_APPNAME could not properly sanitize.\n
 All changes will be reverted. Please try again selecting fewer additional lists."
  
-if [[ "$_DNSSERV" == "UNBOUND" ]] || [ $EUID -ne 0 ] && [[ "$_DNSSERV" == "DNSMASQ" ]]; then save_file
+if [[ "$_DNSSERV" == "UNBOUND" ]] || [[ "$EUID" != 0 && "$_DNSSERV" == "DNSMASQ" ]]; then
+	save_file
 else
 	cp "$bgenfile" /etc/NetworkManager/dnsmasq.d/blacklist ; clean_up
-	echo "# Adding blacklist to the system..." && sleep 1
+	echo "# Adding blacklist to the system..." ; sleep 1
 	echo "# Restarting Network Manager..." 
 	service network-manager stop && service network-manager start ; sleep 2
 
@@ -181,18 +201,18 @@ else
     if (( $COUNT == "3" )); then
     	echo "# Internet not reachable..."
     	zenity --error --width="340" --height="160" --title="Oppss, something went wrong" --text="$fail_dialog" 2>/dev/null
-    		(
+ 
 			echo "# Removing active blacklist..." 
-			rm -f "/etc/NetworkManager/dnsmasq.d/blacklist" && sleep 2
+			rm -f "/etc/NetworkManager/dnsmasq.d/blacklist" ; sleep 2
 			echo "# Restarting Network Manager..." 
 			service network-manager stop && service network-manager start ; sleep 3
-			echo "# Blacklist removed." && sleep 1 ) | yad --progress --pulsate --width=380 --height=110 --title="Progress Status" --text="" --center --no-buttons \
-														   --skip-taskbar --undecorated --no-cancel --percentage=0 --auto-close --auto-kill 2>/dev/null
+			echo "# Blacklist removed." ; sleep 1 
+												 
         exit 1
     fi
 	done
 
-	echo "# Blacklist applied." && sleep 2
+	echo "# Blacklist applied." ; sleep 2
 fi
 echo "100"
 }
@@ -245,7 +265,7 @@ _dialog2="\n<span font='12'>  Additional Hosts List\n</span>
   <span font='9'>⚫ Multiple lists can be selected</span>"
 
 echo "5"
-echo "# Selecting Unified blacklist sources..." && sleep .2
+echo "# Selecting Unified blacklist sources..." ; sleep .2
 
 ans=$(yad --list --radiolist --width="580" --height="580" --title=" $_APPNAME" --text="$_dialog" --window-icon="$_RUN_ICON" \
 		  --image="$_wlimage" --image-on-top --separator=" " --wrap --borders="8" --button="gtk-cancel":1 --button="Next":0 \
@@ -266,7 +286,8 @@ ans=$(yad --list --radiolist --width="580" --height="580" --title=" $_APPNAME" -
 	FALSE "$unified_fakenews_porn_social" "  Unified hosts + Fakenews + Porn + Social" \
 	FALSE "$unified_gambling_porn_social" "  Unified hosts + Gambling + Porn + Social" \
 	FALSE "$unified_fakenews_gambling_porn_social" "  Unified hosts + fakenews + gambling + porn + social" 2>/dev/null)
-if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
+
+if [[ "${PIPESTATUS}" != "0" ]]; then clean_up ; exit 0 ; fi
 
 # Additional hosts based on StevenBlack hosts list. See https://github.com/StevenBlack/hosts
 # additional hosts variables
@@ -289,7 +310,7 @@ ans2=$(yad --list --checklist --width="600" --height="300" --title=" $_APPNAME" 
 			FALSE "$add12" "Steven Black's ad-hoc " "Additional sketchy domains by StevenBlack @github" \
 			FALSE "$add13" "tyzbit" "Microsoft tracking domains by tyzbit @github" 2>/dev/null)
 
-if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
+if [[ "${PIPESTATUS}" != "0" ]]; then clean_up ; exit 0 ; fi
 
 # Whitelist domains manually
 echo "15"
@@ -302,7 +323,8 @@ isn't blocked.\n\n
 
 szwhite=$(yad --entry --image="$_wlimage" --button="gtk-cancel:1" --button="Next":0 --title=" Whitelist Domains" --wrap \
 			  --text="$_dialog3" --entry-text="" --width="540" --height="300" --borders="8" --center --window-icon="$_RUN_ICON" 2>/dev/null)
-	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0 ; fi
+	
+	if [[ "${PIPESTATUS}" != "0" ]]; then clean_up ; exit 0 ; fi
 	echo "$szwhite" > "$GENFILEW"
 
 echo "20"
@@ -314,7 +336,8 @@ but you also want to block yahoo.com and youtube.com by adding them here.\n\n
 
 szblack=$(yad --entry --image="/usr/share/unlockme/icons/ui/blacklist90.png" --button="gtk-cancel:1" --button="Next":0 --title=" Blacklist Domains" \
 			  --text="$_dialog4" --entry-text="" --width="540" --height="300" --borders="8" --center --window-icon="$_RUN_ICON" --wrap 2>/dev/null)
-	if [ "${PIPESTATUS}" -ne "0" ]; then clean_up ; exit 0; fi
+	
+	if [[ "${PIPESTATUS}" != "0" ]]; then clean_up ; exit 0; fi
 	echo "$szblack" > "$GENFILEB"
 
 # Begin blacklist processing
