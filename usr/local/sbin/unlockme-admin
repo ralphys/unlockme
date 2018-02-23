@@ -133,6 +133,7 @@ ADMRUN="$@"
   if [[ $(grep "BYPASSPSWADMPKEXEC" <<< "$ADMRUN") ]]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
   if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
   if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
+  if [[ $(grep "IPV6" <<< "$ADMRUN") ]]; then ARRAYC+=('IPV6'); fi
   if [[ $(grep "LOGARCHIVES" <<< "$ADMRUN") ]]; then ARRAYC+=('LOGARCHIVES'); fi
   if [[ $(grep "PACKAGECACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('PACKAGECACHE'); fi
   if [[ $(grep "THEMING" <<< "$ADMRUN") ]]; then ARRAYC+=('THEMING'); fi

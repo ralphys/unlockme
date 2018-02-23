@@ -667,8 +667,8 @@ else _mgmtsavesession=()
 fi
 
 # Check Autoremove packages
-if [[ -f "$_DRYAPT" ]] && [[ "$(< "$_DRYAPT" | head -n+1)" -gt 0 ]]; then
-     _DRYAPTVAL=$(< "$_DRYAPT" | head -n+1)
+if [[ -f "$_DRYAPT" ]] && [[ "$(head -n+1 < "$_DRYAPT")" -gt 0 ]]; then
+     _DRYAPTVAL=$(head -n+1 < "$_DRYAPT")
      _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
 else _autoremove=()
 fi

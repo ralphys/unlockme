@@ -2,7 +2,7 @@
 _DATE=$(date "+%Y-%m-%d %H")
 _DRYFILE="${HOME}/.local/share/.dryapt"
 dryapt=$(apt-get -s autoremove | grep -Po '^Remv \K[^ ]+' | awk '{print $0}' | wc -w)
-eval "${dryapt}" &>/dev/null &disown
-echo "${dryapt}" > "$_DRYFILE"
+eval "$dryapt" &>/dev/null &disown
+echo "$dryapt" > "$_DRYFILE"
 echo  "$_DATE" >> "$_DRYFILE" 
 exit 0
