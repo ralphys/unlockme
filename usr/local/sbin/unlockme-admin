@@ -464,7 +464,7 @@ fi
 if [[ "$execute" = "2" ]]; then 
 
   echo "# Flushing DNS cache..."
-  if [[ -n  "$(dpkg -l | grep '\snscd\s')" ]]; then
+  if [[ -n  "$(dpkg -l | grep -E '^ii' | grep '\snscd\s')" ]]; then
     /etc/init.d/nscd restart ; sleep 3
   else
     service network-manager restart ; sleep 3
@@ -776,7 +776,7 @@ while (true); do
 echo "#⚫ Configuring ${_FNAME}..."
 
 # check if preload is installed
-if [[ -z "$(dpkg -l | grep -F 'preload')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -F 'preload')" ]]; then
 
   # if not installed, then prompt user for installation
   zenity --question --width="340" --height="80" --title=" $APPNAME" \
@@ -1029,7 +1029,7 @@ while (true); do
 echo "#⚫ Configuring ${_FNAME}..."
 
 # check if zram is installed
-if [[ -z  "$(dpkg -l | grep 'zram-config')" ]]; then
+if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'zram-config')" ]]; then
   
   # if not installed, prompt user for installation
   zenity --question --width="340" --height="80" --title=" $APPNAME" \

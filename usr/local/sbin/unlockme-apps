@@ -205,7 +205,7 @@ CAJA-DROPBOX() {
 # variables
 _FNAME="caja-dropbox"
 
-if [[ -z "$(dpkg -l | grep 'caja-dropbox\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'caja-dropbox\s\s')" ]]; then
   echo "# Downloading & installing caja-dropbox..." ; check_online 
 
   apt-get install caja-dropbox -y | show_progress ; check_inst
@@ -224,7 +224,7 @@ CATFISH() {
 _FNAME="Catfish"
 
 # if not installed, install it
-if [[ -z "$(dpkg -l | grep '\scatfish\s\s')" ]]; then check_online
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\scatfish\s\s')" ]]; then check_online
 
   # install catfish
   echo "# Downloading & installing ${_FNAME}..." ; sleep 1
@@ -249,7 +249,7 @@ CLEMENTINE() {
 _FNAME="Clementine"
 
 # if not installed, install it
-if [[ -z "$(dpkg -l | grep '\sclementine\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\sclementine\s\s')" ]]; then
   echo "# Downloading & installing ${_FNAME}..." ; check_online
   apt-get install clementine -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -272,7 +272,7 @@ _FNAME="Google Chrome"
 _GCPKG="/tmp/google-chrome-stable_current_amd64.deb"
 _SOURCELIST="/etc/apt/sources.list.d/google-chrome.list"
 
-if [[ -z "$(dpkg -l | grep 'google-chrome-stable\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'google-chrome-stable\s')" ]]; then
   # check internet connection
   echo "#⚫ Querying Google servers..." ; sleep 1 ; check_online 
 
@@ -318,7 +318,7 @@ CHROMIUMWB() {
 # variables
 _FNAME="Chromium"
 
-if [[ -z "$(dpkg -l | grep '\schromium-browser\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\schromium-browser\s\s')" ]]; then
 
   # check internet connection
   echo "#⚫ Downloading & installing ${_FNAME}..." ; sleep 1; check_online
@@ -354,7 +354,7 @@ CONKYMGR() {
 _FNAME="Conky Manager"
 _SOURCELIST="/etc/apt/sources.list.d/teejee2008*.list"
 
-if [[ -z "$(dpkg -l | grep '\sconky-manager\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\sconky-manager\s\s')" ]]; then
   # check internet connection
   echo "#⚫ Downloading ${_FNAME}..." & sleep 1 ; check_online
 
@@ -416,7 +416,7 @@ DCONF() {
 # variables
 _FNAME="dconf Editor"
 
-if [[ -z "$(dpkg -l | grep 'dconf-editor\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'dconf-editor\s\s')" ]]; then
   echo "#⚫ Downloading & installing ${_FNAME}..."; check_online
   apt-get install dconf-editor dconf-cli -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -848,7 +848,7 @@ FILEZILLA() {
 # variables
 _FNAME="Filezilla"
 
-if [[ -z "$(dpkg -l | grep 'filezilla\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'filezilla\s\s')" ]]; then
   echo "#⚫ Downloading & installing ${_FNAME}..."; check_online 
   apt-get install filezilla -y | show_progress ; check_inst
 
@@ -879,7 +879,7 @@ FIREFOXWB() {
 # variables
 _FNAME="Firefox"
 
-if [[ -z "$(dpkg -l | grep 'firefox\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'firefox\s\s')" ]]; then
   echo "#⚫ Downloading & installing ${_FNAME}..." ; check_online
   apt-get install firefox -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -944,7 +944,7 @@ HARDINFO() {
 # variables
 _FNAME="Hardinfo"
 
-if [[ -z "$(dpkg -l | grep 'hardinfo\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'hardinfo\s\s')" ]]; then
   echo "# Downloading & Installing ${_FNAME}..." ; check_online
 
   apt-get install hardinfo -y | show_progress ; check_inst
@@ -968,7 +968,7 @@ MIDORIWB() {
 # variables
 _FNAME="Midori"
 
-if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'midori\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'midori\s')" ]]; then
   echo "#⚫ Downloading & Installing ${_FNAME}..." ; sleep 1 ; check_online
 
   apt-get install midori -y | show_progress ; check_inst
@@ -991,7 +991,7 @@ fi
 }
 
 NEMO-COMPARE() {
-if [[ -z "$(dpkg -l | grep 'nemo-compare\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-compare\s\s')" ]]; then
   echo "# Downloading & Installing nemo-compare..." ; check_online
 
   apt-get install nemo-compare -y | show_progress ; check_inst
@@ -1004,7 +1004,7 @@ fi
 }
 
 NEMO-DROPBOX() {
-if [[ -z "$(dpkg -l | grep 'nemo-dropbox\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-dropbox\s\s')" ]]; then
   echo "# Downloading & Installing nemo-dropbox..." ; check_online
   apt-get install nemo-dropbox -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -1016,7 +1016,7 @@ fi
 }
 
 NEXTCLOUDCL() {
-if [[ -z "$(dpkg -l | grep 'nextcloud-client\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nextcloud-client\s\s')" ]]; then
   echo "# Downloading Nextcloud Client..." ; check_online
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep nextcloud-devs)" ]]; then
       echo "#⚫ Adding PPA..." ; sleep 1
@@ -1050,7 +1050,7 @@ _RM_DUPLICATE="operacdn.com"
   }
 
 # if opera-stable is not installed; install it
-if [[ -z "$(dpkg -l | grep 'opera-stable\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s\s')" ]]; then
   echo "#⚫ Downloading & Installing ${_FNAME}..." ; sleep 1 ; check_online
 
     # if repo and keys are not installed; install them
@@ -1155,7 +1155,7 @@ fi
 }
 
 SCREENFETCH() {
-if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'screenfetch\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'screenfetch\s')" ]]; then
   echo "#⚫ Downloading & Installing screenfetch..." ; sleep 1 ; check_online
   apt-get install screenfetch -y
   echo "#✔ Installation completed." ; sleep 1
@@ -1238,7 +1238,7 @@ _FNAME="Skype"
 skpkg="/tmp/skypeforlinux-64.deb"
 _DLURL="https://repo.skype.com/latest/skypeforlinux-64.deb"
 
-if [[ -z "$(dpkg -l | grep 'skypeforlinux\s\s')" ]]; then check_online
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'skypeforlinux\s\s')" ]]; then check_online
   echo "#⚫ Downloading ${_FNAME}..." 
   cd /tmp ; /usr/local/sbin/get_download "$_DLURL"
 
@@ -1259,7 +1259,7 @@ fi
 }
 
 SUBLIMEAPP() {
-if [[ -z "$(dpkg -l | grep 'sublime-text\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]]; then
   echo "#⚫ Downloading & Installing Sublime Text..." ; sleep 1 ; check_online
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep sublime-text)" ]]; then
       echo "#⚫ Adding PPA..."
@@ -1291,7 +1291,7 @@ fi
 }
 
 THUNAR-DROPBOX() {
-if [[ -z "$(dpkg -l | grep 'thunar-dropbox-plugin')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'thunar-dropbox-plugin')" ]]; then
   echo "# Downloading & Installing thunar-dropbox..."; sleep 1 ; check_online
   apt-get install thunar-dropbox-plugin -y | show_progress
   echo "#✔ Installation completed." ; sleep 1
@@ -1313,7 +1313,7 @@ _SOURCELISTUB="/etc/apt/sources.list"
 _RM_DUPLICATE="vivaldi.com"
 
 # if vivaldi-stable is not installed; install it
-if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'vivaldi-stable\s')" ]]; then
   echo "#⚫ Downloading & installing ${_FNAME}..." ; sleep 1 ; check_online
 
     # if repo and keys are not installed; install them
@@ -1378,7 +1378,7 @@ _WFVERFL="/tmp/waterfox-project.txt"
 _WFDIR="/usr/lib/waterfox"
 
 # if package has been installed, remove it
-if [[ -n "$(dpkg -l | grep -E '^ii' | grep '\swaterfox\s\s')" ]]; then
+if [[ -n "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep '\swaterfox\s\s')" ]]; then
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge waterfox -y | show_progress ; check_download 
   continue
@@ -1466,7 +1466,7 @@ fi
 # App Data Compressors - install / remove
 ZIPPERS() {
 
-if [[ -z "$(dpkg -l | grep '\(p7zip-rar\s\|p7zip-full\s\|\sunace\s\|\sunrar\s\)')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\(p7zip-rar\s\|p7zip-full\s\|\sunace\s\|\sunrar\s\)')" ]]; then
   echo "#⚫ Downloading & Installing data compressors..." ; sleep 1 ; check_online 
   apt-get install p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -1494,8 +1494,10 @@ _APPICONS="/usr/share/unlockme/icons/software"
 RUN() {
 
   printf '%s \n' "${selection[@]}"|
-  while read  line; do            # Execute functions one at a time
-    "$line" 2>/dev/null   
+  while read  line; do  
+
+    opt_procedure="break" ; check_running_package_manager    # check if package manager is running    
+    "$line" 2>/dev/null                                         # Execute functions one at a time
     if [[ "$?" = "1" ]]; then
       zenity --error --width="260" --title="UnlockMe" --text="An error occurred while executing:\n\n ${line}" 2>/dev/null
       exit 1

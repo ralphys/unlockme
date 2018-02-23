@@ -39,9 +39,9 @@ LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # check requirements
-if [[ -z  "$(dpkg -l | grep '\syad\s')" ]] || 
-   [[ -z  "$(dpkg -l | grep '\sgit\s')" ]] || 
-   [[ -z  "$(dpkg -l | grep '\sapt-transport-https\s')" ]]; then
+if [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\syad\s')" ]] || 
+   [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\sgit\s')" ]] || 
+   [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\sapt-transport-https\s')" ]]; then
 
    zenity --question --icon-name="info" --window-icon="info" --width=340 --height=120 \
           --ok-label="Proceed" --cancel-label="Cancel" --title=" Requirements Install" \
@@ -553,7 +553,7 @@ It already favors and makes use of the kernel page cache. \
   if grep -q 'SYSSWAP' <<< "${selection[${i}]}"; then
     
       # if preload is installed display info
-      if [[ -n "$(dpkg -l | grep -F '\spreload\s')" ]]; then
+      if [[ -n "$(dpkg -l | grep -E '^ii' | grep -F '\spreload\s')" ]]; then
 
       # remove
       REMOVE="SYSSWAP"
@@ -720,7 +720,7 @@ fi
 
 # check for dropbox Cinnamon Fix
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
-  if [[ -z "$(dpkg -l | grep '\s\sdropbox\s')" ]]; then _fixdpcin=()
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\s\sdropbox\s')" ]]; then _fixdpcin=()
   else 
     if [[ ! -f "/home/$_SOFTUSR/.local/share/.fixdbcin" ]]; then
       _fixdpcin=(FALSE "FIXDBCIN" "Dropbox Startup Fix" "Repair" "User" "Fix Dropbox Autostart in Cinnamon")
@@ -855,7 +855,7 @@ else _packagecache=()
 fi
 
 # Check if preload is installed
-if [[ -z "$(dpkg -l | grep '\spreload\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\spreload\s')" ]]; then
   if [[ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
    else
