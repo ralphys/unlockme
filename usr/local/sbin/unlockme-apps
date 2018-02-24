@@ -1580,8 +1580,8 @@ fi
 # check for chrome web browser app
 if [[ "$ARCH" = "x86_64" ]]; then
   if [[ -z "$(grep -F ' google-chrome-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
-       _chromewb=(False "$_APPICONS/google-chrome.png" "GOOGLECHROMEWB" "Google Chrome" "Web Browser" "No" "A fast, secure, and free web browser, built for the modern web")
-  else _chromewb=(False "$_APPICONS/google-chrome.png" "GOOGLECHROMEWB" "Google Chrome" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A fast, secure, and free web browser, built for the modern web")
+       _chromewb=(False "$_APPICONS/google-chrome.png" "CHROMEWB" "Google Chrome" "Web Browser" "No" "A fast, secure, and free web browser, built for the modern web")
+  else _chromewb=(False "$_APPICONS/google-chrome.png" "CHROMEWB" "Google Chrome" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A fast, secure, and free web browser, built for the modern web")
   fi
 else _chromewb=()
 fi
