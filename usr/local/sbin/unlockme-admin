@@ -822,7 +822,7 @@ fi
 # preload Main dialog
 echo "# Configuring $_FNAME..."
 PRLOAD=$(NO_AT_BRIDGE=1 yad --width="365" --height="150" --text-align="center" --text="$BTXT" --fixed \
-                            --button=" Uninstall":2 --button="gtk-close:1" --button="$YBTN"\!gtk-apply:0 \
+                            --button=" Uninstall"\!gtk-remove:2 --button="gtk-close:1" --button="$YBTN"\!gtk-apply:0 \
                             --window-icon="$RUN_ICON" --title="$APPNAME" ; echo $?)
 case $PRLOAD in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
@@ -1074,7 +1074,7 @@ fi
 
 # zRAM Main dialog
 sZRAM=$(NO_AT_BRIDGE=1 yad --width="365" --fixed --height="150" --window-icon="$RUN_ICON" --title="$APPNAME" \
-                           --button=" Uninstall":2 --button="gtk-close:1" --button="$YBTN"\!gtk-apply:0 \
+                           --button=" Uninstall"\!gtk-remove:2 --button="gtk-close:1" --button="$YBTN"\!gtk-apply:0 \
                            --text-align="center" --text="$BTXT" ; echo $?)
   case $sZRAM in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop

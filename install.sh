@@ -46,7 +46,7 @@ function install_unlockme () {
 		quiet_git clone https://github.com/ralphys/unlockme && cd unlockme && echo -e "✔ done!\n"
 	fi
 	echo -e "⚫ Installing unlockme..." && sleep .5
-		cp -R usr / && echo -e "✔ done!\n"
+		cp -rf usr / && echo -e "✔ done!\n"
 	echo -e "⚫ Setting files and folders permissions..." && sleep .5
 		find /usr/share/unlockme -type d -print0 | xargs -0 chmod 755
 		find /usr/share/unlockme -type f -print0 | xargs -0 chmod 644
