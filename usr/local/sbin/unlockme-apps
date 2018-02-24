@@ -767,7 +767,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\(\sdropbox\s\|nautilus-dropbox\)')"
       done
 
     # update sources after installing PPA and key
-    echo "#⚫ Updating the cache..." && update_sources
+    echo "#⚫ Updating the cache..." ; update_sources
 
     # install dropbox & python-gpgme
     echo "# Downloading & installing ${_FNAME}..." ; check_online ; apt-get install dropbox python-gpgme -y | show_progress ; check_inst
@@ -910,7 +910,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'geary\s')" ]]; then
       echo "#⚫ Adding PPA..." ; sleep 1
       add-apt-repository ppa:geary-team/releases -y 
 
-      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Updating the cache..." ; update_sources
       echo "#⚫ Installing ${_FNAME}..." ; sleep 1
       apt-get install geary -y | show_progress ; check_inst
     else
@@ -935,6 +935,20 @@ else
   for i in ${_ALLUSERS}; do
     rm -f /home/${i}/Desktop/geary.desktop
   done 
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+}
+
+GTHUMBAPP() {
+
+_FNAME="gThumb"
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'gthumb\s')" ]]; then
+  echo "#⚫ Downloading & Installing ${_FNAME}..." ; sleep 1 ; check_online
+  apt-get install gthumb -y | show_progress ; check_inst
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge gthumb -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -1062,7 +1076,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'opera-stable\s\s')" ]]; then
       wget -qO- https://deb.operacdn.com/archive.key | sudo apt-key add -
 
       # update sources after installing PPA and key
-      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Updating the cache..." ; update_sources
 
       # install opera browser
       echo "#⚫ Installing ${_FNAME}..." ; sleep 1 
@@ -1155,13 +1169,16 @@ fi
 }
 
 SCREENFETCH() {
-if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'screenfetch\s')" ]]; then
-  echo "#⚫ Downloading & Installing screenfetch..." ; sleep 1 ; check_online
-  apt-get install screenfetch -y
+
+_FNAME="Screenfetch"
+
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'screenfetch\s')" ]]; then
+  echo "#⚫ Downloading & Installing ${_FNAME}..." ; sleep 1 ; check_online
+  apt-get install screenfetch -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling screenfetch..." ; sleep 1
-  apt-get remove screenfetch -y
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge screenfetch -y | show_progress ; check_remv
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -1258,6 +1275,20 @@ else
 fi
 }
 
+SPOTIFYAPP() {
+
+_FNAME="Spotify"
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'spotify-client\s')" ]]; then
+  echo "#⚫ Downloading & Installing ${_FNAME}..." ; sleep 1 ; check_online
+  apt-get install spotify-client -y | show_progress ; check_inst
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge spotify-client -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+}
+
 SUBLIMEAPP() {
 if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]]; then
   echo "#⚫ Downloading & Installing Sublime Text..." ; sleep 1 ; check_online
@@ -1266,7 +1297,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'sublime-text\s')" ]]; then
       wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | apt-key add -
 
       echo "deb https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list
-      echo "#⚫ Updating the cache..." && update_sources
+      echo "#⚫ Updating the cache..." ; update_sources
       echo "#⚫ Installing Sublime Text..." ; sleep 1
       apt-get install sublime-text -y | show_progress
     else
@@ -1313,7 +1344,7 @@ _SOURCELISTUB="/etc/apt/sources.list"
 _RM_DUPLICATE="vivaldi.com"
 
 # if vivaldi-stable is not installed; install it
-if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'vivaldi-stable\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'vivaldi-stable\s')" ]]; then
   echo "#⚫ Downloading & installing ${_FNAME}..." ; sleep 1 ; check_online
 
     # if repo and keys are not installed; install them
@@ -1325,7 +1356,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'vivaldi-stable\s')" 
       wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key add -
 
       # update sources after installing PPA and key
-      echo "#⚫ Updating the cache..." & update_sources
+      echo "#⚫ Updating the cache..." ; update_sources
 
       # install vivaldi browser
       echo "#⚫ Installing ${_FNAME}..." ; sleep 1
@@ -1343,7 +1374,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep -E '^ii' | grep 'vivaldi-stable\s')" 
 # remove vivaldi browser
 else
   echo "#⚫ Terminating any ${_FNAME} instances..."
-  if [[ ! -z "$(pgrep vivaldi-bin)" ]]; then killall -9 vivaldi-bin; fi ; sleep 2
+  if [[ -n "$(pgrep vivaldi-bin)" ]]; then killall -9 vivaldi-bin; fi ; sleep 2
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge vivaldi-stable -y | show_progress ; check_remv
 
@@ -1609,6 +1640,14 @@ if [[ -z "$(grep -F ' geary ' <<< ${DPKGCHECKS[@]})" ]]; then
 else _geary=(False "$_APPICONS/evolution.png" "GEARY" "Geary" "Email client" "<span foreground='green'>Select to Remove</span>" "Find, read and send email with a straightforward, modern interface")
 fi
 
+# check for gthumb
+if [[ -z "$(grep -F ' gthumb ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "No" "Image viewer and organizer with options to edit images with a simple interface")
+else _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "<span foreground='green'>Select to Remove</span>" "Image viewer and organizer with options to edit images with a simple interface")
+fi
+
+
+
 # check for hardinfo
 if [[ -z "$(grep -F ' hardinfo ' <<< ${DPKGCHECKS[@]})" ]]; then
      _hardinfo=(False "$_APPICONS/hardinfo.png" "HARDINFO" "Hardinfo" "Utility" "No" "System information and benchmark tool")
@@ -1680,6 +1719,12 @@ if [[ "$ARCH" = "x86_64" ]]; then
   else _skypems=(False "$_APPICONS/skype.png" "SKYPEMS" "Skype" "Chat" "<span foreground='green'>Select to Remove</span>" "Instant messaging App. Text message and video chat services")
   fi
 else  _skypems=()
+fi
+
+# check for spotify
+if [[ -z "$(grep -F ' spotify-client ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _spotifyapp=(False "$_APPICONS/spotify.png" "SPOTIFYAPP" "Spotify" "Multimedia" "No" "Music, podcast, and video streaming service")
+else _spotifyapp=(False "$_APPICONS/spotify.png" "SPOTIFYAPP" "Spotify" "Multimedia" "<span foreground='green'>Select to Remove</span>" "Music, podcast, and video streaming service")
 fi
 
 # check for sublime-text
@@ -1765,6 +1810,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_filezilla[@]}" \
 "${_firefoxwb[@]}" \
 "${_geary[@]}" \
+"${_gthumbapp[@]}" \
 "${_hardinfo[@]}" \
 "${_midoriwb[@]}" \
 "${_nemocompare[@]}" \
@@ -1775,6 +1821,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_screenfetch[@]}" \
 "${_seamonkeywb[@]}" \
 "${_skypems[@]}" \
+"${_spotifyapp[@]}" \
 "${_sublimeapp[@]}" \
 "${_thunardropbox[@]}" \
 "${_vivaldiwb[@]}" \
