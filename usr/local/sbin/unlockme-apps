@@ -977,6 +977,32 @@ else
 fi
 }
 
+KEEPASSXCAPP() {
+
+_FNAME="KeePassXC"
+
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'keepassxc\s\s')" ]]; then
+  echo "# ${_FNAME}..." ; check_online
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep keepassxc)" ]]; then
+      echo "#⚫ Adding PPA..." ; sleep 1
+      add-apt-repository ppa:phoerious/keepassxc -y ; update_sources
+    fi
+    echo "#⚫ Installing ${_FNAME}..."
+    apt-get install keepassxc -y | show_progress ; check_inst
+    echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Terminating any ${_FNAME} instances..."
+  if [[ -n "$(pgrep keepassxc)" ]]; then killall -9 keepassxc; fi ; sleep 2
+    
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge keepassxc -y | show_progress ; check_remv
+
+  echo "#⚫ Removing PPA..." ; sleep 1
+  apt-add-repository --remove ppa:phoerious/keepassxc
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi  
+}
+
 MIDORIWB() {
 
 # variables
@@ -1665,16 +1691,20 @@ fi
 
 # check for gthumb
 if [[ -z "$(grep -F ' gthumb ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "No" "Image viewer and organizer with options to edit images with a simple interface")
-else _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "<span foreground='green'>Select to Remove</span>" "Image viewer and organizer with options to edit images with a simple interface")
+     _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "No" "Image viewer/organizer that can edit images; all in a simple interface")
+else _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organizer" "<span foreground='green'>Select to Remove</span>" "Image viewer/organizer that can edit images; all in a simple interface")
 fi
-
-
 
 # check for hardinfo
 if [[ -z "$(grep -F ' hardinfo ' <<< ${DPKGCHECKS[@]})" ]]; then
      _hardinfo=(False "$_APPICONS/hardinfo.png" "HARDINFO" "Hardinfo" "Utility" "No" "System information and benchmark tool")
 else _hardinfo=(False "$_APPICONS/hardinfo.png" "HARDINFO" "Hardinfo" "Utility" "<span foreground='green'>Select to Remove</span>" "System information and benchmark tool")
+fi
+
+# check for keepassxc
+if [[ -z "$(grep -F ' keepassxc ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "No" "Community driven and fully cross-platform modern password manager")
+else _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "<span foreground='green'>Select to Remove</span>" "Community driven and fully cross-platform modern password manager")
 fi
 
 # check for midori browser
@@ -1841,6 +1871,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_geary[@]}" \
 "${_gthumbapp[@]}" \
 "${_hardinfo[@]}" \
+"${_keepassxcapp[@]}" \
 "${_midoriwb[@]}" \
 "${_neofetchapp[@]}" \
 "${_nemocompare[@]}" \
