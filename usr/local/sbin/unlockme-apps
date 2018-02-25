@@ -1004,6 +1004,29 @@ else
 fi
 }
 
+NEOFETCHAPP() {
+
+_FNAME="neofetch"
+
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'neofetch\s\s')" ]]; then
+  echo "# ${_FNAME}..." ; check_online
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep neofetch)" ]]; then
+      echo "#⚫ Adding PPA..." ; sleep 1
+      add-apt-repository ppa:dawidd0811/neofetch -y ; update_sources
+    fi
+    echo "#⚫ Installing ${_FNAME}..."
+    apt-get install neofetch -y | show_progress ; check_inst
+    echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge neofetch -y | show_progress ; check_remv
+
+  echo "#⚫ Removing PPA..." ; sleep 1
+  apt-add-repository --remove ppa:dawidd0811/neofetch
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi  
+}
+
 NEMO-COMPARE() {
 if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nemo-compare\s\s')" ]]; then
   echo "# Downloading & Installing nemo-compare..." ; check_online
@@ -1660,6 +1683,12 @@ if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
 else _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A lightweight, fast, and free web browser")
 fi
 
+# check for neofetch
+if [[ -z "$(grep -F ' neofetch ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _neofetchapp=(False "$_APPICONS/neofetch.png" "NEOFETCHAPP" "Neofetch" "System Script" "No" "A fast and highly customizable system info script")
+else _neofetchapp=(False "$_APPICONS/neofetch.png" "NEOFETCHAPP" "Neofetch" "System Script" "<span foreground='green'>Select to Remove</span>" "A fast and highly customizable system info script")
+fi
+
 # check for nemo-compare
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
   if [[ -z "$(grep -F ' nemo-compare ' <<< ${DPKGCHECKS[@]})" ]]; then
@@ -1702,8 +1731,8 @@ fi
 
 # check for screenfetch
 if [[ -z "$(grep -F ' screenfetch ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "No" "Bash Screenshot Information Tool")
-else _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "<span foreground='green'>Select to Remove</span>" "Bash Screenshot Information Tool")
+     _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "No" "Bash system information tool")
+else _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "<span foreground='green'>Select to Remove</span>" "Bash system information tool")
 fi
 
 # check for seamonkey web browser
@@ -1813,6 +1842,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_gthumbapp[@]}" \
 "${_hardinfo[@]}" \
 "${_midoriwb[@]}" \
+"${_neofetchapp[@]}" \
 "${_nemocompare[@]}" \
 "${_nemodropbox[@]}" \
 "${_nextcloudcl[@]}" \

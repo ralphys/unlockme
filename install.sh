@@ -7,7 +7,7 @@
 # Created by Ralphy Rhdez <rafaelrhd3z@gmail.com>
 # UnlockMe Installer 
 
-if [ $EUID -ne 0 ]; then
+if [[ $EUID != 0 ]]; then
 	clear
 	echo -e "\nThis installer must be run with administrative privileges...\n"
 	sudo "$0" "$@" ; exit 0
@@ -51,7 +51,8 @@ function install_unlockme () {
 		find /usr/share/unlockme -type d -print0 | xargs -0 chmod 755
 		find /usr/share/unlockme -type f -print0 | xargs -0 chmod 644
 		cd /usr/local/sbin
-		chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps unlockme-main unlock-req-install blockhosts
+		chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps 
+		chmod +x unlockme-main unlock-req-install blockhosts icon-themes-erikdubois
 		chmod +x /usr/share/unlockme/tools/unlockme-dropbox.sh
 	echo -e "✔ done!\n"
 

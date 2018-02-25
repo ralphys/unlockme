@@ -1,0 +1,497 @@
+#! /bin/bash
+
+# locale
+export LANG=C
+export LANG=C.UTF-8
+
+# commonly used variables
+APPNAME=" Icon Theme Installer"
+APPICON="/usr/share/unlockme/icons/ui/themes.png"
+PREVIMG0="/usr/share/unlockme/icons/ui/sardi.png"
+PREVIMG1="/usr/share/unlockme/icons/ui/sardi-extra.png"
+PREVIMG2="/usr/share/unlockme/icons/ui/surfn.png"
+IconTPS="Icon Theme Pack Selector"
+
+# add name of the icon themes this script will handle in the array below
+# they will be used as variable so replace names that contain dashes (-) with underscore (_)
+packname=(Surfn Sardi Sardi_Extra)
+
+BaselineSardi=(Sardi-Flat Sardi-Mono Sardi-Flexible Sardi-Ghost-Flexible Sardi-Orb-Colora)
+
+# icon theme status variable for installed/not installed
+STATUS=${#packname[@]}
+
+# temporary file to source a couple variables from it
+TMPFL="/tmp/${USER}ICTHEME"
+
+# create the TMPFL file if it doesn't exist with 077 umask
+[ -f "$TMPFL" ] && rm -f "$TMPFL"
+(umask 077; touch "$TMPFL")
+
+# icon cache variable - temp file to write which icon themes are installed
+ICONCACHE="/tmp/${USER}IconCache"
+
+# where to install icons - user_home_dir/.icons folder
+ICONFLD="$HOME/.icons"
+[ ! -d "$ICONFLD" ] && mkdir -p "$ICONFLD"
+
+# where to save the installation logs - later used to uninstall icon  themes 
+INSTLOG="$HOME/.local/share/unlockme"
+[ ! -d "$INSTLOG" ] && mkdir -p "$INSTLOG"
+
+
+### ICON THEME PACK SELECTOR - STARTS ##
+########################################
+ICONTHEMESELECTOR(){
+
+# remove previous yad named pipe if exists
+[[ -f "/tmp/IconTheme03" ]] && rm -f "/tmp/IconTheme03"
+
+# initialize named pipe 
+export PIPE_03="/tmp/IconTheme03"
+mkfifo "$PIPE_03"
+exec 3<> "$PIPE_03"
+trap "rm -rf ${PIPE_03}" EXIT
+
+# Get list of folders in the temp directory   
+# where icon downloads have been extracted into.
+function load_common() {
+  DIRS="$(ls -l $TMPDIR | egrep '^d' | awk '{print $9}')"
+  OIFS=$IFS
+  IFS=""
+  SELECT=($(for DIR in "$DIRS";do echo "$DIR";done ))
+  IFS=$OIFS
+}
+export -f load_common
+
+# load function now
+load_common
+
+
+# Create yad dialog selection from the list
+# of downloaded icon theme's temp directory.
+list=($(
+  for DATA in ${SELECT}; do
+      echo False     			# Default - "False"
+      echo "$DATA"
+  done ))
+
+#list for Surfn icons
+if [[ "$FNAME" = "Surfn" ]]; then
+
+  list=($(sed -e '0,/False/s//True/' <<< ${list[@]}))
+fi
+
+# list for Sardi icons
+if [[ "$FNAME" = "Sardi" ]]; then
+
+  # manipulate list - select core and baseline icon themes by default
+  tmpps="/tmp/tmp_pack_select"
+  echo "${list[@]}" > "$tmpps"
+
+  sed \
+  -i 's/\bFalse\sSardi\b/True Sardi/;s/\bFalse\sSardi-Mono\b/True Sardi-Mono/
+  ;s/\bFalse\sSardi-Flat\b/True Sardi-Flat/;s/\bFalse\sSardi-Flexible\b/True Sardi-Flexible/
+  ;s/\bFalse\sSardi-Ghost-Flexible\b/True Sardi-Ghost-Flexible/;s/\bFalse\sSardi-Orb-Colora\b/True Sardi-Orb-Colora/' "$tmpps"
+
+  # load manipulated list
+  list=($(< "$tmpps")) && rm -f "$tmpps"
+
+fi
+
+
+function clear_all () {
+  echo -e '\f' >> "$PIPE_03"
+  load_common >> "$PIPE_03"
+
+  list=($(
+    for DATA in ${SELECT}; do
+      echo False  >> "$PIPE_03"   # Clear all - "False" for the checklist column
+      echo "$DATA" >> "$PIPE_03"
+    done ))
+}
+export -f clear_all
+
+function select_all () {
+  echo -e '\f' >> "$PIPE_03"
+  load_common >> "$PIPE_03"
+
+  list=($(
+    for DATA in ${SELECT}; do
+      echo True  >> "$PIPE_03"	# Select all - "True" for the checklist column
+      echo "$DATA" >> "$PIPE_03"
+    done ))
+}
+export -f select_all
+
+# Icon Theme Pack Selector Main Dialog
+if [[ "$FNAME" = "Sardi" ]]; then
+ITPMDTEXT="<span font='13'>\nChoose desired icon themes</span>\n\
+  Sardi icons are extremely flexible.\n\
+  6 choices for your applications and 10 kind of folders to use in your file manager.\n"
+
+elif [[ "$FNAME" = "Surfn" ]]; then
+ITPMDTEXT="<span font='13'>\nChoose desired icon themes</span>\n \
+*$FNAME icon theme will be installed for other themes to inherit from it.\n"
+
+elif [[ "$FNAME" = "Sardi-Extra" ]]; then
+ITPMDTEXT="<span font='13'>Choose desired icon themes</span>\n\n \
+Sardi icons are extremely flexible. They are structured in three main groups; Core, Baseline and Inherited.\n
+- <span foreground='chocolate'>Core:</span> In one word: <b>Sardi</b>.
+- <span foreground='chocolate'>Baseline:</span> Icon themes from which others inherit (in addition to Sardi).
+- <span foreground='chocolate'>Inherited:</span> Subsequent icon themes which inherits from Baseline and Core icon themes. (Sardi-Extra)\n
+Baseline group: Sardi-Flat, Sardi-Flexible, Sardi-Ghost-Flexible, Sardi-Mono, Sardi-Orb-Colora.\n
+Install Sardi and a Baseline icon theme for better results. For example, if <b>Sardi-Orb-Colora-xxxx</b> is your preferred icon theme you should also install <b>Sardi-Orb-Colora</b> \
+and <b>Sardi</b> because Sardi-Orb-Colora-xxxx (Inherits) from Sardi-Orb-Colora (Baseline) and Sardi (Core) icon themes.\n"
+
+else
+  ITPMDTEXT="<span font='13'>\nChoose desired icon themes</span>\n"
+fi
+
+PackSelect=($(yad --list --checklist --width=760 --height=550 --separator=" " --grid-lines=hor --search-column=2 \
+    			  --wrap --borders=6 --center --window-icon="$APPICON" --image="$APPICON" --image-on-top \
+    			  --title="$IconTPS" --text="$ITPMDTEXT" \
+    			  --column "▼"  --column "Icon Theme" \
+    			  "${list[@]}" \
+    			  --button="gtk-cancel":1 \
+    			  --button="Clear all!gtk-clear":'bash -c "clear_all"' \
+    			  --button="Select all!gtk-refresh":'bash -c "select_all"' \
+    			  --button="Next!gtk-ok":0 \
+    			  --listen --print-column=2 < $PIPE_03))
+action=$?
+
+# When Quit or (X) is clicked break
+if [[ "$action" = "1" || "$action" = "252" ]]; then
+  rm -rf "$TMPDIR" & break 1  
+fi 
+
+Pack_Selected="${PackSelect[@]}"
+}
+######################################
+### ICON THEME PACK SELECTOR - ENDS ##
+
+#  check internet access
+function check_online() {
+
+  if eval "curl -sk google.com" >> /dev/null 2>&1; then :
+  else # Prompt ERROR internet connection
+    zenity --info --width="390" --ok-label="Got it!" --title=" No Internet access" \
+           --text="\n<b>Your computer is not connected to the internet</b> \n \n\
+It needs to be connected to the internet to download and install packages." 2>/dev/null
+    continue
+  fi
+}
+
+function check_download() {
+
+  if [[ "${PIPESTATUS[0]}" != "0" ]]; then
+  	rm -f "$FNAMEDL"
+    zenity --error --width="260" --height="90" --title="  $APPNAME - Error" \
+           --text="\nAn error occurred while processing $FNAME download. Please try again." 2>/dev/null
+    continue
+  fi
+}
+
+function show_progress() {
+  stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
+}
+
+function uninstall_icons() {
+
+	# read installation log and delete folders
+	echo "#⚫ Removing $FNAME icons..." ; sleep 1  
+
+	REMFDS=$(< "$FILELG")
+    for folders in ${REMFDS}; do
+      rm -rf $folders
+    done
+	echo "#✔ Removal completed." ; rm -f "$FILELG" ; sleep 1
+}
+
+Sardi() {
+
+export FNAME="Sardi"
+FNAMEDL="sardi.tar.gz"
+FILELG="$INSTLOG/Sardi"
+export TMPDIR="/tmp/sardi"
+URLDL="https://sourceforge.net/projects/sardi/files/latest/download?source=files"
+
+echo "#⚫ $FNAME icons..." ; sleep 1
+
+	# check if installed
+	if [[ ! -f "$FILELG" ]]; then
+
+		# if not installed and no previous download is found in /tmp, download 
+		if [[ ! -f "/tmp/$FNAMEDL" ]]; then
+			echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+			cd /tmp ; get_download "$URLDL"
+		fi
+
+		cd /tmp
+    	mv -f download\?source\=files "$FNAMEDL" >> /dev/null 2>&1
+
+    	# remove previous temp directory if present
+    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+
+    	# create temp directory and extract download
+    	echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
+    	mkdir "$TMPDIR" ; tar -zvxf "/tmp/${FNAMEDL}" -C "$TMPDIR" | show_progress ; check_download
+
+    	# cleanup extracted download
+    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+    	echo "#⚫ ${IconTPS}..." ; sleep .5
+
+    	# icon theme selector
+    	ICONTHEMESELECTOR
+
+    	echo "#⚫ Installing $FNAME icons..." ; sleep 1
+    	cd "$TMPDIR"
+    		for i in ${Pack_Selected[@]}; do
+    		cp -rf $i "$ICONFLD"
+    	done
+    	
+    	# ensure Sardi (core) icon theme gets installed
+    	[[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+
+      # log folder for uninstallation
+      echo "$FNAME" >> "$FILELG"
+
+      # ensure baseline icon themes get installed
+      Required=${#BaselineSardi[@]}
+
+      for (( i=0; i<${Required}; i++ )); do
+
+        if [[ ! -d "${ICONFLD}/${BaselineSardi[${i}]}" && $(grep ${BaselineSardi[${i}]} <<< ${Pack_Selected[@]}) ]]; then
+
+          cp -rf "${TMPDIR}/${BaselineSardi[${i}]}" "${ICONFLD}/${BaselineSardi[${i}]}"
+          
+          # add to log file for uninstallation
+          echo "${BaselineSardi[${i}]}" | tr " " "\n" | tee -a "$FILELG"
+        fi
+      done
+
+    	# add to log file for uninstallation
+      echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG"      
+      sed -i 's#^#'"$ICONFLD/"'#' "$FILELG"
+
+    	# remove temporary working directory 
+    	rm -rf "$TMPDIR" &
+		  echo "#✔ Installation completed." ; sleep 1			
+	else
+		# remove sardi icons
+		uninstall_icons
+	fi
+}
+
+Sardi-Extra() {
+
+export FNAME="Sardi-Extra"
+FNAMEDL="sardi-extra.zip"
+FILELG="$INSTLOG/Sardi_Extra"
+export TMPDIR="/tmp/Sardi-Extra-master"
+URLDL="https://github.com/erikdubois/Sardi-Extra/archive/master.zip"
+
+echo "#⚫ $FNAME icons..." && sleep 1
+
+	if [[ ! -f "$FILELG" ]]; then
+		 
+		if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
+			echo "#⚫ Downloading ${FNAME} icons..." ; check_online ; sleep 1 
+			cd /tmp ; get_download "$URLDL"
+		fi
+    	
+    	cd /tmp
+    	[[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
+    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+
+    	echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
+    	unzip "$FNAMEDL" | show_progress ; check_download
+
+
+    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \; 
+    	echo "#⚫ $IconTPS..." ; sleep .5
+
+    	# icon theme selector
+    	ICONTHEMESELECTOR
+
+    	echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
+    	cd "$TMPDIR"
+    		for i in ${Pack_Selected[@]}; do
+    		cp -rf $i "$ICONFLD"
+    	done
+
+    	# ensure main icon theme was installed
+    	[[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+    	
+    	# create log file for uninstallation
+    	echo "$FNAME" > "$FILELG"
+      echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG" && sed -i 's#^#'"$ICONFLD/"'#' "$FILELG"
+
+    	rm -rf "$TMPDIR" & 
+		  echo "#✔ Installation completed." ; sleep 1
+			
+	else
+		uninstall_icons
+	fi
+}
+
+Surfn() {
+
+export FNAME="Surfn"
+FNAMEDL="surfn.zip"
+FILELG="$INSTLOG/Surfn"
+export TMPDIR="/tmp/Surfn-master"
+URLDL="https://github.com/erikdubois/Surfn/archive/master.zip"
+
+echo "#⚫ ${FNAME} icons..." ; sleep 1
+
+	if [[ ! -f "$FILELG" ]]; then
+
+		if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
+			echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+			cd /tmp ; get_download "$URLDL"
+		fi
+				
+    	cd /tmp 
+    	[[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
+    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+
+    	echo "#⚫ Extracting $FNAME download..." ; sleep 1
+    	unzip "$FNAMEDL" | show_progress ; check_download
+
+    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+    	echo "#⚫ ${IconTPS}..." ; sleep .5
+
+    	# icon theme selector
+    	ICONTHEMESELECTOR
+
+    	echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
+    	cd "$TMPDIR"
+    		for i in ${Pack_Selected[@]}; do
+    		cp -rf $i "$ICONFLD"
+    	done
+
+    	# ensure main icon theme was installed
+    	[[ ! -d "$ICONFLD/$FNAME" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+
+    	# create log file for uninstallation
+    	echo "$FNAME" > "$FILELG"
+      echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG" && sed -i 's#^#'"$ICONFLD/"'#' "$FILELG" 
+
+    	rm -rf "$TMPDIR" 
+		  echo "#✔ Installation completed." ; sleep 1
+			
+	else
+		uninstall_icons
+	fi
+}
+
+# main dialog loop
+while (true); do
+echo "# Icon Theme Installer"
+
+# echo each element in packname and write status 
+for (( i=0;i<$STATUS;i++)); do
+	[[ -f "${INSTLOG}/${packname[${i}]}" ]] && 
+		  echo ${packname[${i}]}_status='"<span foreground='\'green\''>Installed - (select to remove)</span>"' | tee -a "$TMPFL"  > /dev/null 2>&1 \
+	 || echo ${packname[${i}]}_status='"Not Installed"' | tee -a "$TMPFL"  > /dev/null 2>&1
+done 
+
+# load status from file
+source "$TMPFL" && rm -f "$TMPFL"
+
+# Icon Theme Descriptions 
+#########################
+
+# sardi icon theme
+Sardi_description="<span font='Bold 12'>Sardi icon theme pack</span>
+Source: SourceForge https://sourceforge.net/projects/sardi/
+By: Erik Dubois  http://erikdubois.be
+6 choices for your applications icons
+10 kind of folders to use in your file manager
+Status: $Sardi_status"
+
+# sardi-extra icon theme
+warn_user_info="<span foreground='chocolate'>Sardi (core) icon theme is not installed. \
+Extra sets may not work as expected. Please install Sardi icon theme first.</span>"
+
+[[ ! -d "${HOME}/.icons/Sardi" ]] && warn_user="$warn_user_info" || warn_user=""
+
+Sardi_Extra_description="<span font='Bold 12'>Sardi-Extra icon theme pack</span>
+Source: Github https://github.com/erikdubois/Sardi-Extra
+Over 100 Sardi based colour combinations icon themes to choose from.
+"$warn_user"
+
+Status: $Sardi_Extra_status"
+
+# surfn icon theme
+Surfn_description="<span font='Bold 12'>Surfn icon theme pack</span>
+Source: Github https://github.com/erikdubois/Surfn
+By: Erik Dubois  http://erikdubois.be
+Based on four different icon themes:
+Ultra Flat, Super Flat remix, Yltra Flat and Numix (Circle)
+Status: $Surfn_status"
+
+# main dialog text
+MDTEXT="\n<span font='13'>Colourful Icon Theme Collection For The Linux Desktop</span>\n \
+  Sort by clicking on the Description header.\n \
+  <b>CTRL</b> - allows you to click and select multiple sets not necessarily next to each other.\n \
+  <b>Shift</b> - allows you to select a group of sets that are contiguous. All sets in between are then selected.\n"
+
+# Icon Theme Installer main dialog
+ICONPACK=$(yad --list --multiple --dclick-action= --width=900 --height=600 --image="$APPICON" --window-icon="$APPICON" \
+				--column=" :IMG" --column="Name" --column="Description" --hide-column="2" --print-column=2 --separator=" " \
+				--button=" Update icon theme cache"\!gtk-refresh:2 --button="gtk-close":1 --button="Go"\!gtk-ok:0 \
+				--title="Icon Theme Installer" --text="$MDTEXT" --wrap --wrap-width="350" \
+				"$PREVIMG0" "Sardi" 			  "$Sardi_description" \
+				"$PREVIMG1" "Sardi-Extra" 	"$Sardi_Extra_description" \
+				"$PREVIMG2" "Surfn" 			  "$Surfn_description") 
+ans=$?
+
+# If Quit or (X) is clicked then exit
+if [[ "$ans" = "1" || "$ans" = "252" ]]; then
+  exit 0
+fi 
+
+grep -q '[a-zA-Z0-9]' <<< "$ICONPACK" # Check if anything is selected
+
+if [[ "$?" != "0" ]]; then
+  zenity --info --width="300" --height="80" --title=" $APPNAME" \
+         --text="\nNo icon theme pack selected. Please try again selecting a at least one pack." 2>/dev/null
+  continue
+fi
+
+if [[ "$ans" = "2" ]]; then
+		
+		echo "#⚫ Updating icon cache..."
+
+		for SELECTED in ${ICONPACK}; do 
+  
+			PROCESS=$(cut -d\- -f1 <<< ${SELECTED})
+			find "${HOME}/.icons" -type d -iname "*${PROCESS}*" | awk -F '/' '{print $NF}' >> "$ICONCACHE"
+		done
+
+		if [[ -z "$(< ${ICONCACHE})" ]]; then 
+			zenity --info --width="280" --title="Icon theme pack not found" \
+             --text="\nSelected icon theme pack does not appear to be installed." 2>/dev/null
+			rm -f "$ICONCACHE"
+      continue
+		fi
+
+		while read CACHE; do
+			echo "#⚫ Updating ${CACHE} icon cache..."
+		 	gtk-update-icon-cache -f "${HOME}/.icons/${CACHE}" 2>&1  
+		done < "$ICONCACHE"
+
+		rm -f "$ICONCACHE"
+		continue
+fi
+  for PACK in ${ICONPACK}; do 
+    ${PACK}
+  done
+done
+
+
+
+
+

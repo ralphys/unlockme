@@ -214,9 +214,9 @@ FIXDBXFCE() {
 }
 
 # icon theme installer
-ICONTHEME() {
+ICONTHEMESERIK() {
   echo "# Icon Theme Installer"
-  bash icon-theme
+  bash icon-themes-erikdubois
 }
 
 # function remove Midori Cache 
@@ -510,7 +510,7 @@ ARRAYB=()    # Array for admin tasks
 
 # array A definitions
 ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FIREFOXCACHE FFOXPROFILE FIXDBCIN \
-           FIXDBXFCE ICONTHEME MIDORICACHE MIDORIPROFILE OPERACACHE OPERAPROFILE PALEMOONCACHE PALEMOONPROFILE \
+           FIXDBXFCE ICONTHEMESERIK MIDORICACHE MIDORIPROFILE OPERACACHE OPERAPROFILE PALEMOONCACHE PALEMOONPROFILE \
            PRELOAD SEAMONKEYCACHE SEAMONKEYPROFILE SYSSWAP THUMBNAILS TRASHBIN VIVALDICACHE \
            VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
 
@@ -1015,18 +1015,19 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="580" -
                 --text="<span font='9'>${DISTRO}\n</span> 
 <span font='9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
 You can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
-"FALSE" "THEMING" "Appearance" "Install or Remove" "Customize" "A selection of popular desktop themes, icons and cursors" \
+"FALSE" "THEMING" "Appearance" "Install or Remove" "System" "A selection of popular desktop themes, icons and cursors" \
 "FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Install and remove selected commonly used applications" \
 "${_autoremove[@]}" \
 "${_blockhosts[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
 "${_dnscache[@]}" \
-"${_ipv6[@]}" \
 "${_fixdpcin[@]}" \
 "${_fixdpxfce[@]}" \
+"${_ipv6[@]}" \
 "${firefoxcache[@]}" \
 "${_chnamehost[@]}" \
+"FALSE" "ICONTHEMESERIK" "Icon Themes" "Install or Remove" "User" "Colorful icon themes collection for linux desktops by Erik Dubois" \
 "${_syscachepr[@]}" \
 "${_sysswap[@]}" \
 "${_logarchives[@]}" \
