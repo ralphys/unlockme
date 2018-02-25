@@ -993,7 +993,7 @@ _FNAME="KeePassXC"
 else
   echo "#⚫ Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep keepassxc)" ]]; then killall -9 keepassxc; fi ; sleep 2
-    
+
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge keepassxc -y | show_progress ; check_remv
 
@@ -1028,6 +1028,27 @@ else
   done
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
+}
+
+MINTSTICKAPP() {
+
+_FNAME="MintStick"
+
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'mintstick\s\s')" ]]; then
+  echo "# ${_FNAME}..." ; check_online
+  [[ -f /tmp/mintstick_1.3.4_all.deb ]] && rm -f /tmp/mintstick_1.3.4_all.deb
+
+  echo "#⚫ Downloading ${_FNAME}..."
+  cd /tmp ; wget -c -T5 -t2 https://unlockforus.com/repository/dists/xenial/all/mintstick_1.3.4_all.deb
+
+  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  dpkg -i mintstick_1.3.4_all.deb | show_progress ; check_inst
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge mintstick -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi 
 }
 
 NEOFETCHAPP() {
@@ -1713,6 +1734,14 @@ if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
 else _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A lightweight, fast, and free web browser")
 fi
 
+# check for mintstick
+if [[ "$LLDENV" = "Lite" ]]; then
+  if [[ -z "$(grep -F ' mintstick ' <<< ${DPKGCHECKS[@]})" ]]; then
+       _mintstickapp=(False "$_APPICONS/mintstick.png" "MINTSTICKAPP" "MintStick" "Utility" "No" "Tool to write .img or .iso files to a USB Key. It can also format them")
+  else _mintstickapp=(False "$_APPICONS/mintstick.png" "MINTSTICKAPP" "MintStick" "Utility" "<span foreground='green'>Select to Remove</span>" "Tool to write .img or .iso files to a USB Key. It can also format them")
+  fi
+fi
+
 # check for neofetch
 if [[ -z "$(grep -F ' neofetch ' <<< ${DPKGCHECKS[@]})" ]]; then
      _neofetchapp=(False "$_APPICONS/neofetch.png" "NEOFETCHAPP" "Neofetch" "System Script" "No" "A fast and highly customizable system info script")
@@ -1873,6 +1902,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_hardinfo[@]}" \
 "${_keepassxcapp[@]}" \
 "${_midoriwb[@]}" \
+"${_mintstickapp[@]}" \
 "${_neofetchapp[@]}" \
 "${_nemocompare[@]}" \
 "${_nemodropbox[@]}" \
