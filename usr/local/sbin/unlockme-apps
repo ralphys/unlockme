@@ -1039,7 +1039,7 @@ _FNAME="MintStick"
   [[ -f /tmp/mintstick_1.3.4_all.deb ]] && rm -f /tmp/mintstick_1.3.4_all.deb
 
   echo "#⚫ Downloading ${_FNAME}..."
-  cd /tmp ; wget -c -T5 -t2 https://unlockforus.com/repository/dists/xenial/all/mintstick_1.3.4_all.deb
+  cd /tmp ; wget -c -T5 -t2 http://packages.linuxmint.com/pool/main/m/mintstick/mintstick_1.3.4_all.deb
 
   echo "#⚫ Installing ${_FNAME}..." ; sleep 1
   dpkg -i mintstick_1.3.4_all.deb | show_progress ; check_inst
