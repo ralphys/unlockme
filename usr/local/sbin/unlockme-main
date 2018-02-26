@@ -74,9 +74,9 @@ fi
 # function - clean up common files
 _CLEANUP() {
   [[ -e /tmp/unlockme.log ]] && rm -f /tmp/unlockme.log # log file
-  [[ -e "$TMPLTF" ]] && rm -f "$TMPLTF"
+  [[ -e "$TMPUSRFL" ]] && rm -f "$TMPUSRFL"
   [[ -e /tmp/aptx ]] && rm -f /tmp/aptx
-  [[ -e /tmp/UnlockDS ]] && rm -f /tmp/UnlockDS         # desktop session file
+  [[ -e /tmp/unlockds ]] && rm -f /tmp/unlockds         # desktop session file
 }
 
 # function - remove browser profile 
@@ -967,12 +967,12 @@ while (true); do
 
 _APPNAME="UnlockMe"
 _SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
-TMPLTF="/tmp/unlockusr"
+TMPUSRFL="/tmp/unlockusr"
 
-echo "$DESKTOP_SESSION" > /tmp/UnlockDS ; chmod 600 /tmp/UnlockDS
-if [[ ! -f "$TMPLTF" ]]; then
-  echo "$_SOFTUSR" > "$TMPLTF"
-  chmod 600 "$TMPLTF"
+echo "$DESKTOP_SESSION" > /tmp/unlockds ; chmod 600 /tmp/unlockds
+if [[ ! -f "$TMPUSRFL" ]]; then
+  echo "$_SOFTUSR" > "$TMPUSRFL"
+  chmod 600 "$TMPUSRFL"
 else :
 fi
 

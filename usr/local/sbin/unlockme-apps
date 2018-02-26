@@ -28,6 +28,20 @@ export LANG=C.UTF-8
 # variables
 _APPNAME="Application Software"
 _APPICON="/usr/share/unlockme/icons/ui/software.png"
+TMPUSRFL="/tmp/unlockusr"
+
+# when executed directly
+if [[ ! -f "$TMPUSRFL" ]]; then
+  SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
+  echo "$SOFTUSR" > "$TMPUSRFL" && chmod 600 "$TMPUSRFL"
+  echo "$DESKTOP_SESSION" > /tmp/unlockds ; chmod 600 /tmp/unlockds
+fi
+
+if [[ $EUID != 0 ]]; then
+  pkexec unlockme-apps ; exit 0
+fi
+
+trap "rm -f ${TMPUSRFL} /tmp/unlockds" EXIT
 
 # check architecture
 ARCH=$(uname -i)
@@ -55,7 +69,7 @@ LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # variable Ubuntu-Bugdie Desktop Environment
-UBDENV=$(< /tmp/UnlockDS)
+[[ -f "/tmp/unlockds" ]] && UBDENV=$(< /tmp/unlockds)
 
 # desktop users
 _ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
@@ -194,7 +208,15 @@ ATOM() {
   else
     echo "#⚫ Terminating any ${_FNAME} instances..."
     if [[ -n "$(pgrep atom)" ]]; then killall -9 atom; fi ; sleep 2
-    echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1 ; apt-get remove --purge atom -y | show_progress ; check_remv
+    
+    echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+    apt-get remove --purge atom -y | show_progress ; check_remv
+
+    echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+    for desktopuser in ${_ALLUSERS}; do
+      rm -f "/home/${desktopuser}/Desktop/atom.desktop"
+      rm -f /home/${desktopuser}/.config/plank/dock{1..3}/launchers/atom{1..3}.dockitem
+    done ; sleep 2
     echo "#✔ Uninstallation completed." ; sleep 1
   fi
 }
@@ -238,6 +260,12 @@ else
   if [[ -n "$(pgrep catfish)" ]]; then killall -9 catfish; fi ; sleep 1 
   echo "#⚫ Uninstalling ${_FNAME}..."  
   apt-get remove --purge catfish -y | show_progress ; check_remv
+
+  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+    for desktopuser in ${_ALLUSERS}; do
+      rm -f "/home/${desktopuser}/Desktop/catfish.desktop"
+
+    done ; sleep 2
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -303,9 +331,9 @@ else
 
     # remove google chrome cache folder from all users accounts
     echo "#⚫ Removing ${_FNAME} cache..."
-    for i in ${_ALLUSERS}; do
-      rm -rf "/home/${i}/.cache/google-chrome/"
-      rm -rf "/home/${i}/Desktop/google-chrome.desktop"
+    for desktopuser in ${_ALLUSERS}; do
+      rm -rf "/home/${desktopuser}/.cache/google-chrome/"
+      rm -f "/home/${desktopuser}/Desktop/google-chrome.desktop"
     done ; sleep 2
 
     echo "#✔ Uninstallation completed." ; sleep 1

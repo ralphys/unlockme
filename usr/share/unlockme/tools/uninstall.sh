@@ -35,11 +35,15 @@ function remove_shortcut() {
 function scripts_removal() {
 
 	echo -e "\n⚫ Removing UnlockMe..." ; sleep .5
+
+		rm -rf /usr/share/unlockme
+		rm -f /usr/share/applications/UnlockMe.desktop
 	cd /usr/local/sbin
-	rm -f dryapt get_download unlockme-admin unlockme-appearance unlockme-apps 
-	rm -f unlockme-main unlock-req-install blockhosts icon-themes-erikdubois
-	rm -rf /usr/share/unlockme
-	rm -f /usr/share/applications/UnlockMe.desktop
+		rm -f dryapt get_download unlockme-admin unlockme-appearance unlockme-apps 
+		rm -f unlockme-main unlock-req-install blockhosts icon-themes-erikdubois
+	cd /usr/share/polkit-1/actions
+		rm -f com.ubuntu.pkexec.unlockme-apps.policy com.ubuntu.pkexec.unlockme-blockhosts.policy
+		rm -f com.ubuntu.pkexec.unlockme-install.policy com.ubuntu.pkexec.unlockme.policy
 }
 
 function remove_unlockme() {
