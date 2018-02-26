@@ -53,7 +53,8 @@ function install_unlockme () {
 		cd /usr/local/sbin
 		chmod +x dryapt get_download unlockme-admin unlockme-appearance unlockme-apps 
 		chmod +x unlockme-main unlock-req-install blockhosts icon-themes-erikdubois
-		chmod +x /usr/share/unlockme/tools/unlockme-dropbox.sh
+		cd /usr/share/unlockme/tools/ && chmod +x unlockme-dropbox.sh uninstall.sh
+
 	echo -e "✔ done!\n"
 
 	while true; do

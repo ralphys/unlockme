@@ -36,9 +36,17 @@ Option 2 - Manually download
 
 `./install.sh`
 
+## Uninstall Instructions
+
+From Terminal:
+
+`/usr/share/unlockme/tools/uninstall.sh`
+
 ## Screenshots
 
-![](https://i.imgur.com/LuthW2D.png)
+![](https://i.imgur.com/Bz48BnF.png)
+
+![](https://i.imgur.com/O5x1mwB.png)
 
 ![](https://i.imgur.com/G6Y9kzB.png)
 
@@ -56,9 +64,11 @@ Option 2 - Manually download
 
 ![](https://i.imgur.com/0F4KbOR.png)
 
-![](https://i.imgur.com/0BP6DL1.png)
+![](https://i.imgur.com/pV9NBWq.png)
 
 ![](https://i.imgur.com/Whf8vUj.png)
+
+![](https://i.imgur.com/4gDMCXx.png)
 
 ![](https://i.imgur.com/mU8fZzt.png)
 
@@ -67,3 +77,5 @@ Option 2 - Manually download
 ![](https://i.imgur.com/WwdcwX4.png) 
 
 ![](https://i.imgur.com/aFEgs4O.png)
+
+![](https://i.imgur.com/Miylkp0.png)
