@@ -25,23 +25,42 @@
 export LANG=C
 export LANG=C.UTF-8
 
+# check if lock file exists
+lockfile="/tmp/unlockme-apps.lock"
+
+if [[ -e "$lockfile" ]]; then
+  echo "# Another instance is already running..."
+  zenity --info --width="320" --title="Unclockme" --text="\nAnother Unlockme Application Software instance is already running." 2>/dev/null
+  exit 0
+fi
+
 # variables
-_APPNAME="Application Software"
+_APPNAME="UnlockMe - Application Software"
 _APPICON="/usr/share/unlockme/icons/ui/software.png"
-TMPUSRFL="/tmp/unlockusr"
+unlockusr="/tmp/.unlockusr"
+unlockds="/tmp/.unlockds"
 
 # when executed directly
-if [[ ! -f "$TMPUSRFL" ]]; then
+if [[ ! -f "$unlockusr" ]]; then
   SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
-  echo "$SOFTUSR" > "$TMPUSRFL" && chmod 600 "$TMPUSRFL"
-  echo "$DESKTOP_SESSION" > /tmp/unlockds ; chmod 600 /tmp/unlockds
+  echo "$SOFTUSR" > "$unlockusr" && chmod 600 "$unlockusr"
+  echo "$DESKTOP_SESSION" > "$unlockds" ; chmod 600 "$unlockds"
 fi
 
 if [[ $EUID != 0 ]]; then
+
+  if pidof -o %PPID -x "unlockme-main" >/dev/null; then
+        zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
+        exit 0
+  fi
   pkexec unlockme-apps ; exit 0
 fi
 
-trap "rm -f ${TMPUSRFL} /tmp/unlockds" EXIT
+# create a lock file
+touch "$lockfile"
+
+# trap files on exit
+trap "rm -f ${unlockusr} ${unlockds} ${lockfile}" EXIT
 
 # check architecture
 ARCH=$(uname -i)
@@ -69,7 +88,7 @@ LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
 # variable Ubuntu-Bugdie Desktop Environment
-[[ -f "/tmp/unlockds" ]] && UBDENV=$(< /tmp/unlockds)
+[[ -f "$unlockds" ]] && UBDENV=$(< ${unlockds})
 
 # desktop users
 _ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
@@ -1887,19 +1906,10 @@ fi
 # Main loop
 while (true); do
   echo "# loading..."
-_SOFTUSR=$(< /tmp/unlockusr)
+_SOFTUSR=$(< "$unlockusr")
 
 # first run the checks
 CHECK
-
-# Main dialog (Zenity dialog - I'm leaving this here for now just in case we have to revert)
-#selection=$(yad --list --imagelist --multiple --width="814" --height="620"  --window-icon="$_APPICON" --cancel-label="Close" --ok-label="Begin" --title=" $_APPNAME" \
-#                   --column=" ":IMG --column="SELECTION" --column="Name" --column="Category" \
-#                   --column="Installed" --column="Description" --hide-column="2" --print-column=2 \
-#                   --text="<span font='Sans 9'>\nSelect the applications you wish to install or remove, then click the Begin button. 
-#Sort by clicking on the columns header.
-#\n  <span font='Sans bold 9'>CTRL</span> - allows you to click and select multiple tasks not necessarily next to each other.
-#  <span font='Sans bold 9'>Shift</span> - allows you to select a group of tasks that are contiguous. All tasks in between are then selected.\n</span>" \
 
 # Main dialog
 DLGICON="/usr/share/unlockme/icons/ui/software.png"
@@ -1907,7 +1917,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
     --column="":CHK --column="":IMG --column="SELECTION" --column="Name":TXT \
     --column="Category":TXT --column="Installed":TXT --column="Description":TXT \
     --hide-column="3" --print-column="3" --search-column="4" --button="Close!gtk-close":1 --button="Begin!gtk-ok":0 \
-    --image-on-top --title="Application Software" --separator=" " --window-icon="$DLGICON" \
+    --image-on-top --title="$_APPNAME" --separator=" " --window-icon="$DLGICON" \
     --text="<span font='13'>\nApplication Software</span>\n\
   - Select the applications you wish to install or remove, then click the Begin button.\ 
   - Sort by clicking on the columns header.\n" \

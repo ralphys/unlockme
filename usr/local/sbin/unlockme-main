@@ -25,10 +25,24 @@
 export LANG=C
 export LANG=C.UTF-8
 
+# check for additional instances
+if pidof -o %PPID -x "unlockme-main" >/dev/null; then
+        zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
+        exit 0
+fi
+
+if [[ -f /tmp/unlockme-apps.lock || -f /tmp/unlockme-admin.lock ]];then
+  zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
+  exit 0
+fi
+
 # variable edition
 mintinfo="/etc/linuxmint/info"
 liteinfo="/etc/llver"
 ppminfo=$mintinfo
+
+# desktop environment file
+unlockds="/tmp/.unlockds"
 
 # desktop environment
 # linuxmint
@@ -73,10 +87,8 @@ fi
 
 # function - clean up common files
 _CLEANUP() {
-  [[ -e /tmp/unlockme.log ]] && rm -f /tmp/unlockme.log # log file
   [[ -e "$TMPUSRFL" ]] && rm -f "$TMPUSRFL"
-  [[ -e /tmp/aptx ]] && rm -f /tmp/aptx
-  [[ -e /tmp/unlockds ]] && rm -f /tmp/unlockds         # desktop session file
+  [[ -e "$unlockds" ]] && rm -f "$unlockds"         # desktop session file
 }
 
 # function - remove browser profile 
@@ -967,9 +979,9 @@ while (true); do
 
 _APPNAME="UnlockMe"
 _SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
-TMPUSRFL="/tmp/unlockusr"
+TMPUSRFL="/tmp/.unlockusr"
 
-echo "$DESKTOP_SESSION" > /tmp/unlockds ; chmod 600 /tmp/unlockds
+echo "$DESKTOP_SESSION" > "$unlockds" ; chmod 600 "$unlockds"
 if [[ ! -f "$TMPUSRFL" ]]; then
   echo "$_SOFTUSR" > "$TMPUSRFL"
   chmod 600 "$TMPUSRFL"

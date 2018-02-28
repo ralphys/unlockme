@@ -25,8 +25,22 @@
 export LANG=C
 export LANG=C.UTF-8
 
+# check if lock file exists
+lockfile="/tmp/unlockme-admin.lock"
+if [[ -e "$lockfile" ]]; then
+  echo "# Another instance is already running..."
+  zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
+  exit 0
+fi
+
+# create a lock file
+touch "$lockfile"
+
+# trap files on exit
+trap "rm -f ${lockfile}" EXIT
+
 # variables
- SOFTUSR=$(< "/tmp/unlockusr")
+ [[ -f "/tmp/unlockusr" ]] && SOFTUSR=$(< "/tmp/unlockusr")
  APPNAME="UnlockMe"
  DLGICON="/usr/share/unlockme/icons/ui/dlgicon.png"
 RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
@@ -394,6 +408,7 @@ _FNAME="DNS Cache"
 _CACHE="/etc/NetworkManager/dnsmasq.d/cache"
 _DNSSEC="/etc/NetworkManager/dnsmasq.d/dnssec"
 _TTL="/etc/NetworkManager/dnsmasq.d/ttl"
+echo "#⚫ $_FNAME..." 
 
 while (true); do
 echo "#⚫ Configuring $_FNAME..." 
@@ -437,7 +452,8 @@ else
   _ttlstatus="FALSE" _ttltxt="Increase TTL Cache"
 fi
 
-_DIALOGTXT="\nNetwork Manager DNS Cache\n
+_MDIALOGTITLE="UnlockMe - Manage DNS Cache"
+_MDIALOGTXT="\nNetwork Manager DNS Cache\n
 Only enable DNS cache if you are a single user on your computer 
 and you're in network that you control such as your home network.\n
 Do not use DNS cache if you are connected to public networks,
@@ -447,7 +463,7 @@ otherwise protect and encrypt your dns requests with DNSCrypt.\n
   otherwise you will lose connectivity.\n"
 
 answd=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --center --borders=8 --width=420 --height=360 --window-icon="$RUN_ICON" \
-               --title="Manage DNS Cache" --text="$_DIALOGTXT" --dclick-action= --no-selection --image="$DLGICON" --icon-name="$RUN_ICON" \
+               --title="$_MDIALOGTITLE" --text="$_MDIALOGTXT" --dclick-action= --no-selection --image="$DLGICON" --icon-name="$RUN_ICON" \
                --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
                --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
                ${_cachestatus} "cachestatus" "$_cachetxt" \
@@ -880,10 +896,11 @@ while (true); do
 
 _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
+_MDIALOGTITLE="UnlockMe - Kernel Cache Pressure"
 
 # Main dialog
 VALCP=$(NO_AT_BRIDGE=1 yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="540" --borders="8" \
-            --fixed --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title=" Kernel Cache Pressure" \
+            --fixed --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title="$_MDIALOGTITLE" \
             --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
             --text="<span font='Bold 11'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
 \nBasically, this is access data about the filesystem. It is generally very costly to look up and also\nvery frequently requested, so it's an excellent thing for your system to cache.
@@ -953,6 +970,7 @@ echo "#⚫ Configuring swappiness..."
 _SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog
+_MDIALOGTITLE="UnlockMe - Adjust System Swappiness"
 _MDIALOGTXT="<span font='Bold 11'>\nSwappiness</span>\n
 The Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
 A high value improves file-system performance, while aggressively swapping less active processes
@@ -971,7 +989,7 @@ B   (the amount -in Megabytes- of free RAM left in the system before swapping)
 \n  ▼ <span font='12'> Set System Swappiness</span>"
 
 VALUE=$(NO_AT_BRIDGE=1 yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="590" --fixed --center \
-            --title="Adjust system Swappiness" --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+            --title="$_MDIALOGTITLE" --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
             --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
   case $? in
