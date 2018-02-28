@@ -1360,6 +1360,7 @@ PLANK() {
 
     zenity --question --width=240 --height="120" --title="Plank Themes" --cancel-label="For All Users" --ok-label="For Me Only" \
            --text="\nWould you like to install Plank themes for all users or just for your account?" 2>/dev/null
+           
     if [[ "$?" = "0" ]]; then
       echo "#⚫ Installing themes for current user only..." ; sleep 1
 
@@ -1375,17 +1376,19 @@ PLANK() {
   # cleanup tmp
   rm -rf /tmp/Plank-Themes
 }
-if [[ -z "$(dpkg -l | grep '\splank\s\s')" ]]; then
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\splank\s\s')" ]]; then
+
   echo "#⚫ Downloading & Installing Plank..." ; sleep 1 ; check_online
-  apt-get install plank -y
+  apt-get install plank -y | show_progress ; check_inst
   plank_themes
   echo "#✔ Installation completed." ; sleep 1
+
 else
   echo "#⚫ Terminating any Plank instances..."
-  if [[ ! -z "$(pgrep plank)" ]]; then killall -9 plank; fi ; sleep 1
+  if [[ -n "$(pgrep plank)" ]]; then killall -9 plank; fi ; sleep 1
 
   echo "#⚫ Uninstalling Plank..." ; sleep 1
-  apt-get remove plank -y 
+  apt-get remove plank -y | show_progress ; check_remv
 
   echo "#⚫ Removing Plank themes..." ; sleep 1
   rm -rf /home/${_SOFTUSR}/.local/share/plank/themes/* && rm -rf /usr/share/plank/themes/*
