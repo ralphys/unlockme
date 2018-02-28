@@ -283,8 +283,8 @@ else
   echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
     for desktopuser in ${_ALLUSERS}; do
       rm -f "/home/${desktopuser}/Desktop/catfish.desktop"
+    done ; sleep 1
 
-    done ; sleep 2
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -297,6 +297,7 @@ _FNAME="Clementine"
 
 # if not installed, install it
 if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\sclementine\s\s')" ]]; then
+
   echo "# Downloading & installing ${_FNAME}..." ; check_online
   apt-get install clementine -y | show_progress ; check_inst
   echo "#✔ Installation completed." ; sleep 1
@@ -307,6 +308,13 @@ else
   # remove clementine
   echo "#⚫ Uninstalling ${_FNAME}..."
   apt-get remove --purge clementine -y | show_progress ; check_remv
+
+  # remove desktop icon from all accounts
+  echo "#⚫ Removing ${_FNAME} launchers..."
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f "/home/${desktopuser}/Desktop/clementine.desktop"
+  done ; sleep 1
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -385,9 +393,9 @@ else
 
   # remove chromium cache folder from all users accounts
   echo "#⚫ Removing ${_FNAME} cache..."
-  for i in ${_ALLUSERS}; do
-    rm -rf "/home/${i}/.cache/chromium/"
-    rm -f "/home/${i}/Desktop/chromium-browser.desktop"
+  for desktopuser in ${_ALLUSERS}; do
+    rm -rf "/home/${desktopuser}/.cache/chromium/"
+    rm -f "/home/${desktopuser}/Desktop/chromium-browser.desktop"
   done ; sleep 1
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -453,6 +461,13 @@ else
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge conky-manager -y | show_progress ; check_remv
   [[ -d "/home/${_SOFTUSR}/.conky/unlockme" ]] && rm -rf /home/${_SOFTUSR}/.conky/unlockme
+
+  # remove desktop icon from all accounts
+  echo "#⚫ Removing ${_FNAME} launchers..."
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f "/home/${desktopuser}/Desktop/conky-manager.desktop"
+  done ; sleep 1
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -1050,6 +1065,50 @@ else
 fi  
 }
 
+LITECCAPP() {
+
+_FNAME="Lite Control Center"
+
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'lite-controlcenter\s\s')" ]]; then
+  
+    echo "# ${_FNAME}..." ; check_online
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
+  
+      echo "#⚫ Adding Repository & key..." ; sleep 1
+
+      # linuxlite
+      if [[ $(lsb_release -sc) = "xenial" ]]; then
+        echo "deb https://unlockforus.com/repository/dists/xenial/ /" | tee /etc/apt/sources.list.d/unlockforus-xenial.list
+        curl -s https://unlockforus.com/repository/keyFile | apt-key add -
+        update_sources
+      fi
+    fi
+      # just install it
+      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      apt-get install lite-controlcenter -y | show_progress ; check_inst
+      echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Terminating any ${_FNAME} instances..."
+  if [[ -n "$(pgrep -f lite-controlcenter)" ]]; then 
+    signal_process=$(pgrep -f lite-controlcenter)
+    for process in  ${signal_process}; do
+      kill "$process" ; sleep 1
+    done
+  fi ; sleep 1
+
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge lite-controlcenter -y | show_progress ; check_remv
+
+  # remove desktop icon
+  echo "#⚫ Removing ${_FNAME} launchers..."
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f "/home/${desktopuser}/Desktop/lite-controlcenter.desktop"
+  done ; sleep 1
+
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi 
+}
+
 MIDORIWB() {
 
 # variables
@@ -1094,6 +1153,47 @@ _FNAME="MintStick"
 else
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge mintstick -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi 
+}
+
+MINTUPDATEAPP() {
+
+_FNAME="Update Manager"
+
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'mintupdate-lite\s\s')" ]]; then
+  
+    echo "# ${_FNAME}..." ; check_online
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
+  
+      echo "#⚫ Adding Repository & key..." ; sleep 1
+
+      # linuxlite
+      if [[ $(lsb_release -sc) = "xenial" ]]; then
+        echo "deb https://unlockforus.com/repository/dists/xenial/ /" | tee /etc/apt/sources.list.d/unlockforus-xenial.list
+        curl -s https://unlockforus.com/repository/keyFile | apt-key add -
+        update_sources
+      fi
+    fi
+      # just install it
+      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      apt-get install mintupdate-lite -y | show_progress ; check_inst
+      echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Terminating any ${_FNAME} instances..."
+  if [[ -n "$(pgrep mintUpdate)" ]]; then 
+    signal_process=$(pgrep mintUpdate) ; kill "$signal_process" 
+  fi ; sleep 1
+
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge mintupdate-lite -y | show_progress ; check_remv
+
+  # remove desktop icon
+  echo "#⚫ Removing ${_FNAME} launchers..."
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f "/home/${desktopuser}/Desktop/mintUpdate.desktop"
+  done ; sleep 1
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi 
 }
@@ -1147,20 +1247,28 @@ fi
 }
 
 NEXTCLOUDCL() {
+
+  _FNAME="Nextcloud Client"
+
 if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nextcloud-client\s\s')" ]]; then
-  echo "# Downloading Nextcloud Client..." ; check_online
-    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep nextcloud-devs)" ]]; then
-      echo "#⚫ Adding PPA..." ; sleep 1
-      add-apt-repository ppa:nextcloud-devs/client -y ; update_sources
-    fi
-    echo "#⚫ Installing Nextcloud Client..."
-    apt-get install nextcloud-client -y | show_progress ; check_inst
-    echo "#✔ Installation completed." ; sleep 1
+  
+  echo "# Downloading ${_FNAME}..." ; check_online
+  if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep nextcloud-devs)" ]]; then
+    echo "#⚫ Adding PPA..." ; sleep 1
+    add-apt-repository ppa:nextcloud-devs/client -y ; update_sources
+  fi
+
+  echo "#⚫ Installing ${_FNAME}..."
+  apt-get install nextcloud-client -y | show_progress ; check_inst
+
+  echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any Nextcloud Client instances..."
+  echo "#⚫ Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep nextcloud)" ]]; then killall -9 nextcloud; fi ; sleep 1
-  echo "#⚫ Uninstalling Nextcloud Client..." ; sleep 1
+
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove nextcloud-client -y | show_progress ; check_remv
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -1775,6 +1883,14 @@ if [[ -z "$(grep -F ' keepassxc ' <<< ${DPKGCHECKS[@]})" ]]; then
 else _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "<span foreground='green'>Select to Remove</span>" "Community driven and fully cross-platform modern password manager")
 fi
 
+# check for lite-controlcenter
+if [[ "$LLDENV" = "Lite" ]]; then
+  if [[ -z "$(grep -F ' lite-controlcenter ' <<< ${DPKGCHECKS[@]})" ]]; then
+       _liteccapp=(False "$_APPICONS/litecc.png" "LITECCAPP" "Lite Control Center" "Utility" "No" "An all-in-one control center application for Linux Lite")
+  else _liteccapp=(False "$_APPICONS/litecc.png" "LITECCAPP" "Lite Control Center" "Utility" "<span foreground='green'>Select to Remove</span>" "An all-in-one control center application for Linux Lite")
+  fi
+fi
+
 # check for midori browser
 if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
      _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "No" "A lightweight, fast, and free web browser")
@@ -1786,6 +1902,14 @@ if [[ "$LLDENV" = "Lite" ]]; then
   if [[ -z "$(grep -F ' mintstick ' <<< ${DPKGCHECKS[@]})" ]]; then
        _mintstickapp=(False "$_APPICONS/mintstick.png" "MINTSTICKAPP" "MintStick" "Utility" "No" "Tool to write .img or .iso files to a USB Key. It can also format them")
   else _mintstickapp=(False "$_APPICONS/mintstick.png" "MINTSTICKAPP" "MintStick" "Utility" "<span foreground='green'>Select to Remove</span>" "Tool to write .img or .iso files to a USB Key. It can also format them")
+  fi
+fi
+
+# check for mintupdate-lite
+if [[ "$LLDENV" = "Lite" ]]; then
+  if [[ -z "$(grep -F ' mintupdate-lite ' <<< ${DPKGCHECKS[@]})" ]]; then
+       _mintupdateapp=(False "$_APPICONS/mintupdate.png" "MINTUPDATEAPP" "Update Manager" "Utility" "No" "Helps installing security updates and new versions of packages")
+  else _mintupdateapp=(False "$_APPICONS/mintupdate.png" "MINTUPDATEAPP" "Update Manager" "Utility" "<span foreground='green'>Select to Remove</span>" "Helps installing security updates and new versions of packages")
   fi
 fi
 
@@ -1939,8 +2063,10 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" -
 "${_gthumbapp[@]}" \
 "${_hardinfo[@]}" \
 "${_keepassxcapp[@]}" \
+"${_liteccapp[@]}" \
 "${_midoriwb[@]}" \
 "${_mintstickapp[@]}" \
+"${_mintupdateapp[@]}" \
 "${_neofetchapp[@]}" \
 "${_nemocompare[@]}" \
 "${_nemodropbox[@]}" \
