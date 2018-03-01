@@ -19,8 +19,6 @@ Report issues and feel free to suggest your own fixes/tweaks/script improvements
 
 ## Installation and Update Instructions
 
- ** Will create uninstaller script later **
-
 Option 1 - From Terminal:
 
 `cd /tmp && wget https://raw.githubusercontent.com/ralphys/unlockme/master/install.sh && chmod +x install.sh && ./install.sh`
