@@ -1910,8 +1910,8 @@ fi
 
 # check for geary
 if [[ -z "$(grep -F ' geary ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _geary=(False "$_APPICONS/evolution.png" "GEARY" "Geary" "Email client" "No" "Find, read and send email with a straightforward, modern interface")
-else _geary=(False "$_APPICONS/evolution.png" "GEARY" "Geary" "Email client" "<span foreground='green'>Select to Remove</span>" "Find, read and send email with a straightforward, modern interface")
+     _geary=(False "$_APPICONS/geary.png" "GEARY" "Geary" "Email client" "No" "Find, read and send email with a straightforward, modern interface")
+else _geary=(False "$_APPICONS/geary.png" "GEARY" "Geary" "Email client" "<span foreground='green'>Select to Remove</span>" "Find, read and send email with a straightforward, modern interface")
 fi
 
 # check for gthumb
@@ -2016,8 +2016,8 @@ fi
 
 # check for screenfetch
 if [[ -z "$(grep -F ' screenfetch ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "No" "Bash system information tool")
-else _screenfetch=(False "$_APPICONS/utility.png" "SCREENFETCH" "Screenfetch" "Utility" "<span foreground='green'>Select to Remove</span>" "Bash system information tool")
+     _screenfetch=(False "$_APPICONS/screenfetch.png" "SCREENFETCH" "Screenfetch" "Utility" "No" "Bash system information tool")
+else _screenfetch=(False "$_APPICONS/screenfetch.png" "SCREENFETCH" "Screenfetch" "Utility" "<span foreground='green'>Select to Remove</span>" "Bash system information tool")
 fi
 
 # check for seamonkey web browser
