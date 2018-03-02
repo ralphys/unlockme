@@ -527,7 +527,7 @@ ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FI
            VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
 
 # array B definitions
-ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING SOFTINST LOGARCHIVES CHNAMEHOST \
+ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING SOFTINST LITECCMODS LOGARCHIVES CHNAMEHOST \
            PACKAGECACHE RESIDCONFIG SYSCACHEPR NULL)
 
  SELECTRUN=${#selection[@]}
@@ -797,6 +797,13 @@ else
        _sysswap=(FALSE "SYSSWAP" "Kernel Swappiness" "Performance" "System" "<span foreground='green'>Custom kernel swappiness applied - (select to modify)</span>")
 fi
 
+# check for lite-controlcenter modules
+if [[ "$LLDENV" = "Lite" && -n "$(dpkg -l | grep -E '^ii' | grep '\s\slite-controlcenter\s')" ]] && \
+   [[ -d /usr/share/litecc/modules/disabled && "$(ls -A /usr/share/litecc/modules/disabled)" ]]; then
+       _liteccmodules=(FALSE "LITECCMODS" "Control Center modules" "Management" "System" "Enable UnlockMe modules in Linux Lite Control Center")
+  else _liteccmodules=()
+fi
+
 # Check if  midori browser cache exists
 if [[ -d  "${HOME}/.cache/midori/" ]]; then
      MDCACHESIZE=$(du -sh "${HOME}/.cache/midori/" | awk '{print $1"B"}')
@@ -1033,6 +1040,7 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_blockhosts[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
+"${_liteccmodules[@]}" \
 "${_dnscache[@]}" \
 "${_fixdpcin[@]}" \
 "${_fixdpxfce[@]}" \

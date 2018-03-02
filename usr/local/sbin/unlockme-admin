@@ -40,7 +40,7 @@ touch "$lockfile"
 trap "rm -f ${lockfile}" EXIT
 
 # variables
- [[ -f "/tmp/unlockusr" ]] && SOFTUSR=$(< "/tmp/unlockusr")
+ [[ -f "/tmp/.unlockusr" ]] && SOFTUSR=$(< "/tmp/.unlockusr")
  APPNAME="UnlockMe"
  DLGICON="/usr/share/unlockme/icons/ui/dlgicon.png"
 RUN_ICON="/usr/share/unlockme/icons/ui/run.png"
@@ -148,6 +148,7 @@ ADMRUN="$@"
   if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
   if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
   if [[ $(grep "IPV6" <<< "$ADMRUN") ]]; then ARRAYC+=('IPV6'); fi
+  if [[ $(grep "LITECCMODS" <<< "$ADMRUN") ]]; then ARRAYC+=('LITECCMODS'); fi
   if [[ $(grep "LOGARCHIVES" <<< "$ADMRUN") ]]; then ARRAYC+=('LOGARCHIVES'); fi
   if [[ $(grep "PACKAGECACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('PACKAGECACHE'); fi
   if [[ $(grep "THEMING" <<< "$ADMRUN") ]]; then ARRAYC+=('THEMING'); fi
@@ -411,7 +412,7 @@ _TTL="/etc/NetworkManager/dnsmasq.d/ttl"
 echo "#⚫ $_FNAME..." 
 
 while (true); do
-echo "#⚫ Configuring $_FNAME..." 
+echo "#⚫ Configuring $_FNAME..." ; sleep .1
 
   disable_dns_cache() {
 
@@ -627,6 +628,53 @@ else
     else
       echo "#✘ An error occurred while disabling IPv6." ; sleep 2
     fi
+fi
+}
+
+# linuxlite control center modules tweak
+LITECCMODS() {
+
+echo "#⚫ Lite Control Center modules..." ; sleep .2
+
+TITLE="UnlockMe modules for Lite Control Center"
+MODDIR="/usr/share/litecc/modules/disabled"
+
+unlockme_modules=(
+  "/usr/share/litecc/modules/system/unlockmemain"
+  "/usr/share/litecc/modules/system/unlockmesyscachepr"
+  "/usr/share/litecc/modules/system/unlockmesysswap"
+  "/usr/share/litecc/modules/networking/unlockmednscache"
+  "/usr/share/litecc/modules/software/unlockmeappsoftware"
+)
+
+if zenity --question --width="320" --height="140" --title="$TITLE" \
+       --text="\nYou are about to enable all UnlockMe related modules in Lite Control Center.\n\n\
+Would you like to proceed?" 2>/dev/null; then
+
+  if [[ -n "$(pgrep -f lite-controlcenter)" ]]; then
+
+    APPACTIVE="1" 
+    signal_process=$(pgrep -f lite-controlcenter)
+    
+    echo "#⚫ Terminating any Lite Control Center instances..."
+    for process in  ${signal_process}; do
+      kill "$process" ; sleep 1
+    done
+  fi
+
+  echo "#⚫ Enabling UnlockMe modules..." ; sleep .5
+
+  for module in ${unlockme_modules[@]}; do
+    echo "# ${module}"
+    mv -f "$MODDIR"/"$(awk -F'/' '{print $NF}' <<< ${module})" "$module" ; sleep .5
+  done
+
+  echo "#✔ Modules enabled."
+  rm -rf "$MODDIR"
+
+  sleep 2 ; zenity --info --width="320" --timeout="8" --title="$TITLE" \
+                   --text="\nUnlockMe modules have been enabled in Lite Control Center." 2>/dev/null
+
 fi
 }
 
@@ -889,10 +937,12 @@ echo "#✔ Residual configuration files cleared" ; sleep 1
 # kernel cache pressure tweak
 SYSCACHEPR() {
 
-echo "# Configuring kernel cache pressure..."
+echo "# Configuring kernel cache pressure..." ; sleep .1
 
 # the loop
 while (true); do
+
+echo "# Configuring kernel cache pressure..." ; sleep .1
 
 _SYSFL="/etc/sysctl.conf"
 _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
@@ -963,10 +1013,12 @@ SYSSWAP() {
 # sysctl.conf variable
 _SYSFL="/etc/sysctl.conf"
 
+echo "#⚫ Configuring swappiness..." ; sleep .1
+
 # kernel swappiness main dialog loop
 while (true); do
 
-echo "#⚫ Configuring swappiness..."
+echo "#⚫ Configuring swappiness..." ; sleep .1
 _SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog

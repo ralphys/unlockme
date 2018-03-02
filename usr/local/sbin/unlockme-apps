@@ -47,13 +47,17 @@ if [[ ! -f "$unlockusr" ]]; then
   echo "$DESKTOP_SESSION" > "$unlockds" ; chmod 600 "$unlockds"
 fi
 
-if [[ $EUID != 0 ]]; then
+if [[ "$EUID" != "0" ]]; then
 
   if pidof -o %PPID -x "unlockme-main" >/dev/null; then
         zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
         exit 0
   fi
-  pkexec unlockme-apps ; exit 0
+  pkexec unlockme-apps
+  if [[ "${PIPESTATUS[@]}" = "126" ]]; then
+    rm -f "$unlockusr" "$unlockds" ; exit 0
+  fi 
+  exit 0
 fi
 
 # create a lock file
