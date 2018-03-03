@@ -209,6 +209,9 @@ echo "#⚫ Configuring pkexec password prompt..." ; sleep .5
 
 _WFILE0="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"
 _WFILE1="/usr/share/unlockme/set/ACTPKEXEC"
+_WFILE2="/home/${SOFTUSR}/.local/share/unlockme/ACTPKEXEC"
+
+[[ ! -d "/home/${SOFTUSR}/.local/share/unlockme" ]] && mkdir -p "/home/${SOFTUSR}/.local/share/unlockme"
 
 if [[ ! -f "$_WFILE0" ]]; then
   echo "#⚫ Bypassing pkexec password prompt for admins..." ; sleep 2
@@ -219,8 +222,8 @@ Identity=unix-group:sudo
 Action=*
 ResultActive=yes' > "$_WFILE0"
 
-  touch "$_WFILE1"
-  if [[ -f "$_WFILE0" && -f "$_WFILE1" ]]; then
+  touch "$_WFILE1" "$_WFILE2"
+  if [[ -f "$_WFILE0" && -f "$_WFILE1" && -f "$_WFILE2" ]]; then
     echo "#✔ pkexec bypass for admins applied." ; sleep 2
   else
     echo "# Error..." ; sleep .5
@@ -228,14 +231,13 @@ ResultActive=yes' > "$_WFILE0"
   fi
 
 else
-  zenity --question --width="300" --title="pkexec password prompt" \
-         --text="\nDo you want to enable pkexec password prompt for admins again?" 2>/dev/null
+  if zenity --question --width="300" --title="pkexec password prompt" \
+            --text="\nDo you want to enable pkexec password prompt for admins again?" 2>/dev/null; then 
 
-  if [ "$?" = "0" ]; then 
     echo "#⚫ Restoring pkexec password prompt for admins..." ; sleep 2
-    rm -f "$_WFILE0" "$_WFILE1"
+    rm -f "$_WFILE0" "$_WFILE1" "$_WFILE2"
 
-    if [[ ! -f "$_WFILE0" && ! -f "$_WFILE1" ]]; then
+    if [[ ! -f "$_WFILE0" && ! -f "$_WFILE1" && ! -f "$_WFILE2" ]]; then
       echo "#✔ pkexec for admins enabled." ; sleep 2
     else
       echo "# Error..." ;sleep .5
@@ -463,7 +465,7 @@ otherwise protect and encrypt your dns requests with DNSCrypt.\n
   Your upstream DNS provider must support DNSSEC,
   otherwise you will lose connectivity.\n"
 
-answd=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --center --borders=8 --width=420 --height=360 --window-icon="$RUN_ICON" \
+answd=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --center --borders=8 --width=420 --height=390 --window-icon="$RUN_ICON" \
                --title="$_MDIALOGTITLE" --text="$_MDIALOGTXT" --dclick-action= --no-selection --image="$DLGICON" --icon-name="$RUN_ICON" \
                --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
                --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
@@ -672,9 +674,8 @@ Would you like to proceed?" 2>/dev/null; then
   echo "#✔ Modules enabled."
   rm -rf "$MODDIR"
 
-  sleep 2 ; zenity --info --width="320" --timeout="8" --title="$TITLE" \
-                   --text="\nUnlockMe modules have been enabled in Lite Control Center." 2>/dev/null
-
+  sleep 2 ; zenity --info --width="340" --timeout="8" --title="$TITLE" \
+                   --text="\nUnlockMe modules for Lite Control Center have been enabled." 2>/dev/null
 fi
 }
 

@@ -28,13 +28,13 @@ if [[ $(wc -l < /etc/hosts) -ge 50 ]]; then
 fi
 
 dialog0="\n${_APPNAME} is running unprivileged
-\nYou won't be able to apply the resulting blacklist to
+\nYou won't be able to apply the resulting blacklist to \
 the system; you'll be prompted to save it instead.\n"
 
-if [[ $EUID != 0 ]]; then
+if [[ "$EUID" != "0" ]]; then
 
-	yad --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders="8" --title="$_APPNAME" --text="$dialog0" --on-top \
-		--fixed --button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0 2>/dev/null
+	yad --width="420" --height="180" --window-icon="gtk-dialog-info" --image=gtk-dialog-info --borders="8" --title="$_APPNAME" --text="$dialog0" --on-top \
+		--button="Authenticate"\!gtk-refresh:2 --button="gtk-cancel":1 --button="Continue"\!gtk-ok:0 2>/dev/null
 	
 	case "$?" in
 		0) : ;;

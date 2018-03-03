@@ -2092,7 +2092,7 @@ CHECK
 
 # Main dialog
 DLGICON="/usr/share/unlockme/icons/ui/software.png"
-selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="620" --image="$DLGICON" \
+selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="640" --image="$DLGICON" \
     --column="":CHK --column="":IMG --column="SELECTION" --column="Name":TXT \
     --column="Category":TXT --column="Installed":TXT --column="Description":TXT \
     --hide-column="3" --print-column="3" --search-column="4" --button="Close!gtk-close":1 --button="Begin!gtk-ok":0 \

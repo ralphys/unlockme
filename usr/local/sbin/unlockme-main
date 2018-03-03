@@ -565,7 +565,7 @@ It already favors and makes use of the kernel page cache. \
   if grep -q 'SYSSWAP' <<< "${selection[${i}]}"; then
     
       # if preload is installed display info
-      if [[ -n "$(dpkg -l | grep -E '^ii' | grep -F '\spreload\s')" ]]; then
+      if [[ -n "$(dpkg -l | grep -E '^ii' | grep '\spreload\s\s')" ]]; then
 
       # remove
       REMOVE="SYSSWAP"
@@ -670,7 +670,7 @@ CHECK() {
 
 VARZSWAP="$(< /sys/module/zswap/parameters/enabled)"                    # zswap variable
 VARZRAM="$(dpkg -l | grep -E '^ii' | grep zram-config | cut -d' ' -f1)" # zram variable
-FILEPKEXEC="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"  # pkexec.pkla file
+FILEPKEXEC="/home/${_SOFTUSR}/.local/share/unlockme/ACTPKEXEC"  # pkexec.pkla file
 
 # Manage Save Session
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
@@ -1027,7 +1027,7 @@ else DISTRO="$(cut -d\\ -f1 < /etc/issue)"
 fi
 
 # main dialog
-selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="580" --window-icon="$ICON" --image="$ICON" --separator=" " \
+selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="600" --window-icon="$ICON" --image="$ICON" --separator=" " \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \
