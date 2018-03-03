@@ -933,8 +933,8 @@ else
   echo "#⚫ Uninstalling ${_FNAME}..."
   apt-get remove filezilla -y | show_progress ; check_remv
 
-  for i in ${_ALLUSERS}; do 
-    rm -f /home/${i}/Desktop/filezilla.desktop
+  for desktopuser in ${_ALLUSERS}; do 
+    rm -f /home/${desktopuser}/Desktop/filezilla.desktop
   done
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -957,9 +957,9 @@ else
   apt-get remove firefox -y | show_progress ; check_remv
 
   echo "#⚫ Removing ${_FNAME} cache..." ; sleep 1
-  for i in ${_ALLUSERS}; do
-    rm -rf /home/${i}/.cache/mozilla/firefox
-    rm -f /home/${i}/Desktop/firefox.desktop
+  for desktopuser in ${_ALLUSERS}; do
+    rm -rf /home/${desktopuser}/.cache/mozilla/firefox
+    rm -f /home/${desktopuser}/Desktop/firefox.desktop
   done 
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -1153,10 +1153,10 @@ else
   apt-get remove midori -y | show_progress ; check_remv
 
   echo "#⚫ Removing ${_FNAME} cache..."
-  for i in ${_ALLUSERS}; do
-    rm -rf /home/${i}/.cache/midori
-    rm -f /home/${i}/Desktop/midori.desktop
-    rm -f /home/${i}/Desktop/midori-private.desktop
+  for desktopuser in ${_ALLUSERS}; do
+    rm -rf /home/${desktopuser}/.cache/midori
+    rm -f /home/${desktopuser}/Desktop/midori.desktop
+    rm -f /home/${desktopuser}/Desktop/midori-private.desktop
   done
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -1361,9 +1361,9 @@ else
 
   # remove cache folder from all users accounts
   echo "#⚫ Removing ${_FNAME} cache..."
-  for i in ${_ALLUSERS}; do
-    rm -rf /home/${i}/.cache/opera/Cache
-    rm -rf /home/${i}/Desktop/opera.desktop
+  for desktopuser in ${_ALLUSERS}; do
+    rm -rf /home/${desktopuser}/.cache/opera/Cache
+    rm -rf /home/${desktopuser}/Desktop/opera.desktop
   done ; sleep 1
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1666,9 +1666,9 @@ else
 
   # remove cache folder from all users accounts
   echo "#⚫ Removing ${_FNAME}  cache..."
-  for i in ${_ALLUSERS}; do 
-    rm -rf /home/${i}/.cache/vivaldi
-    rm -f /home/${i}/Desktop/vivaldi-stable.desktop
+  for desktopuser in ${_ALLUSERS}; do 
+    rm -rf /home/${desktopuser}/.cache/vivaldi
+    rm -f /home/${desktopuser}/Desktop/vivaldi-stable.desktop
   done
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1759,9 +1759,9 @@ else
 
   # remove cache folder from all users accounts
   echo "#⚫ Removing ${_FNAME} cache..."
-  for i in ${_ALLUSERS}; do
-    rm -rf /home/${i}/.cache/waterfox
-    rm -rf /home/${i}/Desktop/waterfox.desktop
+  for desktopuser in ${_ALLUSERS}; do
+    rm -rf /home/${desktopuser}/.cache/waterfox
+    rm -rf /home/${desktopuser}/Desktop/waterfox.desktop
   done
 
   echo "#✔ Uninstallation completed." ; sleep 1
