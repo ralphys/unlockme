@@ -21,7 +21,7 @@ _APPNAME="Blacklist Generator"
 
 
 # check if /etc/hosts is being used to block sites
-if [[ $(wc -l < /etc/hosts) > 50 ]]; then
+if [[ $(wc -l < /etc/hosts) -ge 50 ]]; then
 	zenity  --info --width="300" --height="120" --title="Custom /etc/hosts file detected" \
 			--text="\nIt seems your system is currently using a custom list in the /etc/hosts file to block hostnames.\
 \n\nIt is recommended to restore or revert to the original /etc/hosts file when using Blacklist Generator." 2>/dev/null
