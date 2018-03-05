@@ -142,6 +142,7 @@ check_inst() {
     zenity --error --width="240" --height="80" --title=" Error" \
            --text="\nAn error occurred while installing ${_FNAME}." 2>/dev/null
     echo "#✘ ${_FNAME} installation failed." ; sleep 1
+    [[ -f "$_PKGNAMEi386" || -f "$_PKGNAMEamd64" ]] && rm -f "$_PKGNAMEi386" "$_PKGNAMEamd64"
     continue
   fi
 }
@@ -1135,6 +1136,52 @@ else
 fi 
 }
 
+MESSENGERAPP() {
+
+_FNAME="Messenger for Desktop"
+_PKGNAMEi386="messengerfordesktopi386.deb"
+_PKGNAMEamd64="messengerfordesktopamd64.deb"
+_DLURL32="https://updates.messengerfordesktop.com/download/linux/latest/beta?arch=i386&pkg=deb"
+_DLURL64="https://updates.messengerfordesktop.com/download/linux/latest/beta?arch=amd64&pkg=deb"
+
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'messengerfordesktop\s\s')" ]]; then check_online
+  echo "#⚫ Downloading ${_FNAME}..." ; cd /tmp
+
+  if [[ ! -f "/tmp/messengerfordesktopi386.deb" && ! -f "messengerfordesktopamd64.deb" ]]; then
+    
+    if [[ "$ARCH" = "x86_64" ]]; then
+      /usr/local/sbin/get_download "$_DLURL64" ; wait
+      mv -f 'beta?arch=amd64&pkg=deb' messengerfordesktopamd64.deb
+    else
+      /usr/local/sbin/get_download "$_DLURL32" ; wait
+      mv -f 'beta?arch=i386&pkg=deb' messengerfordesktopi386.deb
+    fi
+  fi
+
+  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  apt-get install ./messengerfordesktop*.deb -y | show_progress ; check_inst
+
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#⚫ Terminating any ${_FNAME} instances..."
+  if [[ -n "$(pgrep -f messengerfordesktop)" ]]; then 
+    signal_process=$(pgrep -f messengerfordesktop)
+    for process in  ${signal_process}; do
+      kill "$process"
+    done
+  fi ; sleep 2
+
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge messengerfordesktop -y | show_progress ; check_remv
+
+  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  for desktopuser in ${_ALLUSERS}; do 
+    rm -rf /home/${desktopuser}/Desktop/messengerfordesktop.desktop
+  done
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+}
+
 MIDORIWB() {
 
 # variables
@@ -1290,7 +1337,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep 'nextcloud-client\s\s')" ]]; then
   echo "#✔ Installation completed." ; sleep 1
 else
   echo "#⚫ Terminating any ${_FNAME} instances..."
-  if [[ ! -z "$(pgrep nextcloud)" ]]; then killall -9 nextcloud; fi ; sleep 1
+  if [[ -n "$(pgrep nextcloud)" ]]; then killall -9 nextcloud; fi ; sleep 1
 
   echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove nextcloud-client -y | show_progress ; check_remv
@@ -1946,6 +1993,12 @@ if [[ "$LLDENV" = "Lite" ]]; then
   fi
 fi
 
+# check for messenger app
+if [[ -z "$(grep -F ' messengerfordesktop ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _messengerapp=(False "$_APPICONS/messengerfd.png" "MESSENGERAPP" "Facebook Messenger" "Chat client" "No" "A simple and beautiful app for Facebook Messenger")
+else _messengerapp=(False "$_APPICONS/messengerfd.png" "MESSENGERAPP" "Facebook Messenger" "Chat client" "<span foreground='green'>Select to Remove</span>" "A simple and beautiful app for Facebook Messenger")
+fi
+
 # check for midori browser
 if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
      _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "No" "A lightweight, fast, and free web browser")
@@ -2120,6 +2173,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="640" -
 "${_hardinfo[@]}" \
 "${_keepassxcapp[@]}" \
 "${_liteccapp[@]}" \
+"${_messengerapp[@]}" \
 "${_midoriwb[@]}" \
 "${_mintstickapp[@]}" \
 "${_mintupdateapp[@]}" \
