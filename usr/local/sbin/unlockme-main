@@ -117,8 +117,8 @@ rm_browser_profile() {
 # function - remove browser cache 
 rm_browser_cache() {
 
-  echo "#⚫ Removing $_BROWSERNAME browser cache..." && sleep 1 
-    rm -rf "{$_BROWSERCACHEDIR}"
+  echo "#⚫ Removing ${_BROWSERNAME} browser cache..." && sleep 1 
+    rm -rf "${_BROWSERCACHEDIR}"/*
 
     if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
       zenity --error --width="260" --height="80" --title=" Error" \

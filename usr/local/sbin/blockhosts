@@ -126,7 +126,7 @@ if [[ -s "$TMPFILE" ]]; then sleep 1
 	echo "50"
 	echo "# Success: Download completed" ; sleep .7
 else
-	echo " Failed: Download unsuccessful, aborting... :("
+	echo "# Failed: Download unsuccessful, aborting... :(" ; sleep 2
 	rm -f "$TMPFILE" "$GENFILEB" "$GENFILEW" > /dev/null
 	exit 1
 fi
