@@ -543,7 +543,7 @@ ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FI
 
 # array B definitions
 ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING SOFTINST LITECCMODS LOGARCHIVES CHNAMEHOST \
-           PACKAGECACHE RESIDCONFIG SYSCACHEPR NULL)
+           PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
 
  SELECTRUN=${#selection[@]}
 
@@ -994,6 +994,14 @@ if [[ "$LLDENV" =~ "Lite" ]]; then
      _whiskermrest=(FALSE "WHISKERMREST" "Whisker Menu Restore" "Fix" "User" "Restore Linux Lite Whisker Menu defaults")
 else _whiskermrest=()
 fi
+
+# Check for samba service -Linux Lite
+if [[ "$LLDENV" = "Lite" ]]; then
+  if [[ -n $(pgrep -f 'smbd') ]]; then
+     _sambasrv=(FALSE "SAMBASVR" " -- Service: samba" "Performance" "System" "If not using this PC as a file server, this service can safely disabled")
+  else _sambasrv=(FALSE "SAMBASVR" " -- Service: samba" "Performance" "System" "<span foreground='green'>Samba is disabled (select to enable samba)</span>")
+  fi
+fi
 } 
 
 # Main loop
@@ -1090,7 +1098,8 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_palemoonprofile[@]}" \
 "${_seamonkeyprofile[@]}" \
 "${_vivaldiprofile[@]}" \
-"${_waterfoxprofile[@]}")
+"${_waterfoxprofile[@]}" \
+"${_sambasrv[@]}")
 
 if [[ "$?" = "1" || "$?" = "252" ]]; then _CLEANUP; exit 0 ; fi # If Quit or (X) is clicked then exit
 

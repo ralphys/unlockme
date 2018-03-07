@@ -161,6 +161,7 @@ ADMRUN="$@"
   if [[ $(grep "SYSSWAP" <<< "$ADMRUN") ]]; then ARRAYC+=('SYSSWAP'); fi
   if [[ $(grep "ZRAM" <<< "$ADMRUN") ]]; then ARRAYC+=('ZRAM'); fi  
   if [[ $(grep "ZSWAP" <<< "$ADMRUN") ]]; then ARRAYC+=('ZSWAP'); fi
+  if [[ $(grep "SAMBASVR" <<< "$ADMRUN") ]]; then ARRAYC+=('SAMBASVR'); fi
 
 # common functions
 
@@ -1262,6 +1263,41 @@ else
   fi
 fi
 continue
+}
+
+# SERVICES
+# samba - smbd, nmbd
+SAMBASVR() {
+
+  echo "# Disabling smbd (samba) service..."
+
+  if [[ -n $(pgrep -f 'smbd') ]]; then
+    if zenity --question --title="$APPNAME - Confirm" --text="\nYou are about to disable Samba. Would you like to proceed?" 2>/dev/null; then
+      
+      # disable services smbd, nmbd
+      systemctl stop smbd && systemctl disable smbd
+      systemctl stop nmbd && systemctl disable nmbd
+
+      # check services 
+      if [[ -n $(systemctl status smbd | grep dead) && -n $(systemctl status nmbd | grep dead) ]]; then
+        echo "#✔ samba services have been disabled." ; sleep 2
+      else
+        echo "# An error occurred while disabling samba service." ; sleep 2
+      fi
+    fi
+  else
+    # enable samba services smbd, nmbd
+    echo "# Enabling samba services..."
+    systemctl enable smbd && systemctl start smbd
+    systemctl enable nmbd && systemctl start nmbd
+
+    # check services are running
+    if [[ -n $(pgrep -f 'smbd') && -n $(pgrep -f 'nmbd') ]]; then
+      echo "#✔ samba services have been enabled." ; sleep 2
+    else
+      echo "# An error occurred while enabling samba service." ; sleep 2
+    fi
+  fi
 }
 
 ## Arrays execution
