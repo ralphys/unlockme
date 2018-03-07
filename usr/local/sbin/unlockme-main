@@ -94,7 +94,7 @@ _CLEANUP() {
 # function - remove browser profile 
 rm_browser_profile() {
 
-  echo "#⚫ Removing ${_BROWSERNAME} browser profile..." && sleep .2
+  echo "#⚫ Removing ${_BROWSERNAME} browser profile..." ; sleep .2
   zenity --question --width="360" --window-icon="warning" --icon-name="gtk-dialog-warning" \
          --title="Browser profile removal" \
          --text="\nAre you sure you want to remove ${_BROWSERNAME} profile?\n\nThis action cannot be reverted." 2>/dev/null;
@@ -103,12 +103,12 @@ rm_browser_profile() {
     rm -rf "$_BROWSERPROFILE"
     
     if [[ "${PIPESTATUS[0]}" != "0" ]]; then 
-      echo "# Error..." && sleep 1
+      echo "# Error..." ; sleep 1
 
       zenity --error --width="260" --height="80" --title=" Error" \
              --text="\nAn error occurred while removing ${_BROWSERNAME} browser profile!" 2>/dev/null; return
     fi
-    echo "#✔ ${_BROWSERNAME} browser profile removed." && sleep 1.5
+    echo "#✔ ${_BROWSERNAME} browser profile removed." ; sleep 1.5
   else
     continue
   fi
@@ -117,14 +117,14 @@ rm_browser_profile() {
 # function - remove browser cache 
 rm_browser_cache() {
 
-  echo "#⚫ Removing ${_BROWSERNAME} browser cache..." && sleep 1 
+  echo "#⚫ Removing ${_BROWSERNAME} browser cache..." ; sleep 1 
     rm -rf "${_BROWSERCACHEDIR}"/*
 
     if [ "${PIPESTATUS[0]}" -ne "0" ]; then echo "# Error..." && sleep 1
       zenity --error --width="260" --height="80" --title=" Error" \
              --text="\nAn error occurred while removing ${_BROWSERNAME} browser cache!" 2>/dev/null; return
     fi
-  echo "#✔ ${_BROWSERNAME} browser cache cleared." && sleep 1
+  echo "#✔ ${_BROWSERNAME} browser cache cleared." ; sleep 1
 }
 
 # Autoclean module check
@@ -164,10 +164,25 @@ CHROMIUMPROFILE() {
   _BROWSERNAME="Chromium" _BROWSERPROFILE="${HOME}/.config/chromium/" ; rm_browser_profile
 }
 
-
 # function remove Firefox Cache 
 FIREFOXCACHE() {
-  _BROWSERNAME="Firefox" _BROWSERCACHEDIR="${HOME}/.cache/mozilla/firefox/" ; rm_browser_cache
+
+  _BROWSERNAME="Firefox" 
+  echo "#⚫ Looking up ${_BROWSERNAME} browser profiles..." ; sleep 1 
+
+  cd "${HOME}/.mozilla/firefox" && FFPRODIRS=$(grep 'Path' profiles.ini | cut -d\= -f2)
+
+  for DIR in ${FFPRODIRS[@]}; do
+    FFCACHEDIR=$(grep 'browser.cache.disk.parent_directory' "${DIR}/prefs.js" | awk '{print $2}' | cut -d\" -f2 -)
+    if [[ -n  "$FFCACHEDIR" ]]; then
+      rm -rf "$FFCACHEDIR"/*
+      rm -rf "$DIR"/cache2/*
+    else
+      rm -rf "$DIR"/cache2/*
+    fi
+ done
+
+  _BROWSERCACHEDIR="${HOME}/.cache/mozilla/firefox/" ; rm_browser_cache
 }
 
 # function remove Firefox profile 
@@ -711,8 +726,8 @@ if [[ -d "${HOME}/.config/google-chrome" ]]; then
 else _chromeprofile=()
 fi
 
-# Check if the chromium browser cache exists
-if [[ -d  "${HOME}/.cache/chromium/" ]]; then
+# Check for chromium browser cache
+if [[ $(du -sb "${HOME}/.cache/chromium/" | cut -f1) -ge 1048576 ]]; then
      CHRCACHESIZE=$(du -sh "${HOME}/.cache/chromium/" | awk '{print $1"B"}')
      chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
 else chromiumcache=()
@@ -762,8 +777,8 @@ if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; the
   fi
 fi
 
-# Check if firefox browser cache exists
-if [[ -d  "${HOME}/.cache/mozilla/" ]]; then
+# check for firefox browser cache
+if [[ $(du -sb "${HOME}/.cache/mozilla/firefox" | cut -f1) -ge 1048576 ]]; then
      FFCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
      firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
 else firefoxcache=()

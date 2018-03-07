@@ -399,7 +399,7 @@ else
   # remove chromium cache folder from all users accounts
   echo "#⚫ Removing ${_FNAME} cache..."
   for desktopuser in ${_ALLUSERS}; do
-    rm -rf "/home/${desktopuser}/.cache/chromium/"
+    rm -rf "/home/${desktopuser}/.cache/chromium"
     rm -f "/home/${desktopuser}/Desktop/chromium-browser.desktop"
   done ; sleep 1
 
@@ -1633,7 +1633,51 @@ else
 
   echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
   for desktopuser in ${_ALLUSERS}; do
-    rm -rf /home/${desktopuser}/Desktop/sublime_text.desktop
+    rm -f /home/${desktopuser}/Desktop/sublime_text.desktop
+  done
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+}
+
+TEAMVIEWERAPP() {
+
+_FNAME="TeamViewer"
+_PKGNAMEi386="teamviewer_i386.deb"
+_PKGNAMEamd64="teamviewer_amd64.deb"
+_DLURL32="https://download.teamviewer.com/download/linux/teamviewer_i386.deb"
+_DLURL64="https://download.teamviewer.com/download/linux/teamviewer_amd64.deb"
+
+if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\steamviewer\s\s')" ]]; then 
+  echo "# Downloading ${_FNAME}..."; sleep 1 ; check_online && cd /tmp
+
+  if [[ ! -f "${_PKGNAMEi386}" && ! -f "${_PKGNAMEamd64}" ]]; then   
+    if [[ "$ARCH" = "x86_64" ]]; then
+      /usr/local/sbin/get_download "$_DLURL64" ; wait
+    else
+      /usr/local/sbin/get_download "$_DLURL32" ; wait
+    fi
+  fi
+
+  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  apt-get install ./teamviewer*.deb -y | show_progress ; check_inst
+
+  echo "#✔ Installation completed." ; sleep 1
+else
+
+  echo "#⚫ Terminating any ${_FNAME} instances..."
+  if [[ -n "$(pgrep -f teamviewer)" ]]; then 
+    signal_process=$(pgrep -f teamviewer)
+    for process in  ${signal_process}; do
+      kill "$process"
+    done
+  fi ; sleep 1
+
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1 ;
+  apt-get remove --purge teamviewer -y | show_progress ; check_remv
+
+  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f /home/${desktopuser}/Desktop/com.teamviewer.TeamViewer.desktop
   done
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -1981,8 +2025,8 @@ fi
 
 # check for keepassxc
 if [[ -z "$(grep -F ' keepassxc ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "No" "Community driven and fully cross-platform modern password manager")
-else _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "<span foreground='green'>Select to Remove</span>" "Community driven and fully cross-platform modern password manager")
+     _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "No" "Community driven cross-platform modern password manager")
+else _keepassxcapp=(False "$_APPICONS/keepassxc.png" "KEEPASSXCAPP" "KeePassXC" "Password Manager" "<span foreground='green'>Select to Remove</span>" "Community driven cross-platform modern password manager")
 fi
 
 # check for lite-controlcenter
@@ -2100,6 +2144,12 @@ if [[ -z "$(grep -F ' sublime-text ' <<< ${DPKGCHECKS[@]})" ]]; then
   else _sublimeapp=(False "$_APPICONS/sublime_text.png" "SUBLIMEAPP" "Sublime Text" "Text Editor" "<span foreground='green'>Select to Remove</span>" "A sophisticated text editor for code, markup and prose")
 fi
 
+# check for teamviewer
+if [[ -z "$(grep -F ' teamviewer ' <<< ${DPKGCHECKS[@]})" ]]; then
+       _teamviewerapp=(False "$_APPICONS/teamviewer.png" "TEAMVIEWERAPP" "TeamViewer" "Desktop Sharing" "No" "Remote control, desktop sharing, web conferencing and file transfer")
+  else _teamviewerapp=(False "$_APPICONS/teamviewer.png" "TEAMVIEWERAPP" "TeamViewer" "Text Editor" "<span foreground='green'>Select to Remove</span>" "Remote control, desktop sharing, web conferencing and file transfer")
+fi
+
 # check for thunar-dropbox-plugin
 if [[ "$LMDENV" =~ "Xfce" || "$LLDENV" =~ "Lite" ]]; then
   if [[ -z "$(grep -F ' dropbox ' <<< ${DPKGCHECKS[@]})" ]]; then 
@@ -2188,6 +2238,7 @@ selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="900" --height="640" -
 "${_skypems[@]}" \
 "${_spotifyapp[@]}" \
 "${_sublimeapp[@]}" \
+"${_teamviewerapp[@]}" \
 "${_thunardropbox[@]}" \
 "${_vivaldiwb[@]}" \
 "${_waterfoxwb[@]}" 2>/dev/null)

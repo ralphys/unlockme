@@ -62,6 +62,8 @@ fi
 (
 TMPFILE="/tmp/blacklist.process" 				# temporary blacklist file
 GENFILEB="/tmp/blacklist.custom" 				# custom config
+userAgent='Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
+
 [[ ! -e "$GENFILEB" ]] && touch "$GENFILEB"
 GENFILEW="/tmp/whitelist.custom" 				# custom config
 [[ ! -e "$GENFILEW" ]] && touch "$GENFILEW"
@@ -109,15 +111,22 @@ done
 
 echo "30"
 echo "# Downloading selected Source lists..."
-echo -n "" > "$TMPFILE"
+echo -n "" > "$TMPFILE" ; sleep 1
 
-for s in ${SOURCES}; do
-	{ (wget $s -O - || logger "Failed: $s") | tr -d "\r" | sed -e '/^[[:alnum:]:]/!d' | awk '{print $2}' | sed -e '/^localhost$/d' >> $TMPFILE
-} & done
+for url in ${SOURCES}; do
+	if which curl > /dev/null; then
+		echo "#Downloading $url..." ; sleep 1
+		curl -fsSL -A "$userAgent" $url >> "$TMPFILE" 
+		wait
+	else
+		echo "#Downloading $url..." ; sleep 1
+		wget -qO- -U "$userAgent" $url >> "$TMPFILE"
+		wait
+	fi
+done
 
-wait
-
-sleep 3
+(tr -d "\r" | sed -e '/^[[:alnum:]:]/!d' | awk '{print $2}' | sed -e '/^localhost$/d') < "$TMPFILE" >> /tmp/.blacklist.process
+mv -f /tmp/.blacklist.process "$TMPFILE"
 
 echo "40"
 echo "# Verifying download..." ; sleep .5
@@ -174,11 +183,16 @@ if [[ "$_DNSSERV" == "DNSMASQ" ]]; then
 		grep -q -F '..' "$bgenfile" && sed -i '/\.\./d' "$bgenfile" ; sleep 1
 		
 	# delete address=/0.0.0.0/ if in blacklist
-		echo "95"
+		echo "92"
 		grep -q -Fx 'address=/0.0.0.0/' "$bgenfile" && sed -i '/address=\/\0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
-		echo "96"
+		echo "93"
 		grep -q -Fx 'address=//0.0.0.0/' "$bgenfile" && sed -i '/address=\/\/\0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
-
+		echo "94"
+		grep -q -Fx 'address=/.net/0.0.0.0' "$bgenfile" && sed -i '/address=\/\.net\/0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
+		echo "95"
+		grep -q -Fx 'address=/.com/0.0.0.0' "$bgenfile" && sed -i '/address=\/\.com\/0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
+		echo "96"
+		grep -q -Fx 'address=/.org/0.0.0.0' "$bgenfile" && sed -i '/address=\/\.org\/0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
 	# cleanup incompleted TLDs
 		echo "98"
 		grep -q -Fx 'address=/.com/0.0.0.0/' "$bgenfile" && sed -i '/address=\/\.com\/\0\.0\.0\.0\//d' "$bgenfile" ; sleep 1
@@ -355,7 +369,7 @@ szblack=$(yad --entry --image="/usr/share/unlockme/icons/ui/blacklist90.png" --b
 
 # Begin blacklist processing
 gen_blacklist $ans $ans2 ) | yad --progress --width="340" --height="110" --title="Progress Status" --text="" --center --no-buttons --skip-taskbar \
-								 --undecorated --no-cancel --percentage=0 --auto-close --auto-kill 2>/dev/null
+								 --fixed --undecorated --no-cancel --percentage=0 --auto-close --auto-kill 2>/dev/null
 (( $? != 0 )) && zenity --error --text="Error in command execution."
 exit 0
 
