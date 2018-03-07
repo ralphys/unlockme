@@ -72,7 +72,7 @@ load_common
 # of downloaded icon theme's temp directory.
 list=($(
   for DATA in ${SELECT}; do
-      echo False     			# Default - "False"
+      echo False          # Default - "False"
       echo "$DATA"
   done ))
 
@@ -118,7 +118,7 @@ function select_all () {
 
   list=($(
     for DATA in ${SELECT}; do
-      echo True  >> "$PIPE_03"	# Select all - "True" for the checklist column
+      echo True  >> "$PIPE_03"  # Select all - "True" for the checklist column
       echo "$DATA" >> "$PIPE_03"
     done ))
 }
@@ -149,15 +149,15 @@ else
 fi
 
 PackSelect=($(yad --list --checklist --width=760 --height=550 --separator=" " --grid-lines=hor --search-column=2 \
-    			  --wrap --borders=6 --center --window-icon="$APPICON" --image="$APPICON" --image-on-top \
-    			  --title="$IconTPS" --text="$ITPMDTEXT" \
-    			  --column "▼"  --column "Icon Theme" \
-    			  "${list[@]}" \
-    			  --button="gtk-cancel":1 \
-    			  --button="Clear all!gtk-clear":'bash -c "clear_all"' \
-    			  --button="Select all!gtk-refresh":'bash -c "select_all"' \
-    			  --button="Next!gtk-ok":0 \
-    			  --listen --print-column=2 < $PIPE_03))
+            --wrap --borders=6 --center --window-icon="$APPICON" --image="$APPICON" --image-on-top \
+            --title="$IconTPS" --text="$ITPMDTEXT" \
+            --column "▼"  --column "Icon Theme" \
+            "${list[@]}" \
+            --button="gtk-cancel":1 \
+            --button="Clear all!gtk-clear":'bash -c "clear_all"' \
+            --button="Select all!gtk-refresh":'bash -c "select_all"' \
+            --button="Next!gtk-ok":0 \
+            --listen --print-column=2 < $PIPE_03))
 action=$?
 
 # When Quit or (X) is clicked break
@@ -185,7 +185,7 @@ It needs to be connected to the internet to download and install packages." 2>/d
 function check_download() {
 
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then
-  	rm -f "$FNAMEDL"
+    rm -f "$FNAMEDL"
     zenity --error --width="260" --height="90" --title="  $APPNAME - Error" \
            --text="\nAn error occurred while processing $FNAME download. Please try again." 2>/dev/null
     continue
@@ -198,60 +198,60 @@ function show_progress() {
 
 function uninstall_icons() {
 
-	# read installation log and delete folders
-	echo "#⚫ Removing $FNAME icons..." ; sleep 1  
+  # read installation log and delete folders
+  echo "#⚫ Removing $FNAME icons..." ; sleep 1  
 
-	REMFDS=$(< "$FILELG")
+  REMFDS=$(< "$FILELG")
     for folders in ${REMFDS}; do
       rm -rf $folders
     done
-	echo "#✔ Removal completed." ; rm -f "$FILELG" ; sleep 1
+  echo "#✔ Removal completed." ; rm -f "$FILELG" ; sleep 1
 }
 
 Sardi() {
 
 export FNAME="Sardi"
-FNAMEDL="sardi.tar.gz"
+echo "#⚫ ${FNAME} icons..." ; check_online
+
 FILELG="$INSTLOG/Sardi"
 export TMPDIR="/tmp/sardi"
-URLDL="https://sourceforge.net/projects/sardi/files/latest/download?source=files"
+PKGVER=$(curl -s https://sourceforge.net/projects/sardi/files/?source=navbar | grep 'class="name">sardi-icons-9' | tail -n1 | cut -d\> -f2 | cut -d\< -f1)
+URLDL="https://svwh.dl.sourceforge.net/project/sardi/$PKGVER"
+FNAMEDL=$PKGVER
 
-echo "#⚫ $FNAME icons..." ; sleep 1
+  # check if installed
+  if [[ ! -f "$FILELG" ]]; then
 
-	# check if installed
-	if [[ ! -f "$FILELG" ]]; then
+    # if not installed and no previous download is found in /tmp, download 
+    if [[ ! -f "/tmp/$FNAMEDL" ]]; then
+      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+      cd /tmp ; get_download "$URLDL"
+    fi
 
-		# if not installed and no previous download is found in /tmp, download 
-		if [[ ! -f "/tmp/$FNAMEDL" ]]; then
-			echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
-			cd /tmp ; get_download "$URLDL"
-		fi
+    cd /tmp
 
-		cd /tmp
-    	mv -f download\?source\=files "$FNAMEDL" >> /dev/null 2>&1
+      # remove previous temp directory if present
+      [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
 
-    	# remove previous temp directory if present
-    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+      # create temp directory and extract download
+      echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
+      mkdir "$TMPDIR" ; tar -zvxf "/tmp/${FNAMEDL}" -C "$TMPDIR" | show_progress ; check_download
 
-    	# create temp directory and extract download
-    	echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
-    	mkdir "$TMPDIR" ; tar -zvxf "/tmp/${FNAMEDL}" -C "$TMPDIR" | show_progress ; check_download
+      # cleanup extracted download
+      find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+      echo "#⚫ ${IconTPS}..." ; sleep .5
 
-    	# cleanup extracted download
-    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
-    	echo "#⚫ ${IconTPS}..." ; sleep .5
+      # icon theme selector
+      ICONTHEMESELECTOR
 
-    	# icon theme selector
-    	ICONTHEMESELECTOR
-
-    	echo "#⚫ Installing $FNAME icons..." ; sleep 1
-    	cd "$TMPDIR"
-    		for i in ${Pack_Selected[@]}; do
-    		cp -rf $i "$ICONFLD"
-    	done
-    	
-    	# ensure Sardi (core) icon theme gets installed
-    	[[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+      echo "#⚫ Installing $FNAME icons..." ; sleep 1
+      cd "$TMPDIR"
+        for i in ${Pack_Selected[@]}; do
+        cp -rf $i "$ICONFLD"
+      done
+      
+      # ensure Sardi (core) icon theme gets installed
+      [[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
 
       # log folder for uninstallation
       echo "$FNAME" >> "$FILELG"
@@ -270,17 +270,17 @@ echo "#⚫ $FNAME icons..." ; sleep 1
         fi
       done
 
-    	# add to log file for uninstallation
+      # add to log file for uninstallation
       echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG"      
       sed -i 's#^#'"$ICONFLD/"'#' "$FILELG"
 
-    	# remove temporary working directory 
-    	rm -rf "$TMPDIR" &
-		  echo "#✔ Installation completed." ; sleep 1			
-	else
-		# remove sardi icons
-		uninstall_icons
-	fi
+      # remove temporary working directory 
+      rm -rf "$TMPDIR" &
+      echo "#✔ Installation completed." ; sleep 1     
+  else
+    # remove sardi icons
+    uninstall_icons
+  fi
 }
 
 Sardi-Extra() {
@@ -293,46 +293,46 @@ URLDL="https://github.com/erikdubois/Sardi-Extra/archive/master.zip"
 
 echo "#⚫ $FNAME icons..." && sleep 1
 
-	if [[ ! -f "$FILELG" ]]; then
-		 
-		if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
-			echo "#⚫ Downloading ${FNAME} icons..." ; check_online ; sleep 1 
-			cd /tmp ; get_download "$URLDL"
-		fi
-    	
-    	cd /tmp
-    	[[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
-    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+  if [[ ! -f "$FILELG" ]]; then
+     
+    if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
+      echo "#⚫ Downloading ${FNAME} icons..." ; check_online ; sleep 1 
+      cd /tmp ; get_download "$URLDL"
+    fi
+      
+      cd /tmp
+      [[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
+      [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
 
-    	echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
-    	unzip "$FNAMEDL" | show_progress ; check_download
+      echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
+      unzip "$FNAMEDL" | show_progress ; check_download
 
 
-    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \; 
-    	echo "#⚫ $IconTPS..." ; sleep .5
+      find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \; 
+      echo "#⚫ $IconTPS..." ; sleep .5
 
-    	# icon theme selector
-    	ICONTHEMESELECTOR
+      # icon theme selector
+      ICONTHEMESELECTOR
 
-    	echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
-    	cd "$TMPDIR"
-    		for i in ${Pack_Selected[@]}; do
-    		cp -rf $i "$ICONFLD"
-    	done
+      echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
+      cd "$TMPDIR"
+        for i in ${Pack_Selected[@]}; do
+        cp -rf $i "$ICONFLD"
+      done
 
-    	# ensure main icon theme was installed
-    	[[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
-    	
-    	# create log file for uninstallation
-    	echo "$FNAME" > "$FILELG"
+      # ensure main icon theme was installed
+      [[ ! -d "${ICONFLD}/${FNAME}" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+      
+      # create log file for uninstallation
+      echo "$FNAME" > "$FILELG"
       echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG" && sed -i 's#^#'"$ICONFLD/"'#' "$FILELG"
 
-    	rm -rf "$TMPDIR" & 
-		  echo "#✔ Installation completed." ; sleep 1
-			
-	else
-		uninstall_icons
-	fi
+      rm -rf "$TMPDIR" & 
+      echo "#✔ Installation completed." ; sleep 1
+      
+  else
+    uninstall_icons
+  fi
 }
 
 Surfn() {
@@ -345,45 +345,45 @@ URLDL="https://github.com/erikdubois/Surfn/archive/master.zip"
 
 echo "#⚫ ${FNAME} icons..." ; sleep 1
 
-	if [[ ! -f "$FILELG" ]]; then
+  if [[ ! -f "$FILELG" ]]; then
 
-		if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
-			echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
-			cd /tmp ; get_download "$URLDL"
-		fi
-				
-    	cd /tmp 
-    	[[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
-    	[[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+    if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
+      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+      cd /tmp ; get_download "$URLDL"
+    fi
+        
+      cd /tmp 
+      [[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
+      [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
 
-    	echo "#⚫ Extracting $FNAME download..." ; sleep 1
-    	unzip "$FNAMEDL" | show_progress ; check_download
+      echo "#⚫ Extracting $FNAME download..." ; sleep 1
+      unzip "$FNAMEDL" | show_progress ; check_download
 
-    	find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
-    	echo "#⚫ ${IconTPS}..." ; sleep .5
+      find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+      echo "#⚫ ${IconTPS}..." ; sleep .5
 
-    	# icon theme selector
-    	ICONTHEMESELECTOR
+      # icon theme selector
+      ICONTHEMESELECTOR
 
-    	echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
-    	cd "$TMPDIR"
-    		for i in ${Pack_Selected[@]}; do
-    		cp -rf $i "$ICONFLD"
-    	done
+      echo "#⚫ Installing ${FNAME} icons..." ; sleep 1
+      cd "$TMPDIR"
+        for i in ${Pack_Selected[@]}; do
+        cp -rf $i "$ICONFLD"
+      done
 
-    	# ensure main icon theme was installed
-    	[[ ! -d "$ICONFLD/$FNAME" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
+      # ensure main icon theme was installed
+      [[ ! -d "$ICONFLD/$FNAME" ]] && cp -rf "${TMPDIR}/${FNAME}" "${ICONFLD}/${FNAME}"
 
-    	# create log file for uninstallation
-    	echo "$FNAME" > "$FILELG"
+      # create log file for uninstallation
+      echo "$FNAME" > "$FILELG"
       echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG" && sed -i 's#^#'"$ICONFLD/"'#' "$FILELG" 
 
-    	rm -rf "$TMPDIR" 
-		  echo "#✔ Installation completed." ; sleep 1
-			
-	else
-		uninstall_icons
-	fi
+      rm -rf "$TMPDIR" 
+      echo "#✔ Installation completed." ; sleep 1
+      
+  else
+    uninstall_icons
+  fi
 }
 
 # main dialog loop
@@ -392,9 +392,9 @@ echo "# Icon Theme Installer"
 
 # echo each element in packname and write status 
 for (( i=0;i<$STATUS;i++)); do
-	[[ -f "${INSTLOG}/${packname[${i}]}" ]] && 
-		  echo ${packname[${i}]}_status='"<span foreground='\'green\''>Installed - (select to remove)</span>"' | tee -a "$TMPFL"  > /dev/null 2>&1 \
-	 || echo ${packname[${i}]}_status='"Not Installed"' | tee -a "$TMPFL"  > /dev/null 2>&1
+  [[ -f "${INSTLOG}/${packname[${i}]}" ]] && 
+      echo ${packname[${i}]}_status='"<span foreground='\'green\''>Installed - (select to remove)</span>"' | tee -a "$TMPFL"  > /dev/null 2>&1 \
+   || echo ${packname[${i}]}_status='"Not Installed"' | tee -a "$TMPFL"  > /dev/null 2>&1
 done 
 
 # load status from file
@@ -440,12 +440,12 @@ MDTEXT="\n<span font='13'>Colourful Icon Theme Collection For The Linux Desktop<
 
 # Icon Theme Installer main dialog
 ICONPACK=$(yad --list --multiple --dclick-action= --width=900 --height=600 --image="$APPICON" --window-icon="$APPICON" \
-				--column=" :IMG" --column="Name" --column="Description" --hide-column="2" --print-column=2 --separator=" " \
-				--button=" Update icon theme cache"\!gtk-refresh:2 --button="gtk-close":1 --button="Go"\!gtk-ok:0 \
-				--title="Icon Theme Installer" --text="$MDTEXT" --wrap --wrap-width="350" \
-				"$PREVIMG0" "Sardi" 			  "$Sardi_description" \
-				"$PREVIMG1" "Sardi-Extra" 	"$Sardi_Extra_description" \
-				"$PREVIMG2" "Surfn" 			  "$Surfn_description") 
+               --column=" :IMG" --column="Name" --column="Description" --hide-column="2" --print-column=2 --separator=" " \
+               --button=" Update icon theme cache"\!gtk-refresh:2 --button="gtk-close":1 --button="Go"\!gtk-ok:0 \
+               --title="Icon Theme Installer" --text="$MDTEXT" --wrap --wrap-width="350" \
+               "$PREVIMG0" "Sardi"        "$Sardi_description" \
+               "$PREVIMG1" "Sardi-Extra"  "$Sardi_Extra_description" \
+               "$PREVIMG2" "Surfn"        "$Surfn_description") 
 ans=$?
 
 # If Quit or (X) is clicked then exit
@@ -462,36 +462,32 @@ if [[ "$?" != "0" ]]; then
 fi
 
 if [[ "$ans" = "2" ]]; then
-		
-		echo "#⚫ Updating icon cache..."
+    
+    echo "#⚫ Updating icon cache..."
 
-		for SELECTED in ${ICONPACK}; do 
+    for SELECTED in ${ICONPACK}; do 
   
-			PROCESS=$(cut -d\- -f1 <<< ${SELECTED})
-			find "${HOME}/.icons" -type d -iname "*${PROCESS}*" | awk -F '/' '{print $NF}' >> "$ICONCACHE"
-		done
+      PROCESS=$(cut -d\- -f1 <<< ${SELECTED})
+      find "${HOME}/.icons" -type d -iname "*${PROCESS}*" | awk -F '/' '{print $NF}' >> "$ICONCACHE"
+    done
 
-		if [[ -z "$(< ${ICONCACHE})" ]]; then 
-			zenity --info --width="280" --title="Icon theme pack not found" \
+    if [[ -z "$(< ${ICONCACHE})" ]]; then 
+      zenity --info --width="280" --title="Icon theme pack not found" \
              --text="\nSelected icon theme pack does not appear to be installed." 2>/dev/null
-			rm -f "$ICONCACHE"
+      rm -f "$ICONCACHE"
       continue
-		fi
+    fi
 
-		while read CACHE; do
-			echo "#⚫ Updating ${CACHE} icon cache..."
-		 	gtk-update-icon-cache -f "${HOME}/.icons/${CACHE}" 2>&1  
-		done < "$ICONCACHE"
+    while read CACHE; do
+      echo "#⚫ Updating ${CACHE} icon cache..."
+      gtk-update-icon-cache -f "${HOME}/.icons/${CACHE}" 2>&1  
+    done < "$ICONCACHE"
 
-		rm -f "$ICONCACHE"
-		continue
+    rm -f "$ICONCACHE"
+    continue
 fi
   for PACK in ${ICONPACK}; do 
     ${PACK}
   done
 done
-
-
-
-
 
