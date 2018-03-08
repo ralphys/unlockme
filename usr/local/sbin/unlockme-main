@@ -543,7 +543,7 @@ ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FI
 
 # array B definitions
 ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION OPENASROOT_THUNAR OPENTERM_HERE THEMING SOFTINST LITECCMODS \
-           LOGARCHIVES CHNAMEHOST PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
+           LOGARCHIVES LXTERMWINSIZE CHNAMEHOST PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
 
  SELECTRUN=${#selection[@]}
 
@@ -818,6 +818,12 @@ if [[ "$LLDENV" = "Lite" && -n "$(dpkg -l | grep -E '^ii' | grep '\s\slite-contr
    [[ -d /usr/share/litecc/modules/disabled && "$(ls -A /usr/share/litecc/modules/disabled)" ]]; then
        _liteccmodules=(FALSE "LITECCMODS" "Control Center modules" "Management" "System" "Enable UnlockMe modules in Linux Lite Control Center")
   else _liteccmodules=()
+fi
+
+# lxterminal geometry size | linuxlite specific
+if [[ "$LLDENV" = "Lite" ]]; then
+       _lxtermwinsize=(FALSE "LXTERMWINSIZE" "LXTerminal Geometry" "Management" "System" "Change default LXTerminal geometry in Linux Lite (system-wide)")
+  else _lxtermwinsize=()
 fi
 
 # Check if  midori browser cache exists
@@ -1095,6 +1101,7 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_syscachepr[@]}" \
 "${_sysswap[@]}" \
 "${_logarchives[@]}" \
+"${_lxtermwinsize[@]}" \
 "${_mgmtsavesession[@]}" \
 "${_midoricache[@]}" \
 "${_operacache[@]}" \

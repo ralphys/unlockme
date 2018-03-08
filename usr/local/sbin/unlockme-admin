@@ -153,6 +153,7 @@ ADMRUN="$@"
   if [[ $(grep "IPV6" <<< "$ADMRUN") ]]; then ARRAYC+=('IPV6'); fi
   if [[ $(grep "LITECCMODS" <<< "$ADMRUN") ]]; then ARRAYC+=('LITECCMODS'); fi
   if [[ $(grep "LOGARCHIVES" <<< "$ADMRUN") ]]; then ARRAYC+=('LOGARCHIVES'); fi
+  if [[ $(grep "LXTERMWINSIZE" <<< "$ADMRUN") ]]; then ARRAYC+=('LXTERMWINSIZE'); fi
   if [[ $(grep "PACKAGECACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('PACKAGECACHE'); fi
   if [[ $(grep "THEMING" <<< "$ADMRUN") ]]; then ARRAYC+=('THEMING'); fi
   if [[ $(grep "SOFTINST" <<< "$ADMRUN") ]]; then ARRAYC+=('SOFTINST'); fi
@@ -711,6 +712,57 @@ find /var/log \( -name '*.gz' -o -name '*.0' -o -name '*.1' \) -exec rm -rf {} \
 echo "#✔ Archived logs cleared." ; sleep 1
 }
 
+# lxterminal geometry | linuxlite specific
+LXTERMWINSIZE() {
+
+_FNAME="LXTerminal Geometry"
+# dialog icon
+ICON="${THEME:1:-1}terminal"
+# set app icon variable
+THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
+
+info_message() {
+  zenity --info --width="300" --height="110" --text="\nGeometry applied. \
+Please close and reopen any LXTerminal window you may have open for changes to take effect." 2>/dev/null
+}
+
+while (true) do
+echo "# ${_FNAME}..."
+
+# file
+WKFILE="/usr/share/vte/termcap/xterm"
+INITWIDTH=$( (grep ':co#' | cut -d# -f2 | cut -d: -f1) < ${WKFILE})
+INITHEIGHT=$( (grep ':co#' | cut -dl -f2 | cut -d# -f2 | cut -d: -f1) < ${WKFILE})
+
+SETWIN=$(yad --title="$APPNAME - $_FNAME" --form --align=right --fixed --width="380" --heigh="200" --buttons-layout="spread" \
+  --separator="," --image="$ICON" --text-align="center" --window-icon="$RUN_ICON" --image-on-top --borders="8" \
+  --text="<span font='12'>LXTerminal default geometry</span>" --columns=2 \
+  --field="           Columns::NUM" $INITWIDTH \
+  --field="           Rows::NUM" $INITHEIGHT \
+  --field=" :LBL" \
+  --field=" :LBL" \
+  --field=" :LBL" \
+  --button="Reset!gtk-refresh:2" \
+  --button="Close!gtk-close:1" \
+  --button="Apply!gtk-apply:0" \
+  "" "")
+  action=$?
+  for line in ${SETWIN}; do 
+    WIDTH=$(awk -F',' '{print $1}' <<< $line)
+    HEIGHT=$(awk -F',' '{print $2}' <<< $line)
+  done
+
+  case $action in
+    0) echo "# Applying new geometry..." ; sleep 1
+       sed -i 's/:co#.*/:co#'"$WIDTH"':it#8:li#'"$HEIGHT"':\\/' "$WKFILE" ; info_message ;;
+    2) echo "# Reseting default geometry..." ; sleep 1
+       sed  -i 's/:co#.*/:co#80:it#8:li#24:\\/' "$WKFILE" ; info_message ;;
+    *) break ;;
+  esac
+done
+}
+
+# Manage Save Session tweak
 MGMTSAVESESSION() {
 
 echo "# Manage Save Session..." ; sleep .5
