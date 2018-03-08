@@ -57,6 +57,9 @@ DENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk
 LLD=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMD=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
+# desktop users
+ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
+
 # common functions
 
 check_running_package_manager() {
@@ -155,6 +158,8 @@ ADMRUN="$@"
   if [[ $(grep "SOFTINST" <<< "$ADMRUN") ]]; then ARRAYC+=('SOFTINST'); fi
   if [[ $(grep "CHNAMEHOST" <<< "$ADMRUN") ]]; then ARRAYC+=('CHNAMEHOST'); fi
   if [[ $(grep "MGMTSAVESESSION" <<< "$ADMRUN") ]]; then ARRAYC+=('MGMTSAVESESSION'); fi
+  if [[ $(grep "OPENASROOT_THUNAR" <<< "$ADMRUN") ]]; then ARRAYC+=('OPENASROOT_THUNAR'); fi
+  if [[ $(grep "OPENTERM_HERE" <<< "$ADMRUN") ]]; then ARRAYC+=('OPENTERM_HERE'); fi
   if [[ $(grep "PRELOAD" <<< "$ADMRUN") ]]; then ARRAYC+=('PRELOAD'); fi
   if [[ $(grep "RESIDCONFIG" <<< "$ADMRUN") ]]; then ARRAYC+=('RESIDCONFIG'); fi
   if [[ $(grep "SYSCACHEPR" <<< "$ADMRUN") ]]; then ARRAYC+=('SYSCACHEPR'); fi
@@ -179,6 +184,18 @@ show_progress() {
 
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
+
+# kill thunar instances - xfce
+kill_thunar() {
+    echo "#⚫ Terminating any ${_FNAME} instances..."
+    if [[ -n "$(pgrep thunar\|Thunar)" ]]; then 
+      signal_process=$(pgrep thunar\|Thunar)
+    
+      for process in ${signal_process}; do
+        kill "$process"
+      done
+    fi ; sleep 1
+  }
 
 # tweak - remove unnedded packages
 AUTOREMOVE() {
@@ -812,6 +829,97 @@ fi
 done
 }
 
+# tweak - open as root - thunar/xfce
+OPENASROOT_THUNAR() {
+
+_FNAME="Thunar"
+_CAFILE=".config/Thunar/uca.xml"
+echo "# ${_FNAME} Custom Action - Open as Root..."
+
+if [[ -z $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+
+  kill_thunar
+  
+  echo "# Updating Custom Action - Open as Root..." ; sleep 1
+
+  for desktopuser in ${ALLUSERS}; do
+    sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
+    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
+  done
+
+  if [[ "$LLD" = "Lite" ]]; then 
+
+    if [[ -n $(grep 'gksudo exo-open %f' "/etc/skel/${_CAFILE}") ]]; then
+      sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_CAFILE}"
+    else
+      sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_CAFILE}"
+    fi
+  fi
+  
+  if [[ -n $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+    echo "# pkexec PolicyKit applied." ; sleep 2
+  else
+    echo "# An error occurred while applying changes." ; sleep 1
+  fi
+else
+# RESTORE
+  echo "# Reverting Custom Action - Open as Root..." ; sleep 1
+  kill_thunar
+
+  for desktopuser in ${ALLUSERS}; do
+    sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
+  done
+
+  if [[ "$LLD" = "Lite" ]]; then sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/skel/${_CAFILE}" ; fi
+
+
+  if [[ -n $(grep '<command>gksu Thunar %F</command>' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+    echo "# Custom Action reverted." ; sleep 2
+  else
+    echo "# An error occurred while applying changes." ; sleep 1
+  fi
+fi
+}
+
+# tweak - Open Terminal Here - linuxlite specific
+OPENTERM_HERE() {
+
+_FNAME="Open Terminal Here"
+_CAFILE=".config/Thunar/uca.xml"
+_CHKFILE="/etc/skel/.config/Thunar/uca.xml"
+_CHKLINE="<command>x-terminal-emulator -t &quot;Command Line&quot; --working-directory=%f"
+
+echo "# ${_FNAME}..."
+
+if [[ -z $(grep -F "$_CHKLINE" "$_CHKFILE") ]]; then
+  
+  echo "# Updating Custom Action..." ; sleep 1
+  kill_thunar
+  sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "$_CHKFILE"
+
+  echo "# Updating for all users..." ; sleep 1
+
+  for desktopuser in ${ALLUSERS}; do
+    if [[ -z $(grep -F "$_CHKLINE" "/home/${desktopuser}/${_CAFILE}") ]]; then
+      sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "/home/${desktopuser}/${_CAFILE}"
+    fi
+  done
+  echo "# Custom Action update applied." ; sleep 2
+else
+ # RESTORE
+
+  echo "# Reverting Custom Action update..." ; sleep 1 
+  kill_thunar
+
+  sed -i 's/\s--working-directory=%f//' "$_CHKFILE"
+
+  for desktopuser in ${ALLUSERS}; do
+    sed -i 's/\s--working-directory=%f//' "/home/${desktopuser}/${_CAFILE}"
+  done
+  echo "# Custom Action update reverted." ; sleep 2
+fi
+}
+
 # tweak - clean up package cache
 PACKAGECACHE() {
 
@@ -1269,7 +1377,7 @@ continue
 # samba - smbd, nmbd
 SAMBASVR() {
 
-  echo "# Disabling smbd (samba) service..."
+  echo "# Disabling samba service..."
 
   if [[ -n $(pgrep -f 'smbd') ]]; then
     if zenity --question --title="$APPNAME - Confirm" --text="\nYou are about to disable Samba. Would you like to proceed?" 2>/dev/null; then

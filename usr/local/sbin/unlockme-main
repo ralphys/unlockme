@@ -542,8 +542,8 @@ ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FI
            VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
 
 # array B definitions
-ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION THEMING SOFTINST LITECCMODS LOGARCHIVES CHNAMEHOST \
-           PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
+ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION OPENASROOT_THUNAR OPENTERM_HERE THEMING SOFTINST LITECCMODS \
+           LOGARCHIVES CHNAMEHOST PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
 
  SELECTRUN=${#selection[@]}
 
@@ -685,7 +685,8 @@ CHECK() {
 
 VARZSWAP="$(< /sys/module/zswap/parameters/enabled)"                    # zswap variable
 VARZRAM="$(dpkg -l | grep -E '^ii' | grep zram-config | cut -d' ' -f1)" # zram variable
-FILEPKEXEC="/home/${_SOFTUSR}/.local/share/unlockme/ACTPKEXEC"  # pkexec.pkla file
+FILEPKEXEC="/home/${_SOFTUSR}/.local/share/unlockme/ACTPKEXEC"          # pkexec.pkla file
+_CAFILE="${HOME}/.config/Thunar/uca.xml"                                # Custom Action file - xfce 
 
 # Manage Save Session
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
@@ -709,8 +710,8 @@ fi
 
 # Check for bypass pkexec password prompt
 if [[ ! -f "/usr/share/unlockme/set/ACTPKEXEC" && ! -f "$FILEPKEXEC" ]]; then
-     _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "Bypass pkexec password prompt for admin accounts")
-else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "Pkexec password prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - (select to remove)</span>")
+     _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "pkexec Password Prompt" "Management" "System" "Bypass pkexec password prompt for admin accounts")
+else _bypasspswadmpkexec=(FALSE "BYPASSPSWADMPKEXEC" "pkexec Password Prompt" "Management" "System" "<span foreground='green'>Bypass pkexec prompt for admins - (select to remove)</span>")
 fi
 
 # Check if the google-chrome browser cache exists
@@ -727,7 +728,7 @@ else _chromeprofile=()
 fi
 
 # Check for chromium browser cache
-if [[ $(du -sb "${HOME}/.cache/chromium/" | cut -f1) -ge 1048576 ]]; then
+if [[ -d "${HOME}/.cache/chromium/" && $(du -sb "${HOME}/.cache/chromium/" | cut -f1) -ge 1048576 ]]; then
      CHRCACHESIZE=$(du -sh "${HOME}/.cache/chromium/" | awk '{print $1"B"}')
      chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
 else chromiumcache=()
@@ -778,7 +779,7 @@ if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$DESKTOP_SESSION" = "budgie-desktop" ]]; the
 fi
 
 # check for firefox browser cache
-if [[ $(du -sb "${HOME}/.cache/mozilla/firefox" | cut -f1) -ge 1048576 ]]; then
+if [[ -d "${HOME}/.cache/mozilla/firefox" && $(du -sb "${HOME}/.cache/mozilla/firefox" | cut -f1) -ge 1048576 ]]; then
      FFCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
      firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
 else firefoxcache=()
@@ -879,6 +880,26 @@ if [[ $(du -sk "${HOME}/.cache/thumbnails/" | awk '{print $1}') > 100 ]]; then
      THUMBCACHESIZE=$(du -sh "${HOME}"/.cache/thumbnails/ | awk '{print $1"B"}')
      _thumbn=(FALSE "THUMBNAILS" "Thumbnail Cache" "Cleanup" "User" "You can remove $THUMBCACHESIZE from your thumbnail cache")
 else _thumbn=()
+fi
+
+# check for open as root - Thunar custom action 
+if which Thunar > /dev/null; then
+  if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep 'pkexec Thunar %F' "${_CAFILE}") ]]; then
+    _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "<span foreground='green'>Using pkexec to open folders in Thunar as Root (select to revert)</span>")
+  else 
+    _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "Use pkexec PolicyKit to open folders as Root in Thunar")
+  fi
+fi
+
+# check for Open terminal Here - linuxlite specific 
+if [[ "$LLDENV" = "Lite" ]]; then
+  _CHKFILE="/etc/skel/.config/Thunar/uca.xml"
+  _CHKNEWL="<command>x-terminal-emulator -t &quot;Command Line&quot; --working-directory=%f"
+  if [[ -n $(grep -F "$_CHKNEWL" "$_CHKFILE") && -n $(grep 'Open Terminal Here' "${_CHKFILE}") ]]; then
+    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "<span foreground='green'>Terminal opens in the selected folder (select to revert)</span>")
+  else 
+    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "Fixes custom action so that LXTerminal opens in the selected folder")
+  fi
 fi
 
 # Check package cache 
@@ -1079,6 +1100,8 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_operacache[@]}" \
 "${_palemooncache[@]}" \
 "${_packagecache[@]}" \
+"${_openasroot_thunar[@]}" \
+"${_openterm_here[@]}" \
 "${_bypasspswadmpkexec[@]}" \
 "${_preload[@]}" \
 "${_resconfig[@]}" \

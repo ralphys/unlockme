@@ -42,7 +42,7 @@ function scripts_removal() {
 		rm -f dryapt get_download unlockme-admin unlockme-appearance unlockme-apps 
 		rm -f unlockme-main unlock-req-install blockhosts icon-themes-erikdubois
 	cd /usr/share/polkit-1/actions
-		rm -f com.ubuntu.pkexec.unlockme-apps.policy com.ubuntu.pkexec.unlockme-blockhosts.policy
+		rm -f com.ubuntu.pkexec.unlockme-apps.policy com.ubuntu.pkexec.unlockme-blockhosts.policy com.ubuntu.pkexec.unlockme-thunar.policy
 		rm -f com.ubuntu.pkexec.unlockme-install.policy com.ubuntu.pkexec.unlockme.policy
 }
 
