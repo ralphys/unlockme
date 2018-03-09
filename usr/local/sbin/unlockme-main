@@ -52,6 +52,9 @@ LLDENV=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 # peppermint
 PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
+# desktop users
+ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
+
 # check requirements
 if [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\syad\s')" ]] || 
    [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\sgit\s')" ]] || 
@@ -142,6 +145,127 @@ fi
 BLOCKHOSTS() {
   echo "# Blacklist Generator..."
   bash blockhosts
+}
+
+# compton compositor
+COMPTONWC() {
+
+_FNAME="Compton Compositor"
+AUTOSTART="/home/${_SOFTUSR}/.config/autostart/compton.desktop"
+echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
+
+# dialog icon
+ICON="${THEME:1:-1}wmtweaks"
+# set app icon variable
+THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
+
+# the loop
+while (true); do
+echo "#⚫ Configuring ${_FNAME}..."
+
+XFWM4PROCESS4=$(xfconf-query -c xfwm4 -p /general/use_compositing -t bool)
+
+# check if compton compositor is installed
+if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'compton')" ]]; then
+  
+  # if not installed, prompt user for installation
+  if zenity --question --width="340" --height="80" --title=" $_APPNAME" \
+            --text="\nCompton is not available in your system.\nWould you like to install ${_FNAME}?" 2>/dev/null; then
+
+    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+
+    # elevate for compton installation
+    bash -c "pkexec unlockme-admin COMPTONWCINST"
+      if [[ "${PIPESTATUS[@]}" = "126" ]]; then
+        return
+      fi
+
+    sed -i 's/Hidden=.*/Hidden=false/' "$AUTOSTART"
+
+    # disable xfwm4 compositing if enabled
+    if [[ "$XFWM4PROCESS4" = "true" ]]; then  
+      echo "#⚫ Disabling xfwm4 compositing..." ; sleep 1
+      xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s false ; sleep 1
+    fi
+    echo "#⚫ Starting ${_FNAME}..." ; sleep 1 ; compton -b ; sleep .5
+  else
+      break
+  fi # exit on cancel
+else
+
+  # if a compton.conf file doesn't exist, add it
+  [[ ! -f "/home/${USER}/.config/compton.conf" ]] && cp -f /usr/share/unlockme/tools/compton.conf "/home/${USER}/.config/"
+  
+  # check if compton is running and assign variables
+  [[ $(pgrep 'compton') ]] && _status="Enabled" COMPTONPROCESS="1" || _status="Disabled" COMPTONPROCESS=""
+  grep -qFx 'Hidden=false' "$AUTOSTART" && LOGONAUTO="will" || LOGONAUTO="<b>will not</b>"
+
+  # compton Status
+  echo "# ${_FNAME}..."
+
+  if [[ "$_status" = "Enabled" ]]; then
+
+    MDTXT="\n<span font='Bold 10'>          Compton Status</span>: <span foreground='green'>${_status}</span>\n\n\
+*<span font='9'> ${_FNAME} is running\n\
+* ${_FNAME} ${LOGONAUTO} autostart on logon</span>\n\n\
+<b>Important</b>: No other display compositor must be enable while Compton is running. To enable the default display compositing in \
+<i>Settings >> Window Manager Tweaks >> Compositor | Enable display compositing</i>, you should first disable or uninstall Compton to prevent \
+display compositing conflicts."
+    YBTN="Disable compton"
+    DLGSIZE="--width=480 --height=150"
+  else
+    MDTXT="\n<span font='Bold 10'>          Compton Status</span>: <span foreground='red'>${_status}</span>\n\n\
+*<span font='9'> ${_FNAME} is disabled\n\
+* ${_FNAME} ${LOGONAUTO} autostart on logon</span>\n"
+    YBTN="Enable compton"
+    DLGSIZE="--width=370 --height=150"
+  fi
+
+  # compton Main dialog
+  COMPTON=$(NO_AT_BRIDGE=1 yad ${DLGSIZE} --window-icon="$ICON" --title="$_FNAME" --image="$ICON" \
+                               --text="$MDTXT" --borders="8" \
+                               --button="Uninstall"\!gtk-remove:2 --button="$YBTN"\!gtk-apply:0 ; echo $?)
+  case $COMPTON in
+    0)  if [[ "$_status" = "Enabled" ]]; then # stop
+            echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 ; killall -9 compton ; sleep .5
+            sed -i 's/Hidden=.*/Hidden=true/' "$AUTOSTART"
+          else
+            echo "#⚫ Starting ${_FNAME}..." ; sleep 1
+
+            if [[ $(xfconf-query -c xfwm4 -p /general/use_compositing -t bool) = "true" ]]; then
+              echo "#⚫ Disabling xfwm4 compositing..."
+              xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s false ; sleep 2
+              echo "#⚫ Enabling ${_FNAME}..." ; sleep 1
+            fi
+            compton -b ; sleep .5
+            sed -i 's/Hidden=.*/Hidden=false/' "$AUTOSTART"
+        fi
+        ;;
+    1)  return
+        ;;
+    2)  # Remove compton
+        if zenity --question --width="300" --title=" $_APPNAME" \
+                  --text="\nAre you sure you want to remove ${_FNAME}?" 2>/dev/null; then
+
+          echo "#⚫ Uninstalling ${_FNAME}..."
+
+          # elevate for compton removal
+          bash -c "pkexec unlockme-admin COMPTONWCINST"
+            if [[ "${PIPESTATUS[@]}" = "126" ]]; then
+              continue
+            fi
+          
+          if [[ "$XFWM4PROCESS4" = "false" ]]; then
+            echo "#⚫ Enabling xfwm4 compositing..." ; sleep 1
+            xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s true
+          fi
+          sleep 1 ; return
+        fi
+        ;;
+    *)  return ;;
+  esac
+fi
+done
 }
 
 # function remove Chrome cache 
@@ -536,7 +660,7 @@ ARRAYA=()    # Array for non-admin tasks
 ARRAYB=()    # Array for admin tasks
 
 # array A definitions
-ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE FIREFOXCACHE FFOXPROFILE FIXDBCIN \
+ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE COMPTONWC FIREFOXCACHE FFOXPROFILE FIXDBCIN \
            FIXDBXFCE ICONTHEMESERIK MIDORICACHE MIDORIPROFILE OPERACACHE OPERAPROFILE PALEMOONCACHE PALEMOONPROFILE \
            PRELOAD SEAMONKEYCACHE SEAMONKEYPROFILE SYSSWAP THUMBNAILS TRASHBIN VIVALDICACHE \
            VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
@@ -738,6 +862,15 @@ fi
 if [[ -d "${HOME}/.config/chromium/" ]]; then
      _chromiumprofile=(FALSE "CHROMIUMPROFILE" " -- Chromium Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Chromium browser profile</span>")
 else _chromiumprofile=()
+fi
+
+# check for compton compositor
+if [[ "$LMDENV" = "Xfce" || "$LLDENV" = "Lite" ]]; then
+  if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
+       _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Compton Compositor for beautiful tear free compositing in Xfce")
+  else _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "<span foreground='green'>Compton Compositor is currently installed - (select to modify)</span>")
+  fi
+else  _comptonwc=()
 fi
 
 # Check for dns cache tweak
@@ -1090,6 +1223,7 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_blockhosts[@]}" \
 "${chromecache[@]}" \
 "${chromiumcache[@]}" \
+"${_comptonwc[@]}" \
 "${_liteccmodules[@]}" \
 "${_dnscache[@]}" \
 "${_fixdpcin[@]}" \

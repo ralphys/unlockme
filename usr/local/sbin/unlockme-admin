@@ -148,6 +148,7 @@ ADMRUN="$@"
 
   if [[ $(grep "AUTOREMOVE" <<< "$ADMRUN") ]]; then ARRAYC+=('AUTOREMOVE'); fi
   if [[ $(grep "BYPASSPSWADMPKEXEC" <<< "$ADMRUN") ]]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
+  if [[ $(grep "COMPTONWCINST" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONWCINST'); fi  
   if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
   if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
   if [[ $(grep "IPV6" <<< "$ADMRUN") ]]; then ARRAYC+=('IPV6'); fi
@@ -406,6 +407,43 @@ The hostname cannot be changed." 2>/dev/null
     fi
   fi
 done
+fi
+}
+
+# tweak compton compositor
+COMPTONWCINST() {
+_FNAME="Compton Compositor"
+
+if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
+
+  # install compton
+  echo "# Installing ${_FNAME}..." ; sleep 1
+  apt-get install compton -y | show_progress ; check_inst
+
+  # copy provided compton.conf to users home directory
+    for desktopuser in ${ALLUSERS} ; do
+      cp -f /usr/share/unlockme/tools/compton.conf "/home/${desktopuser}/.config/"
+      cp -f /usr/share/unlockme/tools/compton.desktop "/home/${desktopuser}/.config/autostart/"
+      chown "$desktopuser":"$desktopuser" "/home/${desktopuser}/.config/compton.conf" "/home/${desktopuser}/.config/autostart/compton.desktop"
+    done
+
+  echo "#✔ Installation completed."
+else
+  # remove compton
+  if [[ -n $(pgrep 'compton') ]]; then
+    echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 
+    killall -9 compton ; sleep .5
+  fi
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#⚫ Removing ${_FNAME} configuration..."
+
+  for desktopuser in ${ALLUSERS}; do
+    rm -f "/home/${desktopuser}/.config/compton.conf"
+    rm -f "/home/${desktopuser}/.config/autostart/compton.desktop"
+  done ; sleep 2
+
+  apt-get remove --purge compton -y | show_progress ; check_remv
+  echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
 
