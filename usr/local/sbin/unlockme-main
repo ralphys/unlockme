@@ -150,14 +150,83 @@ BLOCKHOSTS() {
 # compton compositor
 COMPTONWC() {
 
-_FNAME="Compton Compositor"
+export _FNAME="Compton Compositor"
 AUTOSTART="/home/${_SOFTUSR}/.config/autostart/compton.desktop"
 echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
 
 # dialog icon
 ICON="${THEME:1:-1}wmtweaks"
+export ICONSAVE="${THEME:1:-1}gtk-save"
+export ICONREST="${THEME:1:-1}reload"
 # set app icon variable
-THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
+export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
+
+        show_act_progress() {
+
+        NO_AT_BRIDGE=1 yad --text-align="center" --borders="10" --no-buttons --undecorated \
+                           --fixed --progress --pulsate --auto-close --auto-kill \
+                           --skip-taskbar --center --width="340" --height="110" \
+                           --text="\n<span font='13'>UnlockMe</span>"
+        }
+
+        export -f show_act_progress
+
+        # function save configuration 
+        save_config() {
+
+          szSavePath=$(zenity --file-selection --title=" Save ${_FNAME} configuration" --width="550" --height="380" \
+                              --filename="${HOME}/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
+                              --file-filter='All files | *' --save --confirm-overwrite)
+          if [[ "$?" = "0" ]]; then
+            cp "${HOME}/.config/compton.conf" "$szSavePath"
+          fi
+        }
+
+        export -f save_config
+
+        # function restore configuration
+        restore_config() {
+
+          szSavePath=$(zenity --file-selection --title=" Restore Compton configuration" --width="550" --height="380" \
+                              --filename="${HOME}/compton.conf" --window-icon="$_ICON" --file-filter='*.conf' \
+                              --file-filter='All files | *')
+          if [[ "$?" = "0" ]]; then
+            ( echo "# Importing configuration..." 
+            cp -f "$szSavePath" "${HOME}/.config/compton.conf" ; sleep 2
+            echo "# Restarting ${_FNAME}..." ; sleep 1
+            killall -9 compton ; sleep 1
+            compton -b ; sleep 1 )| show_act_progress
+          fi
+        }
+
+        export -f restore_config
+
+        # function restore configuration
+        default_config() {
+
+          ( echo "# Loading UnlockMe configuration..." 
+            cp -f "/usr/share/unlockme/tools/compton.conf" "${HOME}/.config/compton.conf" ; sleep 2
+            echo "# Restarting ${_FNAME}..." ; sleep 1
+            killall -9 compton ; sleep 1
+            compton -b ; sleep 1 )| show_act_progress
+        }
+
+        export -f default_config
+
+        compositor_config() {
+
+        yad --form --width="140" --text-align="center" --window-icon="$ICON" --buttons-layout="center" --undecorated --skip-taskbar \
+            --image-on-top --title="$_FNAME" --text="<span font='12'>Compton Configuration</span>\n" --button="Close":1 --borders="20" \
+            --field=" Backup configuration        !"gtk-save":FBTN" "bash -c save_config" \
+            --field=" Restore from backup         !"gtk-open":FBTN" "bash -c restore_config" \
+            --field="  Use UnlockMe defaults    !"gtk-refresh":FBTN" "bash -c default_config" \
+            --field=" Push current to all users!"gtk-copy":FBTN" 'bash -c "pkexec unlockme-admin COMPTONWCPUSH"' \
+            --field=" :LBL" ""
+        if [[ "$?" = "1" || "$?" = "252" ]]; then exit 0; fi
+
+        }
+
+        export -f compositor_config
 
 # the loop
 while (true); do
@@ -177,7 +246,19 @@ if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'compton')" ]]; then
     # elevate for compton installation
     bash -c "pkexec unlockme-admin COMPTONWCINST"
       if [[ "${PIPESTATUS[@]}" = "126" ]]; then
-        return
+        break
+      else
+        if [[ "$?" = "1" ]]; then
+          if [[ -n  "$(dpkg -l | grep -E '^ii' | grep 'compton')" ]]; then
+            :
+          else
+            if [[ "$XFWM4PROCESS4" = "false" ]]; then
+              echo "#⚫ Enabling xfwm4 compositing..."
+              xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s true ; sleep 2
+            fi
+            break
+          fi
+        fi
       fi
 
     sed -i 's/Hidden=.*/Hidden=false/' "$AUTOSTART"
@@ -222,9 +303,11 @@ display compositing conflicts."
   fi
 
   # compton Main dialog
-  COMPTON=$(NO_AT_BRIDGE=1 yad ${DLGSIZE} --window-icon="$ICON" --title="$_FNAME" --image="$ICON" \
-                               --text="$MDTXT" --borders="8" \
-                               --button="Uninstall"\!gtk-remove:2 --button="$YBTN"\!gtk-apply:0 ; echo $?)
+  COMPTON=$(NO_AT_BRIDGE=1 yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" \
+                               --title="$_FNAME" --text="$MDTXT" --borders="8" \
+                               --button="...":'bash -c "compositor_config"' \
+                               --button="Uninstall":2 \
+                               --button="$YBTN"\!gtk-apply:0 ; echo $?)
   case $COMPTON in
     0)  if [[ "$_status" = "Enabled" ]]; then # stop
             echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 ; killall -9 compton ; sleep .5
@@ -241,8 +324,8 @@ display compositing conflicts."
             sed -i 's/Hidden=.*/Hidden=false/' "$AUTOSTART"
         fi
         ;;
-    1)  return
-        ;;
+    #1)  return
+    #    ;;
     2)  # Remove compton
         if zenity --question --width="300" --title=" $_APPNAME" \
                   --text="\nAre you sure you want to remove ${_FNAME}?" 2>/dev/null; then
@@ -253,13 +336,21 @@ display compositing conflicts."
           bash -c "pkexec unlockme-admin COMPTONWCINST"
             if [[ "${PIPESTATUS[@]}" = "126" ]]; then
               continue
+            else
+              if [[ "$?" = "1" ]]; then
+                if [[ -n  "$(dpkg -l | grep -E '^ii' | grep 'compton')" ]]; then
+                  continue
+                else
+                  if [[ "$XFWM4PROCESS4" = "false" ]]; then
+                    echo "#⚫ Enabling xfwm4 compositing..."
+                    xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s true ; sleep 2
+                  fi
+                  break
+                fi
+              fi
             fi
-          
-          if [[ "$XFWM4PROCESS4" = "false" ]]; then
-            echo "#⚫ Enabling xfwm4 compositing..." ; sleep 1
-            xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s true
-          fi
-          sleep 1 ; return
+        else
+          continue
         fi
         ;;
     *)  return ;;
@@ -1168,7 +1259,7 @@ fi
 while (true); do
 
 _APPNAME="UnlockMe"
-_SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
+_SOFTUSR=$(whoami)
 TMPUSRFL="/tmp/.unlockusr"
 
 echo "$DESKTOP_SESSION" > "$unlockds" ; chmod 600 "$unlockds"

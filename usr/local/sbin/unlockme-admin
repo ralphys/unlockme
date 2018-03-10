@@ -20,7 +20,8 @@
 
 # UnlockMe version - none :)
 # Script name: unlockme-admin
-
+#
+# NOTES: check_running_package_manager is set on specific/needed functions (not globally) 
 # locale
 export LANG=C
 export LANG=C.UTF-8
@@ -148,6 +149,7 @@ ADMRUN="$@"
 
   if [[ $(grep "AUTOREMOVE" <<< "$ADMRUN") ]]; then ARRAYC+=('AUTOREMOVE'); fi
   if [[ $(grep "BYPASSPSWADMPKEXEC" <<< "$ADMRUN") ]]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
+  if [[ $(grep "COMPTONWCPUSH" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONWCPUSH'); fi 
   if [[ $(grep "COMPTONWCINST" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONWCINST'); fi  
   if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
   if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
@@ -410,6 +412,28 @@ done
 fi
 }
 
+# tweak compton config push
+COMPTONWCPUSH() {
+
+CONFIGFILE="/home/${SOFTUSR}/.config/compton.conf"
+CONFPUSH=$(sed '/'"$SOFTUSR"'/d' <<< "$ALLUSERS" | awk '{ print $1}')
+
+  # push admin compton.conf to users
+( echo "#⚫ Reading users list..." ; sleep 2
+  for desktopuser in ${CONFPUSH} ; do
+    echo "#⚫ Pushing configuration to user ${desktopuser}..." ; sleep 1
+    cp -f "$CONFIGFILE" "/home/${desktopuser}/.config/"
+    echo "#⚫ Setting permissions for user ${desktopuser}..." ; sleep 1
+    chown "$desktopuser":"$desktopuser" "/home/${desktopuser}/.config/compton.conf"
+    echo "#✔ Configuration for user ${desktopuser} applied." ; sleep 1
+  done ) | NO_AT_BRIDGE=1 yad --text-align="center" --borders="10" --no-buttons --undecorated \
+                           --fixed --progress --pulsate --auto-close --auto-kill --on-top \
+                           --skip-taskbar --center --width="340" --height="110" \
+                           --text="\n<span font='13'>UnlockMe</span>"
+echo "100"
+exit 0
+}
+
 # tweak compton compositor
 COMPTONWCINST() {
 _FNAME="Compton Compositor"
@@ -418,7 +442,24 @@ if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
 
   # install compton
   echo "# Installing ${_FNAME}..." ; sleep 1
+  opt_procedure="exit 1" ; check_running_package_manager    # check if package manager is running
   apt-get install compton -y | show_progress ; check_inst
+
+  if [[ -f "/home/${SOFTUSR}/.config/compton.conf" ]]; then
+    if zenity --question --width="320" --icon-name="gtk-dialog-warning" \
+           --title="Configuration file found" --window-icon="warning" \
+           --text="\nThe installer is about to overwrite an existing compton.conf file in your account. \
+Would you like to backup the existing configuration file?" 2>/dev/null; then
+
+      szSavePath=$(zenity --file-selection --title=" Save ${_FNAME} configuration" --width="550" --height="380" \
+                          --filename="/home/${SOFTUSR}/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
+                          --file-filter='All files | *' --save --confirm-overwrite)
+      if [[ "$?" = "0" ]]; then
+        cp -f "/home/${SOFTUSR}/.config/compton.conf" "$szSavePath"
+        chown "$SOFTUSR":"$SOFTUSR" "$szSavePath"
+      fi
+    fi
+  fi
 
   # copy provided compton.conf to users home directory
     for desktopuser in ${ALLUSERS} ; do
@@ -429,13 +470,31 @@ if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
 
   echo "#✔ Installation completed."
 else
+  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  # check if package manager is running
+  opt_procedure="break" ; check_running_package_manager    
   # remove compton
   if [[ -n $(pgrep 'compton') ]]; then
     echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 
     killall -9 compton ; sleep .5
   fi
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
   echo "#⚫ Removing ${_FNAME} configuration..."
+
+  if [[ -f "/home/${SOFTUSR}/.config/compton.conf" ]]; then
+    if zenity --question --width="320" --icon-name="gtk-dialog-warning" \
+           --title="Configuration file found" --window-icon="warning" \
+           --text="\nThe installer is about to remove compton's configuration file from your account. \
+Would you like to backup the existing configuration first?" 2>/dev/null; then
+
+      szSavePath=$(zenity --file-selection --title=" Save ${_FNAME} configuration" --width="550" --height="380" \
+                          --filename="/home/${SOFTUSR}/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
+                          --file-filter='All files | *' --save --confirm-overwrite)
+      if [[ "$?" = "0" ]]; then
+        cp -f "/home/${SOFTUSR}/.config/compton.conf" "$szSavePath"
+        chown "$SOFTUSR":"$SOFTUSR" "$szSavePath"
+      fi
+    fi
+  fi
 
   for desktopuser in ${ALLUSERS}; do
     rm -f "/home/${desktopuser}/.config/compton.conf"
