@@ -26,11 +26,11 @@ export LANG=C.UTF-8
 
 _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
-LLDENV=$(cat /etc/llver | awk '{print $2, $3}' | cut -d. -f1)
+LLDENV="$(awk '{print $2, $3}' < /etc/llver | cut -d. -f1)"
 
 check_internet=$(wget -q -t2 --spider https://www.google.com ; echo $?) 
 
-check_connection() {
+checkConnection() {
   if [[ "$check_internet" != "0" ]]; then
     zenity --info --width="360" --height="120" --ok-label="Close" --title=" No internet connection" \
            --text="\nYour computer is not connected to the internet.\n\n\
@@ -39,7 +39,7 @@ Required packages will fail to download and install. Please check the internet c
   fi
 }
 
-check_connection
+checkConnection
 
 if [[ "$EUID" != "0" ]]; then
   pkexec $0; exit 0
@@ -95,7 +95,7 @@ Pin: origin ppa.launchpad.net
 Pin-Priority: 501' > /etc/apt/preferences
   else
     grep -q 'yad' < /etc/apt/preferences
-    if [ $? != 0 ]; then
+    if [[ "$?" != "0" ]]; then
       printf \
 '%s\nPackage: yad
 Pin: origin ppa.launchpad.net
@@ -103,7 +103,7 @@ Pin-Priority: 501' >> /etc/apt/preferences
     fi
   fi
 
-  check_connection
+  checkConnection
   apt-get remove --allow-remove-essential --purge yad -y 2>&1 |
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'  |
   zenity --progress --pulsate --width="400" --height="80" --window-icon="$_APPICON" \

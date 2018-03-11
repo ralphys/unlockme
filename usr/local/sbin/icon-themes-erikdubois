@@ -3,6 +3,7 @@
 # locale
 export LANG=C
 export LANG=C.UTF-8
+export NO_AT_BRIDGE=1
 
 # commonly used variables
 APPNAME=" Icon Theme Installer"
@@ -55,17 +56,17 @@ trap "rm -rf ${PIPE_03}" EXIT
 
 # Get list of folders in the temp directory   
 # where icon downloads have been extracted into.
-function load_common() {
+function loadCommon() {
   DIRS="$(ls -l $TMPDIR | egrep '^d' | awk '{print $9}')"
   OIFS=$IFS
   IFS=""
   SELECT=($(for DIR in "$DIRS";do echo "$DIR";done ))
   IFS=$OIFS
 }
-export -f load_common
+export -f loadCommon
 
 # load function now
-load_common
+loadCommon
 
 
 # Create yad dialog selection from the list
@@ -100,9 +101,9 @@ if [[ "$FNAME" = "Sardi" ]]; then
 fi
 
 
-function clear_all () {
+function clearAll () {
   echo -e '\f' >> "$PIPE_03"
-  load_common >> "$PIPE_03"
+  loadCommon >> "$PIPE_03"
 
   list=($(
     for DATA in ${SELECT}; do
@@ -110,11 +111,11 @@ function clear_all () {
       echo "$DATA" >> "$PIPE_03"
     done ))
 }
-export -f clear_all
+export -f clearAll
 
-function select_all () {
+function selectAll () {
   echo -e '\f' >> "$PIPE_03"
-  load_common >> "$PIPE_03"
+  loadCommon >> "$PIPE_03"
 
   list=($(
     for DATA in ${SELECT}; do
@@ -122,7 +123,7 @@ function select_all () {
       echo "$DATA" >> "$PIPE_03"
     done ))
 }
-export -f select_all
+export -f selectAll
 
 # Icon Theme Pack Selector Main Dialog
 if [[ "$FNAME" = "Sardi" ]]; then
@@ -154,8 +155,8 @@ PackSelect=($(yad --list --checklist --width=760 --height=550 --separator=" " --
             --column "▼"  --column "Icon Theme" \
             "${list[@]}" \
             --button="gtk-cancel":1 \
-            --button="Clear all!gtk-clear":'bash -c "clear_all"' \
-            --button="Select all!gtk-refresh":'bash -c "select_all"' \
+            --button="Clear all!gtk-clear":'bash -c "clearAll"' \
+            --button="Select all!gtk-refresh":'bash -c "selectAll"' \
             --button="Next!gtk-ok":0 \
             --listen --print-column=2 < $PIPE_03))
 action=$?
@@ -171,7 +172,7 @@ Pack_Selected="${PackSelect[@]}"
 ### ICON THEME PACK SELECTOR - ENDS ##
 
 #  check internet access
-function check_online() {
+function checkOnline() {
 
   if eval "curl -sk google.com" >> /dev/null 2>&1; then :
   else # Prompt ERROR internet connection
@@ -182,7 +183,7 @@ It needs to be connected to the internet to download and install packages." 2>/d
   fi
 }
 
-function check_download() {
+function checkDownload() {
 
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then
     rm -f "$FNAMEDL"
@@ -192,11 +193,11 @@ function check_download() {
   fi
 }
 
-function show_progress() {
+function showProgress() {
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p'
 }
 
-function uninstall_icons() {
+function iconsUninstall() {
 
   # read installation log and delete folders
   echo "#⚫ Removing $FNAME icons..." ; sleep 1  
@@ -211,7 +212,7 @@ function uninstall_icons() {
 Sardi() {
 
 export FNAME="Sardi"
-echo "#⚫ ${FNAME} icons..." ; check_online
+echo "#⚫ ${FNAME} icons..." ; checkOnline
 
 FILELG="$INSTLOG/Sardi"
 export TMPDIR="/tmp/sardi"
@@ -224,7 +225,7 @@ FNAMEDL=$PKGVER
 
     # if not installed and no previous download is found in /tmp, download 
     if [[ ! -f "/tmp/$FNAMEDL" ]]; then
-      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; checkOnline 
       cd /tmp ; get_download "$URLDL"
     fi
 
@@ -235,7 +236,7 @@ FNAMEDL=$PKGVER
 
       # create temp directory and extract download
       echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
-      mkdir "$TMPDIR" ; tar -zvxf "/tmp/${FNAMEDL}" -C "$TMPDIR" | show_progress ; check_download
+      mkdir "$TMPDIR" ; tar -zvxf "/tmp/${FNAMEDL}" -C "$TMPDIR" | showProgress ; checkDownload
 
       # cleanup extracted download
       find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
@@ -279,7 +280,7 @@ FNAMEDL=$PKGVER
       echo "#✔ Installation completed." ; sleep 1     
   else
     # remove sardi icons
-    uninstall_icons
+    iconsUninstall
   fi
 }
 
@@ -296,7 +297,7 @@ echo "#⚫ $FNAME icons..." && sleep 1
   if [[ ! -f "$FILELG" ]]; then
      
     if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
-      echo "#⚫ Downloading ${FNAME} icons..." ; check_online ; sleep 1 
+      echo "#⚫ Downloading ${FNAME} icons..." ; checkOnline ; sleep 1 
       cd /tmp ; get_download "$URLDL"
     fi
       
@@ -305,7 +306,7 @@ echo "#⚫ $FNAME icons..." && sleep 1
       [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
 
       echo "#⚫ Extracting ${FNAME} download..." ; sleep 1
-      unzip "$FNAMEDL" | show_progress ; check_download
+      unzip "$FNAMEDL" | showProgress ; checkDownload
 
 
       find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \; 
@@ -331,7 +332,7 @@ echo "#⚫ $FNAME icons..." && sleep 1
       echo "#✔ Installation completed." ; sleep 1
       
   else
-    uninstall_icons
+    iconsUninstall
   fi
 }
 
@@ -348,7 +349,7 @@ echo "#⚫ ${FNAME} icons..." ; sleep 1
   if [[ ! -f "$FILELG" ]]; then
 
     if [[ ! -f "/tmp/${FNAMEDL}" ]]; then
-      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; check_online 
+      echo "#⚫ Downloading $FNAME icons..." ; sleep 1 ; checkOnline 
       cd /tmp ; get_download "$URLDL"
     fi
         
@@ -357,7 +358,7 @@ echo "#⚫ ${FNAME} icons..." ; sleep 1
       [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
 
       echo "#⚫ Extracting $FNAME download..." ; sleep 1
-      unzip "$FNAMEDL" | show_progress ; check_download
+      unzip "$FNAMEDL" | showProgress ; checkDownload
 
       find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
       echo "#⚫ ${IconTPS}..." ; sleep .5
@@ -382,7 +383,7 @@ echo "#⚫ ${FNAME} icons..." ; sleep 1
       echo "#✔ Installation completed." ; sleep 1
       
   else
-    uninstall_icons
+    iconsUninstall
   fi
 }
 
@@ -490,4 +491,3 @@ fi
     ${PACK}
   done
 done
-

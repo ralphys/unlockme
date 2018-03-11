@@ -24,6 +24,7 @@
 # locale
 export LANG=C
 export LANG=C.UTF-8
+export NO_AT_BRIDGE=1
 
 # check for additional instances
 if pidof -o %PPID -x "unlockme-main" >/dev/null; then
@@ -77,8 +78,8 @@ if [[ "$?" != "0" ]]; then exit 0; else :; fi
 fi
 
 # start splash
-NO_AT_BRIDGE=1 yad --width="340" --height="110" --info --skip-taskbar --undecorated --no-buttons --timeout="1" --text-align=center \
-                   --text='\n\n\n<span font="14">Getting Ready</span>\n<span font="11"> \n  please wait...\n</span>' & 
+yad --width="340" --height="110" --info --skip-taskbar --undecorated --no-buttons --timeout="1" --text-align=center \
+                  --text='\n\n\n<span font="14">Getting Ready</span>\n<span font="11"> \n  please wait...\n</span>' & 
 
 # linuxlite specific | failsafe not to use default linuxlite yad package
 if [[ "$LLDENV" == "Lite" ]]; then grep -q "yad" < /etc/apt/preferences
@@ -95,7 +96,7 @@ _CLEANUP() {
 }
 
 # function - remove browser profile 
-rm_browser_profile() {
+removeBrowserProfile() {
 
   echo "#⚫ Removing ${_BROWSERNAME} browser profile..." ; sleep .2
   zenity --question --width="360" --window-icon="warning" --icon-name="gtk-dialog-warning" \
@@ -118,7 +119,7 @@ rm_browser_profile() {
 }
 
 # function - remove browser cache 
-rm_browser_cache() {
+removeBrowserCache() {
 
   echo "#⚫ Removing ${_BROWSERNAME} browser cache..." ; sleep 1 
     rm -rf "${_BROWSERCACHEDIR}"/*
@@ -161,18 +162,18 @@ export ICONREST="${THEME:1:-1}reload"
 # set app icon variable
 export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
 
-        show_act_progress() {
+        showActProgress() {
 
-        NO_AT_BRIDGE=1 yad --text-align="center" --borders="10" --no-buttons --undecorated \
-                           --fixed --progress --pulsate --auto-close --auto-kill \
-                           --skip-taskbar --center --width="340" --height="110" \
-                           --text="\n<span font='13'>UnlockMe</span>"
+        yad --text-align="center" --borders="10" --no-buttons --undecorated \
+            --fixed --progress --pulsate --auto-close --auto-kill \
+            --skip-taskbar --center --width="340" --height="110" \
+            --text="\n<span font='13'>UnlockMe</span>"
         }
 
-        export -f show_act_progress
+        export -f showActProgress
 
         # function save configuration 
-        save_config() {
+        saveConfig() {
 
           szSavePath=$(zenity --file-selection --title=" Save ${_FNAME} configuration" --width="550" --height="380" \
                               --filename="${HOME}/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
@@ -182,10 +183,10 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
           fi
         }
 
-        export -f save_config
+        export -f saveConfig
 
         # function restore configuration
-        restore_config() {
+        restoreConfig() {
 
           szSavePath=$(zenity --file-selection --title=" Restore Compton configuration" --width="550" --height="380" \
                               --filename="${HOME}/compton.conf" --window-icon="$_ICON" --file-filter='*.conf' \
@@ -195,38 +196,38 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
             cp -f "$szSavePath" "${HOME}/.config/compton.conf" ; sleep 2
             echo "# Restarting ${_FNAME}..." ; sleep 1
             killall -9 compton ; sleep 1
-            compton -b ; sleep 1 )| show_act_progress
+            compton -b ; sleep 1 )| showActProgress
           fi
         }
 
-        export -f restore_config
+        export -f restoreConfig
 
         # function restore configuration
-        default_config() {
+        defaultConfig() {
 
           ( echo "# Loading UnlockMe configuration..." 
             cp -f "/usr/share/unlockme/tools/compton.conf" "${HOME}/.config/compton.conf" ; sleep 2
             echo "# Restarting ${_FNAME}..." ; sleep 1
             killall -9 compton ; sleep 1
-            compton -b ; sleep 1 )| show_act_progress
+            compton -b ; sleep 1 )| showActProgress
         }
 
-        export -f default_config
+        export -f defaultConfig
 
-        compositor_config() {
+        compositorConfig() {
 
         yad --form --width="140" --text-align="center" --window-icon="$ICON" --buttons-layout="center" --undecorated --skip-taskbar \
             --image-on-top --title="$_FNAME" --text="<span font='12'>Compton Configuration</span>\n" --button="Close":1 --borders="20" \
-            --field=" Backup configuration        !"gtk-save":FBTN" "bash -c save_config" \
-            --field=" Restore from backup         !"gtk-open":FBTN" "bash -c restore_config" \
-            --field="  Use UnlockMe defaults    !"gtk-refresh":FBTN" "bash -c default_config" \
+            --field=" Backup configuration        !"gtk-save":FBTN" "bash -c saveConfig" \
+            --field=" Restore from backup         !"gtk-open":FBTN" "bash -c restoreConfig" \
+            --field="  Use UnlockMe defaults    !"gtk-refresh":FBTN" "bash -c defaultConfig" \
             --field=" Push current to all users!"gtk-copy":FBTN" 'bash -c "pkexec unlockme-admin COMPTONWCPUSH"' \
             --field=" :LBL" ""
         if [[ "$?" = "1" || "$?" = "252" ]]; then exit 0; fi
 
         }
 
-        export -f compositor_config
+        export -f compositorConfig
 
 # the loop
 while (true); do
@@ -303,11 +304,11 @@ display compositing conflicts."
   fi
 
   # compton Main dialog
-  COMPTON=$(NO_AT_BRIDGE=1 yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" \
-                               --title="$_FNAME" --text="$MDTXT" --borders="8" \
-                               --button="...":'bash -c "compositor_config"' \
-                               --button="Uninstall":2 \
-                               --button="$YBTN"\!gtk-apply:0 ; echo $?)
+  COMPTON=$(yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" \
+                           --title="$_FNAME" --text="$MDTXT" --borders="8" \
+                           --button="...":'bash -c "compositorConfig"' \
+                           --button="Uninstall":2 \
+                           --button="$YBTN"\!gtk-apply:0 ; echo $?)
   case $COMPTON in
     0)  if [[ "$_status" = "Enabled" ]]; then # stop
             echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 ; killall -9 compton ; sleep .5
@@ -361,22 +362,22 @@ done
 
 # function remove Chrome cache 
 CHROMECACHE() {
-  _BROWSERNAME="Google Chrome" _BROWSERCACHEDIR="${HOME}/.cache/google-chrome/" ; rm_browser_cache
+  _BROWSERNAME="Google Chrome" _BROWSERCACHEDIR="${HOME}/.cache/google-chrome/" ; removeBrowserCache
 }
 
 # function remove Chrome profile 
 CHROMEPROFILE() {
-  _BROWSERNAME="Google Chrome" _BROWSERPROFILE="${HOME}/.config/google-chrome/" ; rm_browser_profile
+  _BROWSERNAME="Google Chrome" _BROWSERPROFILE="${HOME}/.config/google-chrome/" ; removeBrowserProfile
 }
 
 # function remove Chromium Cache 
 CHROMIUMCACHE() {
-  _BROWSERNAME="Chromium" _BROWSERCACHEDIR="${HOME}/.cache/chromium/" ; rm_browser_cache
+  _BROWSERNAME="Chromium" _BROWSERCACHEDIR="${HOME}/.cache/chromium/" ; removeBrowserCache
 }
 
 # function remove Chromium profile 
 CHROMIUMPROFILE() {
-  _BROWSERNAME="Chromium" _BROWSERPROFILE="${HOME}/.config/chromium/" ; rm_browser_profile
+  _BROWSERNAME="Chromium" _BROWSERPROFILE="${HOME}/.config/chromium/" ; removeBrowserProfile
 }
 
 # function remove Firefox Cache 
@@ -397,12 +398,12 @@ FIREFOXCACHE() {
     fi
  done
 
-  _BROWSERCACHEDIR="${HOME}/.cache/mozilla/firefox/" ; rm_browser_cache
+  _BROWSERCACHEDIR="${HOME}/.cache/mozilla/firefox/" ; removeBrowserCache
 }
 
 # function remove Firefox profile 
 FFOXPROFILE() {
-  _BROWSERNAME="Firefox" _BROWSERPROFILE="${HOME}/.mozilla/firefox/" ; rm_browser_profile
+  _BROWSERNAME="Firefox" _BROWSERPROFILE="${HOME}/.mozilla/firefox/" ; removeBrowserProfile
 }
 
 # function fix dropbox | cinnamon
@@ -463,42 +464,42 @@ ICONTHEMESERIK() {
 
 # function remove Midori Cache 
 MIDORICACHE() {
-  _BROWSERNAME="Midori" _BROWSERCACHEDIR="${HOME}/.cache/midori/" ; rm_browser_cache
+  _BROWSERNAME="Midori" _BROWSERCACHEDIR="${HOME}/.cache/midori/" ; removeBrowserCache
 }
 
 # function remove Midori profile 
 MIDORIPROFILE() {
-  _BROWSERNAME="Midori" _BROWSERPROFILE="${HOME}/.config/midori/" ; rm_browser_profile
+  _BROWSERNAME="Midori" _BROWSERPROFILE="${HOME}/.config/midori/" ; removeBrowserProfile
 }
 
 # function remove Opera cache
 OPERACACHE() {
-  _BROWSERNAME="Opera" _BROWSERCACHEDIR="${HOME}/.cache/opera/Cache/" ; rm_browser_cache
+  _BROWSERNAME="Opera" _BROWSERCACHEDIR="${HOME}/.cache/opera/Cache/" ; removeBrowserCache
 }
 
 # function remove Opera profile 
 OPERAPROFILE() {
-  _BROWSERNAME="Opera" _BROWSERPROFILE="${HOME}/.config/opera/" ; rm_browser_profile
+  _BROWSERNAME="Opera" _BROWSERPROFILE="${HOME}/.config/opera/" ; removeBrowserProfile
 }
 
 # function remove Pale Moon cache
 PALEMOONCACHE() {
-  _BROWSERNAME="Pale Moon" _BROWSERCACHEDIR="${HOME}/.cache/moonchild productions/pale moon/" ; rm_browser_cache
+  _BROWSERNAME="Pale Moon" _BROWSERCACHEDIR="${HOME}/.cache/moonchild productions/pale moon/" ; removeBrowserCache
 }
 
 # function remove Pale Moon profile 
 PALEMOONPROFILE() {
-  _BROWSERNAME="Pale Moon" _BROWSERPROFILE="${HOME}/.moonchild productions/" ; rm_browser_profile
+  _BROWSERNAME="Pale Moon" _BROWSERPROFILE="${HOME}/.moonchild productions/" ; removeBrowserProfile
 }
 
 # function remove SeaMonkey cache 
 SEAMONKEYCACHE() {
-  _BROWSERNAME="SeaMonkey" _BROWSERCACHEDIR="${HOME}/.cache/mozilla/seamonkey/" ; rm_browser_cache
+  _BROWSERNAME="SeaMonkey" _BROWSERCACHEDIR="${HOME}/.cache/mozilla/seamonkey/" ; removeBrowserCache
 }
 
 # function remove SeaMonkey profile 
 SEAMONKEYPROFILE() {
-  _BROWSERNAME="SeaMonkey" _BROWSERPROFILE="${HOME}/.mozilla/seamonkey/" ; rm_browser_profile
+  _BROWSERNAME="SeaMonkey" _BROWSERPROFILE="${HOME}/.mozilla/seamonkey/" ; removeBrowserProfile
 }
 
 # function delete thumbnail cache
@@ -530,22 +531,22 @@ TRASHBIN() {
 
 # function remove Vivaldi Cache 
 VIVALDICACHE() {
-  _BROWSERNAME="Vivaldi" _BROWSERCACHEDIR="${HOME}/.cache/vivaldi/" ; rm_browser_cache
+  _BROWSERNAME="Vivaldi" _BROWSERCACHEDIR="${HOME}/.cache/vivaldi/" ; removeBrowserCache
 }
 
 # function remove Vivaldi profile 
 VIVALDIPROFILE() {
-  _BROWSERNAME="Vivaldi" _BROWSERPROFILE="${HOME}/.config/vivaldi/" ; rm_browser_profile
+  _BROWSERNAME="Vivaldi" _BROWSERPROFILE="${HOME}/.config/vivaldi/" ; removeBrowserProfile
 }
 
 # function remove Waterfox Cache 
 WATERFOXCACHE() {
-  _BROWSERNAME="Waterfox" _BROWSERCACHEDIR="${HOME}/.cache/waterfox/" ; rm_browser_cache
+  _BROWSERNAME="Waterfox" _BROWSERCACHEDIR="${HOME}/.cache/waterfox/" ; removeBrowserCache
 }
 
 # function remove Waterfox profile 
 WATERFOXPROFILE() {
-  _BROWSERNAME="Waterfox" _BROWSERPROFILE="${HOME}/.waterfox/" ; rm_browser_profile
+  _BROWSERNAME="Waterfox" _BROWSERPROFILE="${HOME}/.waterfox/" ; removeBrowserProfile
 }
 
 # function whisker menu restore | linuxlite
@@ -655,22 +656,22 @@ WHISKERMREST() {
   fi
 
   # main dialog
-  OPT=$(NO_AT_BRIDGE=1 yad --list --checklist --fixed --width="640" --height="440" --title="$_APPNAME" \
-             --window-icon=$APP_ICON --image=/usr/share/pixmaps/unlockme-wm.png --image-on-top \
-             --button="Cancel"\!gtk-cancel:1 --button="Proceed"\!gtk-apply:0 \
-             --text="<span font='11'>\n    Choose reset preferences from the options below:</span>\n" \
-             --column="Pick" --column="OPTS" --column="Items" --column="Description" \
-             --dclick-action= --no-selection --hide-column="2" --print-column="2" --wrap-width=370 \
-             "${keep_favorites}" "keep_favorites" "Favorites" "Help Manual and Install Updates will be restored. \
+  OPT=$(yad --list --checklist --fixed --width="640" --height="440" --title="$_APPNAME" \
+            --window-icon=$APP_ICON --image=/usr/share/pixmaps/unlockme-wm.png --image-on-top \
+            --button="Cancel"\!gtk-cancel:1 --button="Proceed"\!gtk-apply:0 \
+            --text="<span font='11'>\n    Choose reset preferences from the options below:</span>\n" \
+            --column="Pick" --column="OPTS" --column="Items" --column="Description" \
+            --dclick-action= --no-selection --hide-column="2" --print-column="2" --wrap-width=370 \
+            "${keep_favorites}" "keep_favorites" "Favorites" "Help Manual and Install Updates will be restored. \
 All other items in your Favorites will be kept when this option is selected." \
-             "${keep_recent}" "keep_recent" "Recently Used" "Keep your current Recently Used items" \
-             "${keep_opacity}" "keep_opacity" "Background Opacity" "Keep your current Background Opacity preference" \
-             "${keep_mcatsize}" "keep_mcatsize" "Category icon size" "Keep your current Category icon size preference" \
-             "${keep_micsize}" "keep_micsize" "Item icon size" "Keep your current Item icon size preference" \
-             "${keep_mhierarchy}" "keep_mhierarchy" "Menu hierarchy" "Keep your current menu hierarchy preference" \
-             "${keep_menu_icon}" "keep_menu_icon" "Menu icon" "Keep your current Whisker menu icon" \
-             "${keep_menu_title}" "keep_menu_title" "Menu title" "Keep your current Whisker menu title" \
-             "${keep_wxhy}" "keep_wxhy" "Width and height" "Keep the menu's current width and height")
+            "${keep_recent}" "keep_recent" "Recently Used" "Keep your current Recently Used items" \
+            "${keep_opacity}" "keep_opacity" "Background Opacity" "Keep your current Background Opacity preference" \
+            "${keep_mcatsize}" "keep_mcatsize" "Category icon size" "Keep your current Category icon size preference" \
+            "${keep_micsize}" "keep_micsize" "Item icon size" "Keep your current Item icon size preference" \
+            "${keep_mhierarchy}" "keep_mhierarchy" "Menu hierarchy" "Keep your current menu hierarchy preference" \
+            "${keep_menu_icon}" "keep_menu_icon" "Menu icon" "Keep your current Whisker menu icon" \
+            "${keep_menu_title}" "keep_menu_title" "Menu title" "Keep your current Whisker menu title" \
+            "${keep_wxhy}" "keep_wxhy" "Width and height" "Keep the menu's current width and height")
 
   if [[ "$?" -eq "1" || "$?" -eq "252" ]]; then 
     mv "$LWMRFILE".bak "$LWMRFILE"
@@ -878,10 +879,10 @@ if [[ "${#ARRAYA[@]}" != "0" ]]; then
       zenity --error --width="260" --title="UnlockMe" --text="An error occurred while executing:\n\n ${line}" 2>/dev/null
       exit 1
     fi
-    done | NO_AT_BRIDGE=1 yad --text-align="center" --borders="10" --no-buttons --undecorated \
-                              --fixed --progress --pulsate --auto-close --auto-kill \
-                              --skip-taskbar --center --width="340" --height="110" \
-                              --text="\n<span font='13'>UnlockMe</span>"
+    done | yad --text-align="center" --borders="10" --no-buttons --undecorated \
+              --fixed --progress --pulsate --auto-close --auto-kill \
+              --skip-taskbar --center --width="340" --height="110" \
+              --text="\n<span font='13'>UnlockMe</span>"
 fi
 
 # Check whether ARRAYB is empty and skip execution if so
@@ -1301,7 +1302,7 @@ else DISTRO="$(cut -d\\ -f1 < /etc/issue)"
 fi
 
 # main dialog
-selection=$(NO_AT_BRIDGE=1 yad --list --checklist --width="880" --height="600" --window-icon="$ICON" --image="$ICON" --separator=" " \
+selection=$(yad --list --checklist --width="880" --height="600" --window-icon="$ICON" --image="$ICON" --separator=" " \
                 --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
                 --column="Category" --column="Description" --hide-column="2" --print-column=2 \

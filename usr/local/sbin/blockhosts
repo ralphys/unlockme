@@ -16,6 +16,7 @@
 # locale
 export LANG=C
 export LANG=C.UTF-8
+export NO_AT_BRIDGE=1
 
 _APPNAME="Blacklist Generator"
 
@@ -75,7 +76,7 @@ clean_up() {
 }
 
 # function Save generated file 
-save_file() {
+saveFile() {
 
 	szSavePath=$(zenity --file-selection --title=" Save Generated file" --width="550" --height="380" \
 						--filename="${HOME}/blacklist.conf" --window-icon="$_ICON" --file-filter='*.conf' \
@@ -88,7 +89,7 @@ save_file() {
     fi
 }
 
-gen_blacklist() {
+genBlacklist() {
 
 echo "10"
 echo "# Processing sources..." ; sleep .5
@@ -212,7 +213,7 @@ This is usually caused by errors in one or more additional lists that $_APPNAME 
 All changes will be reverted. Please try again selecting fewer additional lists."
  
 if [[ "$_DNSSERV" == "UNBOUND" ]] || [[ "$EUID" != 0 && "$_DNSSERV" == "DNSMASQ" ]]; then
-	save_file
+	saveFile
 else
 	cp "$bgenfile" /etc/NetworkManager/dnsmasq.d/blacklist ; clean_up
 	echo "# Adding blacklist to the system..." ; sleep 1
@@ -368,7 +369,7 @@ szblack=$(yad --entry --image="/usr/share/unlockme/icons/ui/blacklist90.png" --b
 	echo "$szblack" > "$GENFILEB"
 
 # Begin blacklist processing
-gen_blacklist $ans $ans2 ) | yad --progress --width="340" --height="110" --title="Progress Status" --text="" --center --no-buttons --skip-taskbar \
+genBlacklist $ans $ans2 ) | yad --progress --width="340" --height="110" --title="Progress Status" --text="" --center --no-buttons --skip-taskbar \
 								 --fixed --undecorated --no-cancel --percentage=0 --auto-close --auto-kill 2>/dev/null
 (( $? != 0 )) && zenity --error --text="Error in command execution."
 exit 0
