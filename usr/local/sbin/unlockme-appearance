@@ -80,7 +80,7 @@ Those processes will be terminated before continuing.\n\nWould you like to proce
 
   if [[ "$?" != "0" ]]; then ${opt_procedure[@]}
   else
-    echo "#⚫ Terminating processes..." ; sleep 1
+    echo "#• Terminating processes..." ; sleep 1
     killall -9 synaptic
     killall -9 apt
     killall -9 apt-get
@@ -172,7 +172,6 @@ for i in ${CINVER}; do
 done
 }
 
-
 # Mint-Y Colora Desktop Theme Collection
 MTYCOLORA() {
 	
@@ -181,12 +180,12 @@ _LGFILE="/usr/share/unlockme/set/MTYCOLORA"
 
 # if not installed, then task = install
 if [[ ! -f "/usr/share/unlockme/set/MTYCOLORA" ]]; then
-	echo "#⚫ Downloading Mint-Y-Colora Theme Collection..." ; sleep 1 ; checkOnline 
+	echo "#• Downloading Mint-Y-Colora Theme Collection..." ; sleep 1 ; checkOnline 
 
 	# if temp directory exists, remove it
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR"
 
-	echo "#⚫ Preparing for installation..."
+	echo "#• Preparing for installation..."
 
 	# download theme collection from github into temp dir
 	git clone https://github.com/erikdubois/Mint-Y-Colora-Theme-Collection "$_TMPDIR"
@@ -201,7 +200,7 @@ if [[ ! -f "/usr/share/unlockme/set/MTYCOLORA" ]]; then
     # install for current user
     if [[ "$?" = "0" ]]; then
     
-    	echo "#⚫ Installing themes for current user only..." ; sleep 1
+    	echo "#• Installing themes for current user only..." ; sleep 1
 
     	# if folder doesn't exist, create it
     	_USRTHEMEDIR="/home/${_SOFTUSR}/.themes"
@@ -216,7 +215,7 @@ if [[ ! -f "/usr/share/unlockme/set/MTYCOLORA" ]]; then
 	echo "#✔ Installation completed." ; sleep 1
 else
 	# if already installed, then task = remove 
-	echo "#⚫ Removing Mint-Y-Colora Theme Collection..." ; sleep 1
+	echo "#• Removing Mint-Y-Colora Theme Collection..." ; sleep 1
 
 	# delete folders logged during installation and delete the log file 
 	_REMFDS=$(< "$_LGFILE")
@@ -237,7 +236,7 @@ _FNAME="Arch Theme"
 _TMPDIR="/tmp/arc-theme"
 _FFTMP="/tmp/arc-firefox-theme"
 
-echo "#⚫ ${_FNAME}..." ; sleep 1 ; checkOnline
+echo "#• ${_FNAME}..." ; sleep 1 ; checkOnline
 
 # if not installed, then task = install
 if [[ ! -d  "/usr/share/themes/Arc" ]]; then
@@ -246,20 +245,17 @@ if [[ ! -d  "/usr/share/themes/Arc" ]]; then
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR" ; [[ -d "$_FFTMP" ]] && rm -rf "$_FFTMP" 
 
 	# download theme from github
-	echo "#⚫ Downloading from github..." ; sleep 1
+	echo "#• Downloading from github..." ; sleep 1
 	git clone https://github.com/horst3180/arc-theme --depth 1 "$_TMPDIR" 2>&1 | showProgress && cd "$_TMPDIR" 
 
 	# install theme
 	./autogen.sh --prefix=/usr
-	echo "#⚫ Installing Arc Theme..." ; sleep 1
+	echo "#• Installing Arc Theme..." ; sleep 1
 	make install 2>&1 | showProgress && rm -rf "$_TMPDIR"
-
-
- 
 
 	# if Firefox browser is installed, then also install browser theme
 	if  [[ -n "$(grep -F ' firefox ' <<< ${DPKGCHECKS[@]})" ]]; then
-		echo "#⚫ Installing Arc Theme for Firefox..." ; sleep 1
+		echo "#• Installing Arc Theme for Firefox..." ; sleep 1
 
 		# download from github
 		cd /tmp && git clone https://github.com/horst3180/arc-firefox-theme --depth 1 "$_FFTMP" 2>&1 | showProgress && cd "$_FFTMP"
@@ -271,7 +267,7 @@ if [[ ! -d  "/usr/share/themes/Arc" ]]; then
 	echo "#✔ Installation completed." ; sleep 1
 else
 	# if already installed, then task = remove
-	echo "#⚫ Removing Arc Theme..." 
+	echo "#• Removing Arc Theme..." 
 	rm -rf /usr/share/themes/{Arc,Arc-Darker,Arc-Dark}
 	# remove firefox browser theme
 	rm -rf /usr/lib/firefox/browser/extensions/{03cb16aa-4675-11e5-b233-213b1d5d46b0} 
@@ -287,12 +283,12 @@ ARCCOLORA() {
 	_LGFILE="/usr/share/unlockme/set/ARCCOLORA"
 
 if [[ ! -f "/usr/share/unlockme/set/ARCCOLORA" ]]; then
-	echo "#⚫ Downloading Arc-Theme-Colora Collection..." ; sleep 1 ; checkOnline 
+	echo "#• Downloading Arc-Theme-Colora Collection..." ; sleep 1 ; checkOnline 
 
 	# if temp directory exists, remove it
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR"
 
-	echo "#⚫ Downloading from github..."
+	echo "#• Downloading from github..."
 
 	# download theme collection from github into temp dir
 	git clone https://github.com/erikdubois/Arc-Theme-Colora-Collection "$_TMPDIR"
@@ -307,7 +303,7 @@ if [[ ! -f "/usr/share/unlockme/set/ARCCOLORA" ]]; then
     # for current user
     if [[ "$?" = "0" ]]; then
     
-    	echo "#⚫ Installing themes for current user only..." ; sleep 1
+    	echo "#• Installing themes for current user only..." ; sleep 1
 
     	# if folder doesn't exist, create it
     	_USRTHEMEDIR="/home/$_SOFTUSR/.themes"
@@ -321,7 +317,7 @@ if [[ ! -f "/usr/share/unlockme/set/ARCCOLORA" ]]; then
 	rm -rf "$_TMPDIR"
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Arc-Theme-Colora Collection..." ; sleep 1
+	echo "#• Removing Arc-Theme-Colora Collection..." ; sleep 1
 	_REMFDS=$(< "$_LGFILE")
 
 	for folders in ${_REMFDS}; do
@@ -342,14 +338,14 @@ if [[ ! -f "$_LGFILE" ]]; then
 
 	if [[ -f "/usr/share/unlockme/set/BREEZELHCT" ]]; then
 
-		echo "#⚫ Conflict found..." ; sleep .5
+		echo "#• Conflict found..." ; sleep .5
 		zenity --question --width="300" --title="Conflicting Cursor Pack" \
 			   --text="Another Breeze pack is already installed. It will be removed before installing this pack.\n\nWould you like to continue?" 2>/dev/null
 
 		if [[ "$?" != "0" ]]; then
 			continue
 		else 
-			echo "#⚫ Removing Breeze Cursors..." ; sleep 1
+			echo "#• Removing Breeze Cursors..." ; sleep 1
 			_REMOCT=$(< "/usr/share/unlockme/set/BREEZELHCT")
 
 			for folders in ${_REMOCT}; do
@@ -360,11 +356,11 @@ if [[ ! -f "$_LGFILE" ]]; then
 	fi
 
 	if [[ ! -f "$_DLF" ]]; then
-		echo "#⚫ Downloading Breeze Cursors..." ; sleep .5 ; checkOnline
+		echo "#• Downloading Breeze Cursors..." ; sleep .5 ; checkOnline
 		wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF" 2>&1 | showProgress
 	fi
 
-	echo "#⚫ Installing Breeze Cursors..." ; sleep 1
+	echo "#• Installing Breeze Cursors..." ; sleep 1
 
 	cd /tmp && 7z x $_CPNAME.7z | showProgress
 	cp -rf /tmp/${_CPNAME}/* "$_CURDIR"
@@ -377,7 +373,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Breeze Cursors..." ; sleep 1
+	echo "#• Removing Breeze Cursors..." ; sleep 1
 	_REMFDS=$(< "$_LGFILE")
 
 	for folders in ${_REMFDS}; do
@@ -398,7 +394,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 	
 	if [[ -f "/usr/share/unlockme/set/BREEZECT" ]]; then 
 		
-		echo "#⚫ Conflict found..." ; sleep .5
+		echo "#• Conflict found..." ; sleep .5
 		zenity --question --width="300" --title="Conflicting Cursor Pack" \
 			   --text="Another Breeze pack is already installed. It will be removed before installing this pack.\
 \n\nWould you like to continue?" 2>/dev/null
@@ -406,7 +402,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 		if [[ "$?" != "0" ]]; then
 			continue
 		else 
-			echo "#⚫ Removing Breeze Cursors..." ; sleep 1
+			echo "#• Removing Breeze Cursors..." ; sleep 1
 			_REMOCT=$(< "/usr/share/unlockme/set/BREEZECT")
 
 			for folders in ${_REMOCT}; do
@@ -417,11 +413,11 @@ if [[ ! -f "$_LGFILE" ]]; then
 	fi
 
 	if [[ ! -f "$_DLF" ]]; then
-		echo "#⚫ Downloading Breeze Left Handed Cursors..." ; sleep .5 ; checkOnline
+		echo "#• Downloading Breeze Left Handed Cursors..." ; sleep .5 ; checkOnline
 		wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME2.7z -O "$_DLF" 2>&1 | showProgress
 	fi
 		
-	echo "#⚫ Installing Breeze Cursors..." ; sleep 1
+	echo "#• Installing Breeze Cursors..." ; sleep 1
 	
 	cd /tmp && 7z x $_CPNAME2.7z | showProgress
 	cp -rf /tmp/${_CPNAME2}/* "$_CURDIR"
@@ -434,7 +430,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Breeze Left Handed Cursors..." ; sleep 1
+	echo "#• Removing Breeze Left Handed Cursors..." ; sleep 1
 	_REMFDS=$(< "$_LGFILE")
 
 	for folders in ${_REMFDS}; do
@@ -455,16 +451,16 @@ _DLF="/tmp/capitaine-cursors.7z"
 if [[ ! -f "$_LGFILE" ]]; then
 	
 	if [[ ! -f "$_DLF" ]]; then
-		echo "#⚫ Downloading Capitaine Cursors..." ; sleep .5 ; checkOnline
+		echo "#• Downloading Capitaine Cursors..." ; sleep .5 ; checkOnline
 		wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF"
 	fi
 
-	echo "#⚫ Installing Phoethon Capitaine..." & sleep 1
+	echo "#• Installing Phoethon Capitaine..." & sleep 1
 	cd /tmp && 7z x $_CPNAME.7z -o/usr/share/icons ; echo "Installed" > "$_LGFILE"
 
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Capitaine Cursors..." ; sleep 1
+	echo "#• Removing Capitaine Cursors..." ; sleep 1
 	rm -rf "${_CURDIR}/${_CPNAME}" && rm -f "$_LGFILE"
 	echo "#✔ Removal completed."  ; sleep 1
 fi
@@ -479,7 +475,7 @@ _FFDEF=$(ls /home/${_SOFTUSR}/.mozilla/firefox/ | grep '.default')
 	[[ ! -d  "/usr/share/themes/Vertex-Dark" ]] ||
 	[[ ! -d  "/usr/share/themes/Vertex-Light" ]]; then
 
-	echo "#⚫ Preparing..." ; sleep 1 ; checkOnline
+	echo "#• Preparing..." ; sleep 1 ; checkOnline
 
 	[[ -d "/tmp/vertex-theme" ]] && rm -rf /tmp/vertex-theme
 
@@ -491,38 +487,38 @@ _FFDEF=$(ls /home/${_SOFTUSR}/.mozilla/firefox/ | grep '.default')
 		rm -rf /home/${desktopuser}/.themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
 	done
 
-	echo "#⚫ Downloading from github..." ; sleep 1
+	echo "#• Downloading from github..." ; sleep 1
 	git clone https://github.com/horst3180/vertex-theme --depth 1  /tmp/vertex-theme && cd /tmp/vertex-theme
 
-	echo "#⚫ Compiling Vertex theme..." ; sleep 1
+	echo "#• Compiling Vertex theme..." ; sleep 1
 	./autogen.sh --prefix=/usr
 
-	echo "#⚫ Installing Vertex Theme..." ; sleep 1
+	echo "#• Installing Vertex Theme..." ; sleep 1
 	make install
 
 	# install vertex theme for plank
 	if  [[ -n "$(grep -F ' plank ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-		echo "#⚫ Adding Vertex theme to Plank..." ; sleep 1
+		echo "#• Adding Vertex theme to Plank..." ; sleep 1
 		cp -rf /tmp/vertex-theme/extra/Vertex-Plank /usr/share/plank/themes
 	fi
 
 	# install vertex theme for Firefox
 	if  [[ -n "$(grep -F ' firefox ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-		echo "#⚫ Adding Vertex theme to Firefox..." ; sleep 1
+		echo "#• Adding Vertex theme to Firefox..." ; sleep 1
 		cp -rf /tmp/vertex-theme/extra/Firefox/* "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
 		chown "$_SOFTUSR":"$_SOFTUSR" /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/{Vertex,Vertex-Dark,Vertex-Light}
 	fi
 	echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Removing Vertex Theme..." ; sleep 1
+  echo "#• Removing Vertex Theme..." ; sleep 1
   rm -rf /usr/share/themes/{Vertex,Vertex-Dark,Vertex-Light}
 
-  echo "#⚫ Removing Plank theme..." ; sleep 1
+  echo "#• Removing Plank theme..." ; sleep 1
   rm -rf /usr/share/plank/themes/Vertex-Plank
 
-  echo "#⚫ Removing Firefox theme..." ; sleep 1
+  echo "#• Removing Firefox theme..." ; sleep 1
   rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/{Vertex,Vertex-Dark,Vertex-Light}
   rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
   rm -f /usr/share/unlockme/set/VERTEXFFTH
@@ -537,7 +533,7 @@ VERTEXFFTH() {
 _LGFILE="/usr/share/unlockme/set/VERTEXFFTH"
 _FFDEF=$(ls /home/${_SOFTUSR}/.mozilla/firefox/ | grep '.default')
 
-echo "#⚫ Set Vertex Theme for Firefox..."
+echo "#• Set Vertex Theme for Firefox..."
 
 # the loop
 while (true); do
@@ -568,7 +564,7 @@ if [[ "$?" = "1" || "$?" = "252" ]]; then exit 0 ; fi
 
 if [[ "$OPT" = "vdef" ]]; then 
 
-	echo "#⚫ Applying default Vertext theme..." ; sleep 1
+	echo "#• Applying default Vertext theme..." ; sleep 1
 
 	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
 	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
@@ -577,7 +573,7 @@ if [[ "$OPT" = "vdef" ]]; then
 	
 elif [[ "$OPT" = "vdark" ]]; then
 
-	echo "#⚫ Applying Dark Vertext theme..." ; sleep 1
+	echo "#• Applying Dark Vertext theme..." ; sleep 1
 
 	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Dark/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
 	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
@@ -586,7 +582,7 @@ elif [[ "$OPT" = "vdark" ]]; then
 
 elif [[ "$OPT" = "vlight" ]]; then
 
-	echo "#⚫ Applying Light Vertext theme..." ; sleep 1
+	echo "#• Applying Light Vertext theme..." ; sleep 1
 
 	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Light/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
 	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
@@ -596,10 +592,10 @@ elif [[ "$OPT" = "vlight" ]]; then
 elif [[ "$OPT" = "disable" ]]; then
 
 	if [[ ! -d "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome" ]]; then
-		echo "#⚫ No changes necessary..." ; sleep 1
+		echo "#• No changes necessary..." ; sleep 1
 		return 
 	else
-		echo "#⚫ Disabling Vertext theme for Firefox ..." ; sleep 1
+		echo "#• Disabling Vertext theme for Firefox ..." ; sleep 1
 		rm -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
 		echo "disable" > "$_LGFILE"
 	fi
@@ -622,11 +618,11 @@ _TMPDIR="/tmp/arc-icon-theme"
 
 if [[ ! -d  "/usr/share/icons/Arc" ]]; then
 
-	echo "#⚫ Downloading & Installing Arc Icon Theme..." ; sleep 1 ; checkOnline
+	echo "#• Downloading & Installing Arc Icon Theme..." ; sleep 1 ; checkOnline
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR"
 
 	if [[ ! -d "/usr/share/icons/Moka" ]]; then
-		echo "#⚫ Installing dependencies..." ; sleep 1
+		echo "#• Installing dependencies..." ; sleep 1
 		MOKAIT
 	fi
 
@@ -634,7 +630,7 @@ if [[ ! -d  "/usr/share/icons/Arc" ]]; then
 	./autogen.sh --prefix=/usr && make install
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Arc Icon Theme..." ; sleep 1
+	echo "#• Removing Arc Icon Theme..." ; sleep 1
 	rm -rf "/usr/share/icons/Arc"
 	echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -654,22 +650,22 @@ if  [[ -z "$(grep -F ' flat-remix ' <<< ${DPKGCHECKS[@]})" ]]; then
 	# if PPA is not installed; add it
     if [[ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep daniruiz)" ]]; then
 		
-		echo "#⚫ Adding PPA..." ; checkOnline
+		echo "#• Adding PPA..." ; checkOnline
 		add-apt-repository ppa:daniruiz/flat-remix -y | showProgress
 
-		echo "#⚫ Updating cache..."
+		echo "#• Updating cache..."
 		updateSources
 	fi
 
-	echo "#⚫ Installing ${_FNAME} icon theme..." ; sleep 1
+	echo "#• Installing ${_FNAME} icon theme..." ; sleep 1
 	apt-get install flat-remix -y | showProgress ; checkInstall
 
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing ${_FNAME} icon theme..." ; sleep 1
+	echo "#• Removing ${_FNAME} icon theme..." ; sleep 1
 	apt-get remove --purge flat-remix -y | showProgress ; checkRemoval
 
-	echo "#⚫ Removing PPA..." ; sleep 1
+	echo "#• Removing PPA..." ; sleep 1
 	add-apt-repository --remove ppa:daniruiz/flat-remix -y | showProgress
 	
 	echo "#✔ Uninstallation completed." ; sleep 1
@@ -684,24 +680,24 @@ opt_procedure="continue" ; checkPackageManager
 
 if  [[ -z "$(grep -F ' moka-icon-theme ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing Moka Icon Theme..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing Moka Icon Theme..." ; sleep 1 ; checkOnline
 
   if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep moka)" ]]; then
 
-    echo "#⚫ Adding PPA..." 
+    echo "#• Adding PPA..." 
     add-apt-repository ppa:moka/daily -y | showProgress
 
-    echo "#⚫ Updating cache..."
+    echo "#• Updating cache..."
     updateSources
   fi
 
-  echo "#⚫ Downloading and installing Moka Icon Theme..." ; sleep 1
+  echo "#• Downloading and installing Moka Icon Theme..." ; sleep 1
 
   apt-get install moka-icon-theme faba-icon-theme faba-mono-icons -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 
 else
-	echo "#⚫ Removing Moka Icon Theme..." ; sleep 1
+	echo "#• Removing Moka Icon Theme..." ; sleep 1
 	if [[ -d  "/usr/share/icons/Arc" ]]; then
   		zenity --question --width="340" --height="220" --title="Arc Icon Theme found" \
   			   --text="Arc icon theme does not provide application icons, it needs another icon theme to inherit them.\n\n\
@@ -710,17 +706,17 @@ Gnome icon theme as fallback.\n\n\
 Are you sure you want to remove Moka Icon Theme?" 2>/dev/null
 
 		if [[ "$?" != "0" ]]; then
-			echo "#⚫ Aborting..." ; sleep 1 && break
+			echo "#• Aborting..." ; sleep 1 && break
 		else :
 		fi
   	fi
 
 	apt-get remove --purge moka-icon-theme faba-icon-theme faba-mono-icons -y | showProgress ; checkRemoval
 
-	echo "#⚫ Removing PPA..." 
+	echo "#• Removing PPA..." 
 	apt-add-repository --remove ppa:moka/daily -y | showProgress
 
-	echo "#⚫ Updating cache..."
+	echo "#• Updating cache..."
 	updateSources
 	echo "#✔ Uninstallation completed." ; sleep 1	
 fi
@@ -737,15 +733,15 @@ _DLF="/tmp/Phoeton.7z"
 if [[ ! -f "$_LGFILE" ]]; then
 
 	if [[ ! -f "$_DLF" ]]; then
-		echo "#⚫ Downloading Phoeton Cursors..." ; sleep .5 ; checkOnline
+		echo "#• Downloading Phoeton Cursors..." ; sleep .5 ; checkOnline
 		wget https://unlockforus.com/repository/downloads/cursor/$_CPNAME.7z -O "$_DLF" 2>&1 | showProgress
 	fi
 
-	echo "#⚫ Installing Phoethon Cursors..." ; sleep 1
+	echo "#• Installing Phoethon Cursors..." ; sleep 1
 	cd /tmp && 7z x $_CPNAME.7z -o/usr/share/icons ; echo "Installed" > "$_LGFILE"
 	echo "#✔ Installation completed." ; sleep 1
 else
-	echo "#⚫ Removing Phoethon Cursors..." ; sleep 1
+	echo "#• Removing Phoethon Cursors..." ; sleep 1
 	rm -rf "${_CURDIR}/${_CPNAME}" && rm -f "$_LGFILE"
 	echo "#✔ Removal completed."  ; sleep 1
 fi
@@ -761,29 +757,29 @@ opt_procedure="continue" ; checkPackageManager
 
 if  [[ -z "$(grep -F ' papirus-icon-theme ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-	echo "#⚫ Downloading and installing Papirus Icon Theme..." ; sleep 1 ; checkOnline
+	echo "#• Downloading and installing Papirus Icon Theme..." ; sleep 1 ; checkOnline
     
 	if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep papirus)" ]]; then
 
-    	echo "#⚫ Adding PPA..." 
+    	echo "#• Adding PPA..." 
     	add-apt-repository ppa:papirus/papirus -y | showProgress
 	fi
 
-	echo "#⚫ Updating cache..."
+	echo "#• Updating cache..."
 	updateSources 
 
-	echo "#⚫ Downloading and installing Papirus Icon Theme..."
+	echo "#• Downloading and installing Papirus Icon Theme..."
 	apt-get install papirus-icon-theme -y | showProgress ; checkInstall
 
 	echo "#✔ Installation completed." & sleep 1
 else
-	echo "#⚫ Removing Papirus Icon Theme..." 
+	echo "#• Removing Papirus Icon Theme..." 
 	apt-get remove --purge papirus-icon-theme -y | showProgress ; checkRemoval
 
-	echo "#⚫ Removing PPA..." 
+	echo "#• Removing PPA..." 
 	apt-add-repository --remove ppa:papirus/papirus -y | showProgress
 
-	echo "#⚫ Updating cache..."
+	echo "#• Updating cache..."
 	updateSources
 
 	echo "#✔ Uninstallation completed." ; sleep 1
@@ -798,7 +794,7 @@ _LGFILE="/usr/share/unlockme/set/SARDI"
 
 if [[ ! -f "/usr/share/unlockme/set/SARDI" ]]; then
 
-	echo "#⚫ Downloading Sardi icons..." ; sleep 1 ; checkOnline 
+	echo "#• Downloading Sardi icons..." ; sleep 1 ; checkOnline 
 
 	# if temp directory exists, remove it
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR"
@@ -815,7 +811,7 @@ if [[ ! -f "/usr/share/unlockme/set/SARDI" ]]; then
     # for current user
     if [[ "$?" = "0" ]]; then
     
-    	echo "#⚫ Installing Sardi icons for current user..." ; sleep 1
+    	echo "#• Installing Sardi icons for current user..." ; sleep 1
 
     	# if folder doesn't exist, create it
     	_USRICONSDIR="/home/${_SOFTUSR}/.icons"
@@ -829,7 +825,7 @@ if [[ ! -f "/usr/share/unlockme/set/SARDI" ]]; then
 
     else
     	# install for all users
-    	echo "#⚫ Installing Sardi icons..." ; sleep 1
+    	echo "#• Installing Sardi icons..." ; sleep 1
     	cp -rf /tmp/sardi/* "/usr/share/icons"
 
     	ls -l "$_TMPDIR" | egrep '^d' | awk '{print $9}' > "$_LGFILE" 
@@ -841,7 +837,7 @@ if [[ ! -f "/usr/share/unlockme/set/SARDI" ]]; then
 	echo "#✔ Installation completed." ; sleep 1
 else
 
-	echo "#⚫ Removing Sardi icons..." ; sleep 1 
+	echo "#• Removing Sardi icons..." ; sleep 1 
 	_REMFDS=$(< "${_LGFILE}")
 
 	for folders in ${_REMFDS}; do
@@ -1034,11 +1030,12 @@ if  [[ -z "$(grep -F ' git ' <<< ${DPKGCHECKS[@]})" ]] ||
 	[[ -z "$(grep -F ' curl ' <<< ${DPKGCHECKS[@]})" ]] ||
 	[[ -z "$(grep -F ' automake ' <<< ${DPKGCHECKS[@]})" ]] ||
 	[[ -z "$(grep -F ' autoconf ' <<< ${DPKGCHECKS[@]})" ]] ||
+	[[ -z "$(grep -F 'libgtk-3-dev' <<< ${DPKGCHECKS[@]})" ]] ||
 	[[ -z "$(grep -F ' pkg-config ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 	# check for running package manager
 	opt_procedure="break" ; checkPackageManager
-	echo "#⚫ Installing requirements..." ; sleep 1 ; checkOnline 
+	echo "#• Installing requirements..." ; sleep 1 ; checkOnline 
 	apt-get install git automake autoconf pkg-config -y | showProgress
 fi
 

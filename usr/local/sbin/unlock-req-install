@@ -117,7 +117,7 @@ zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel -
 apt-get install yad apt-transport-https autoconf automake pkg-config git curl -y 2>&1 |
   stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |
   zenity --progress --pulsate --window-icon="$_APPICON" --auto-close --no-cancel --width="450" --height="60" \
-         --title="$_APPNAME - Installing requirements" --text="⚫ Installing requirements..." 2>/dev/null
+         --title="$_APPNAME - Installing requirements" --text="• Installing requirements..." 2>/dev/null
 
 if [[ "$LLDENV" =~ "Lite 3" ]]; then
   apt-get install lite-sources lite-updatesnotify -y 2>&1 | stdbuf -oL sed -n -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |

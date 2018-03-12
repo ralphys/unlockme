@@ -77,7 +77,7 @@ Those processes will be terminated before continuing.\n\nWould you like to proce
 
   if [[ "$?" != "0" ]]; then ${opt_procedure[@]}
   else
-    echo "#⚫ Terminating processes..." ; sleep 1
+    echo "#• Terminating processes..." ; sleep 1
     killall -9 synaptic
     killall -9 apt
     killall -9 apt-get
@@ -193,7 +193,7 @@ showProgress() {
 
 # kill thunar instances - xfce
 killThunar() {
-    echo "#⚫ Terminating any ${_FNAME} instances..."
+    echo "#• Terminating any ${_FNAME} instances..."
     if [[ -n "$(pgrep thunar\|Thunar)" ]]; then 
       signal_process=$(pgrep thunar\|Thunar)
     
@@ -206,7 +206,7 @@ killThunar() {
 # tweak - remove unnedded packages
 AUTOREMOVE() {
 
-echo "#⚫ Removing unneeded packages, please wait..."
+echo "#• Removing unneeded packages, please wait..."
 
 # check for running package manager
 opt_procedure="continue" ; checkPackageManager
@@ -229,7 +229,7 @@ echo "#✔ Unneeded packages cleared" && sleep 1
 # tweak - bypass pkexec password prompt for admins
 BYPASSPSWADMPKEXEC() {
 
-echo "#⚫ Configuring pkexec password prompt..." ; sleep .5
+echo "#• Configuring pkexec password prompt..." ; sleep .5
 
 _WFILE0="/var/lib/polkit-1/localauthority/10-vendor.d/49-unlockme_nopasswd_global.pkla"
 _WFILE1="/usr/share/unlockme/set/ACTPKEXEC"
@@ -238,7 +238,7 @@ _WFILE2="/home/${SOFTUSR}/.local/share/unlockme/ACTPKEXEC"
 [[ ! -d "/home/${SOFTUSR}/.local/share/unlockme" ]] && mkdir -p "/home/${SOFTUSR}/.local/share/unlockme"
 
 if [[ ! -f "$_WFILE0" ]]; then
-  echo "#⚫ Bypassing pkexec password prompt for admins..." ; sleep 2
+  echo "#• Bypassing pkexec password prompt for admins..." ; sleep 2
   touch "$_WFILE0" 
   printf \
 '[No pkexec password prompt for sudoers]
@@ -258,7 +258,7 @@ else
   if zenity --question --width="300" --title="pkexec password prompt" \
             --text="\nDo you want to enable pkexec password prompt for admins again?" 2>/dev/null; then 
 
-    echo "#⚫ Restoring pkexec password prompt for admins..." ; sleep 2
+    echo "#• Restoring pkexec password prompt for admins..." ; sleep 2
     rm -f "$_WFILE0" "$_WFILE1" "$_WFILE2"
 
     if [[ ! -f "$_WFILE0" && ! -f "$_WFILE1" && ! -f "$_WFILE2" ]]; then
@@ -317,7 +317,7 @@ while (true); do
       continue
 
     else
-      echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
+      echo "#• Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
       echo "$_NEW_HOSTNAME" > /proc/sys/kernel/hostname
 
       sed -i 's/127.0.1.1.*/127.0.1.1\t'"$_NEW_HOSTNAME"'/g' /etc/hosts
@@ -327,7 +327,7 @@ while (true); do
       _SMBCONF="/etc/samba/smb.conf"
       sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
 
-      echo "#⚫ Updating services. Please wait..." ; sleep 2
+      echo "#• Updating services. Please wait..." ; sleep 2
       # restart/reload services
       systemctl reload smbd && systemctl restart nmbd 
       systemctl restart network-manager ; sleep 3 ; dhclient
@@ -341,7 +341,7 @@ while (true); do
         zenity --info --width="260" --height="60" --timeout="8" --ok-label="Close" \
                --title=" Hostname changed" --text="\nThe hostname has been successfully updated." 2>/dev/null
       fi
-      echo "#⚫ Logging out..." && sleep 2;  systemctl restart mdm
+      echo "#• Logging out..." && sleep 2;  systemctl restart mdm
     fi
   done
 fi
@@ -378,7 +378,7 @@ The hostname cannot be changed." 2>/dev/null
            --title=" Hostname not changed" --text="\nNo new hostname was entered. Please try again." 2>/dev/null
     continue
   else
-    echo "#⚫ Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
+    echo "#• Changing hostname to ' $_NEW_HOSTNAME ' " ; sleep 1
     echo "$_NEW_HOSTNAME" > /proc/sys/kernel/hostname
 
     sed -i 's/127.0.1.1.*/127.0.1.1\t'"$_NEW_HOSTNAME"'/g' /etc/hosts
@@ -393,7 +393,7 @@ The hostname cannot be changed." 2>/dev/null
     _SMBCONF="/etc/samba/smb.conf"
     sed -i "s/netbios name =.*/netbios name = "$_NEW_HOSTNAME"/" "$_SMBCONF"
 
-    echo "#⚫ Updating services. Please wait..." ; sleep 1
+    echo "#• Updating services. Please wait..." ; sleep 1
     systemctl reload smbd && systemctl restart nmbd # restart/reload samba services
     systemctl reload network-manager ; sleep 3 ; dhclient
 
@@ -421,11 +421,11 @@ CONFIGFILE="/home/${SOFTUSR}/.config/compton.conf"
 CONFPUSH=$(sed '/'"$SOFTUSR"'/d' <<< "$ALLUSERS" | awk '{ print $1}')
 
   # push admin compton.conf to users
-( echo "#⚫ Reading users list..." ; sleep 2
+( echo "#• Reading users list..." ; sleep 2
   for desktopuser in ${CONFPUSH} ; do
-    echo "#⚫ Pushing configuration to user ${desktopuser}..." ; sleep 1
+    echo "#• Pushing configuration to user ${desktopuser}..." ; sleep 1
     cp -f "$CONFIGFILE" "/home/${desktopuser}/.config/"
-    echo "#⚫ Setting permissions for user ${desktopuser}..." ; sleep 1
+    echo "#• Setting permissions for user ${desktopuser}..." ; sleep 1
     chown "$desktopuser":"$desktopuser" "/home/${desktopuser}/.config/compton.conf"
     echo "#✔ Configuration for user ${desktopuser} applied." ; sleep 1
   done ) | yad --text-align="center" --borders="10" --no-buttons --undecorated \
@@ -473,15 +473,15 @@ Would you like to backup the existing configuration file?" 2>/dev/null; then
 
   echo "#✔ Installation completed."
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   # check if package manager is running
   opt_procedure="break" ; checkPackageManager    
   # remove compton
   if [[ -n $(pgrep 'compton') ]]; then
-    echo "#⚫ Stopping ${_FNAME}..." ; sleep 1 
+    echo "#• Stopping ${_FNAME}..." ; sleep 1 
     killall -9 compton ; sleep .5
   fi
-  echo "#⚫ Removing ${_FNAME} configuration..."
+  echo "#• Removing ${_FNAME} configuration..."
 
   if [[ -f "/home/${SOFTUSR}/.config/compton.conf" ]]; then
     if zenity --question --width="320" --icon-name="gtk-dialog-warning" \
@@ -513,11 +513,11 @@ fi
 FIXDBXFCE2() {
 
   # set proper permissions for .dbus folder
-  echo "#⚫ Fixing folder permissions ~/.dbus ..." ; sleep 1
+  echo "#• Fixing folder permissions ~/.dbus ..." ; sleep 1
   chown "$SOFTUSR":"$SOFTUSR" "/home/${SOFTUSR}/.dbus" -R
 
   # Fix dropbox application launcher
-  echo "#⚫ Fixing dropbox application launcher..." ; sleep 1
+  echo "#• Fixing dropbox application launcher..." ; sleep 1
   _DBAPPFL="/usr/share/applications/dropbox.desktop"
   [[ -f "$_DBAPPFL" ]] && sed -i 's/Exec=.*/Exec=dbus-launch dropbox start -i/g' "$_DBAPPFL"
   echo "#✔ Fixes applied." ; sleep 1
@@ -530,17 +530,17 @@ _FNAME="DNS Cache"
 _CACHE="/etc/NetworkManager/dnsmasq.d/cache"
 _DNSSEC="/etc/NetworkManager/dnsmasq.d/dnssec"
 _TTL="/etc/NetworkManager/dnsmasq.d/ttl"
-echo "#⚫ $_FNAME..." 
+echo "#• $_FNAME..." 
 
 while (true); do
-echo "#⚫ Configuring $_FNAME..." ; sleep .1
+echo "#• Configuring $_FNAME..." ; sleep .1
 
   disableDnsCache() {
 
     echo "# Disabling DNS cache..." ; sleep .5
     rm -f "$_CACHE" "$_DNSSEC" "$_TTL"
 
-    echo "#⚫ Restarting Network Manager..." 
+    echo "#• Restarting Network Manager..." 
     service network-manager restart ; sleep 2
     continue
   }
@@ -580,7 +580,7 @@ Only enable DNS cache if you are a single user on your computer
 and you're in network that you control such as your home network.\n
 Do not use DNS cache if you are connected to public networks,
 otherwise protect and encrypt your dns requests with DNSCrypt.\n
-⚫ DNSSEC Validation
+• DNSSEC Validation
   Your upstream DNS provider must support DNSSEC,
   otherwise you will lose connectivity.\n"
 
@@ -650,7 +650,7 @@ fi
     # enable dns cache
     if [[ ! -f "$_CACHE" ]]; then
 
-      touch "$_CACHE" ; echo "#⚫ Enabling DNS cache..."
+      touch "$_CACHE" ; echo "#• Enabling DNS cache..."
       printf 'cache-size=1000' > "$_CACHE" ; sleep 1
     fi
   fi
@@ -660,7 +660,7 @@ fi
 
     # enable dnssec
     if [[ ! -f "$_DNSSEC" ]]; then
-      touch "$_DNSSEC" ; echo "#⚫ Enabling DNSSEC..." 
+      touch "$_DNSSEC" ; echo "#• Enabling DNSSEC..." 
       printf \
 'conf-file=/usr/share/dnsmasq-base/trust-anchors.conf
 dnssec
@@ -673,7 +673,7 @@ dnssec-check-unsigned' > "$_DNSSEC" ; sleep 1
 
     # increase TTL
     if [[ ! -f "$_TTL" ]]; then
-      touch "$_TTL" ; echo "#⚫ Increasing TTL..." 
+      touch "$_TTL" ; echo "#• Increasing TTL..." 
       printf \
 'neg-ttl=300
 max-ttl=43200
@@ -682,7 +682,7 @@ max-cache-ttl=86400' > "$_TTL" ; sleep 1
     fi
   fi
 
-echo "#⚫ Restarting Network Manager..." 
+echo "#• Restarting Network Manager..." 
 service network-manager restart ; sleep 2
 
 done
@@ -700,7 +700,7 @@ echo "# Configuring IPv6..." ; sleep .5
 if [[ $(< "$_PROCSYS") = "1" ]]; then
   
   # enable IPv6
-  echo "#⚫ Enabling IPv6..."
+  echo "#• Enabling IPv6..."
   sed -i '/.*net.ipv6.conf.all.disable_ipv6.*/d' "$_SYSFL" 
 
   # when IPv6 is enabled, remove IPv4 preference
@@ -723,7 +723,7 @@ if [[ $(< "$_PROCSYS") = "1" ]]; then
     fi
 else
   # disable IPv6
-  echo "#⚫ Disabling IPv6..."
+  echo "#• Disabling IPv6..."
 
   if grep -q -F 'net.ipv6.conf.all.disable_ipv6' "$_SYSFL"; then
     sed -i 's/.*net.ipv6.conf.all.disable_ipv6.*/net.ipv6.conf.all.disable_ipv6 = 1/g' "$_SYSFL"
@@ -755,7 +755,7 @@ fi
 # linuxlite control center modules tweak
 LITECCMODS() {
 
-echo "#⚫ Lite Control Center modules..." ; sleep .2
+echo "#• Lite Control Center modules..." ; sleep .2
 
 TITLE="UnlockMe modules for Lite Control Center"
 MODDIR="/usr/share/litecc/modules/disabled"
@@ -777,13 +777,13 @@ Would you like to proceed?" 2>/dev/null; then
     APPACTIVE="1" 
     signal_process=$(pgrep -f lite-controlcenter)
     
-    echo "#⚫ Terminating any Lite Control Center instances..."
+    echo "#• Terminating any Lite Control Center instances..."
     for process in  ${signal_process}; do
       kill "$process" ; sleep 1
     done
   fi
 
-  echo "#⚫ Enabling UnlockMe modules..." ; sleep .5
+  echo "#• Enabling UnlockMe modules..." ; sleep .5
 
   for module in ${unlockme_modules[@]}; do
     echo "# ${module}"
@@ -801,7 +801,7 @@ fi
 # delete log archives tweak
 LOGARCHIVES() {
 
-echo "#⚫ Deleting archived logs..." ; sleep 1
+echo "#• Deleting archived logs..." ; sleep 1
 find /var/log \( -name '*.gz' -o -name '*.0' -o -name '*.1' \) -exec rm -rf {} \;
 
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then echo "# Error..." ; sleep 1
@@ -943,11 +943,11 @@ fi
 if [[ "$answ" = "10" ]]; then
 
   if grep 'SaveSession=NONE' < "$kioskrc"; then
-    echo "#⚫ Disabling Save Session for all users..." ; sleep .5 
-    echo "#⚫ No changes needed." ; sleep 1
+    echo "#• Disabling Save Session for all users..." ; sleep .5 
+    echo "#• No changes needed." ; sleep 1
   else
     sed -i 's/SaveSession=.*/SaveSession=NONE/' "$kioskrc"
-    echo '#⚫ Disabling Save Session for all users...' ; sleep .5 
+    echo '#• Disabling Save Session for all users...' ; sleep .5 
     echo "#✔ Disabling Save Session for all users." ; sleep 1
     askLogoutSuper
   fi
@@ -955,11 +955,11 @@ if [[ "$answ" = "10" ]]; then
 elif [[ "$answ" = "20" ]]; then
 
   if grep 'SaveSession=%sudo' < "$kioskrc"; then
-    echo "#⚫ Enabling Save Session for admins only..." ; sleep .5 
-    echo "#⚫ No changes needed." ; sleep 1
+    echo "#• Enabling Save Session for admins only..." ; sleep .5 
+    echo "#• No changes needed." ; sleep 1
   else
     sed -i 's/SaveSession=.*/SaveSession=%sudo/' "$kioskrc"
-    echo "#⚫ Enabling Save Session for admins only..." ; sleep .5 
+    echo "#• Enabling Save Session for admins only..." ; sleep .5 
     echo "#✔ Enabling Save Session for admins only." ; sleep 1
     askLogoutSuper
   fi
@@ -967,11 +967,11 @@ elif [[ "$answ" = "20" ]]; then
 elif [[ "$answ" = "30" ]]; then
 
   if grep 'SaveSession=ALL' < "$kioskrc"; then
-    echo "#⚫ Enabling Save Session for all users..." ; sleep .5 
-    echo "#⚫ No changes needed." ; sleep 1
+    echo "#• Enabling Save Session for all users..." ; sleep .5 
+    echo "#• No changes needed." ; sleep 1
   else
     sed -i 's/SaveSession=.*/SaveSession=ALL/' "$kioskrc"
-    echo '#⚫ Enabling Save Session for all users...' ; sleep .5 
+    echo '#• Enabling Save Session for all users...' ; sleep .5 
     echo "#✔ Enabling Save Session for all users." ; sleep 1
     askLogoutSuper
   fi
@@ -1075,7 +1075,7 @@ fi
 # tweak - clean up package cache
 PACKAGECACHE() {
 
-echo "#⚫ Cleaning packages cache..." ; sleep 1
+echo "#• Cleaning packages cache..." ; sleep 1
 
 # check for running package manager
 opt_procedure="continue" ; checkPackageManager
@@ -1096,11 +1096,11 @@ PRELOAD() {
 
 _FNAME="Preload"
 
-echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
+echo "#• Getting ${_FNAME} status..." ; sleep .5
 
 # preload loop
 while (true); do
-echo "#⚫ Configuring ${_FNAME}..."
+echo "#• Configuring ${_FNAME}..."
 
 # check if preload is installed
 if [[ -z "$(dpkg -l | grep -E '^ii' | grep -F 'preload')" ]]; then
@@ -1121,7 +1121,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep -F 'preload')" ]]; then
   if [[ "$?" = "0" ]]; then
 
     # install preload
-    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+    echo "#• Installing ${_FNAME}..." ; sleep 1
     apt-get install preload -y | showProgress ; checkInstall
 
     echo "#✔ ${_FNAME} successfully installed." ; sleep 1 ; return
@@ -1152,9 +1152,9 @@ PRLOAD=$(yad --width="365" --height="150" --text-align="center" --text="$BTXT" -
                             --window-icon="$RUN_ICON" --title="$APPNAME" ; echo $?)
 case $PRLOAD in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
-            echo "#⚫ Stopping $_FNAME..." & service preload stop ; sleep .5
+            echo "#• Stopping $_FNAME..." & service preload stop ; sleep .5
           else
-            echo "#⚫ Starting $_FNAME..." & service preload start ; sleep .5
+            echo "#• Starting $_FNAME..." & service preload start ; sleep .5
         fi
         ;;
     1)  return
@@ -1167,7 +1167,7 @@ case $PRLOAD in
           opt_procedure="continue" ; checkPackageManager
             
             if [[ "$?" = "0" ]]; then
-              echo "#⚫ Removing ${_FNAME}..." ; sleep .5
+              echo "#• Removing ${_FNAME}..." ; sleep .5
               service preload stop 
               apt-get remove --purge preload -y | showProgress ; checkRemoval
               echo "#✔ $_FNAME successfully removed." ; sleep 2
@@ -1182,7 +1182,7 @@ done
 # residual config files tweak
 RESIDCONFIG() {
 
-echo "#⚫ Removing residual configuration files..." ; sleep 1
+echo "#• Removing residual configuration files..." ; sleep 1
 
 dpkg --purge $(dpkg -l | grep '^rc' | awk '{print $2}')
 
@@ -1233,13 +1233,13 @@ vfs_cache_pressure = 50
           sysctl vm.vfs_cache_pressure=$VALCP
 
           if grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL"; then
-            echo "#⚫ Applying cache pressure value..." ; sleep 1
+            echo "#• Applying cache pressure value..." ; sleep 1
             echo "vm.vfs_cache_pressure = $VALCP" | tee -a "$_SYSFL"
           fi
 
           
           if [[ -n $"(grep 'vm.vfs_cache_pressure' $_SYSFL)" ]]; then 
-            echo "#⚫ Updating cache pressure value..." ; sleep 1
+            echo "#• Updating cache pressure value..." ; sleep 1
             sed -i 's/.*vm.vfs_cache_pressure.*/vm.vfs_cache_pressure = '"$VALCP"'/g' "$_SYSFL"
           fi
       
@@ -1254,12 +1254,12 @@ vfs_cache_pressure = 50
           fi ;;
     1) break ;;
     2)  if [[ "$_CACHEPR" = "100" ]]; then
-          echo "#⚫ Already $VALCP. No changes needed..." ; sleep 1
+          echo "#• Already $VALCP. No changes needed..." ; sleep 1
           continue
         fi
 
       # reset cache pressure
-        echo "#⚫ Reseting cache pressure value..."
+        echo "#• Reseting cache pressure value..."
 
         grep -q -F 'vm.vfs_cache_pressure' "$_SYSFL" && sed -i '/.*vm.vfs_cache_pressure.*/d' "$_SYSFL"
         sysctl vm.vfs_cache_pressure=100 && sysctl -p ; sleep 1 ;;
@@ -1275,12 +1275,12 @@ SYSSWAP() {
 # sysctl.conf variable
 _SYSFL="/etc/sysctl.conf"
 
-echo "#⚫ Configuring swappiness..." ; sleep .1
+echo "#• Configuring swappiness..." ; sleep .1
 
 # kernel swappiness main dialog loop
 while (true); do
 
-echo "#⚫ Configuring swappiness..." ; sleep .1
+echo "#• Configuring swappiness..." ; sleep .1
 _SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog
@@ -1310,7 +1310,7 @@ VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height=
 
        0) # If system's current swappiness equals new set value, don't make unnecessary changes
           if [[ "$_SWPNSS" = "$VALUE" ]]; then
-            echo "#⚫ Already ${VALUE}. No changes needed..." ; sleep 1
+            echo "#• Already ${VALUE}. No changes needed..." ; sleep 1
             continue
           fi
 
@@ -1318,10 +1318,10 @@ VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height=
           sysctl vm.swappiness="$VALUE"
 
           if grep -q -F 'vm.swappiness' "$_SYSFL"; then
-            echo "#⚫ Updating swappiness value..." ; sleep 1
+            echo "#• Updating swappiness value..." ; sleep 1
             sed -i 's/.*vm.swappiness.*/vm.swappiness = '"$VALUE"'/g' "$_SYSFL"   
           else
-            echo "#⚫ Applying new swappiness value..." ; sleep 1
+            echo "#• Applying new swappiness value..." ; sleep 1
             sed -i -e "\$avm.swappiness = "$VALUE"" "$_SYSFL" ; sleep 1
           fi
       
@@ -1338,11 +1338,11 @@ VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height=
           fi ;;
        1) break ;;
        2) if [[ "$_SWPNSS" = "60" ]]; then
-              echo "#⚫ Already ${VALUE}. No changes needed..." ; sleep 1
+              echo "#• Already ${VALUE}. No changes needed..." ; sleep 1
               continue
           fi
 
-          echo "#⚫ Reseting swappiness value..." 
+          echo "#• Reseting swappiness value..." 
           grep -q -F 'vm.swappiness' "$_SYSFL" && sed -i '/.*vm.swappiness.*/d' "$_SYSFL"
           sysctl vm.swappiness=60 && sysctl -p ; sleep 1 ;;
      252) break ;;
@@ -1355,11 +1355,11 @@ done
 ZRAM() {
 
 _FNAME="zRAM"
-echo "#⚫ Getting ${_FNAME} status..." ; sleep .5
+echo "#• Getting ${_FNAME} status..." ; sleep .5
 
 # the loop
 while (true); do
-echo "#⚫ Configuring ${_FNAME}..."
+echo "#• Configuring ${_FNAME}..."
 
 # check if zram is installed
 if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'zram-config')" ]]; then
@@ -1380,7 +1380,7 @@ if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'zram-config')" ]]; then
 
   # install zram
   if [[ "$?" = "0" ]]; then
-    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+    echo "#• Installing ${_FNAME}..." ; sleep 1
     apt-get install zram-config -y | showProgress ; checkInstall
     echo "#✔ zRAM successfully installed." & systemctl start zram-config ; sleep 2
     return
@@ -1411,9 +1411,9 @@ sZRAM=$(yad --width="365" --fixed --height="150" --window-icon="$RUN_ICON" --tit
 
   case $sZRAM in
     0)  if [[ "$_status" =~ "Running" ]]; then # stop
-            echo "#⚫ Stopping $_FNAME..." & service zram-config stop ; sleep .5
+            echo "#• Stopping $_FNAME..." & service zram-config stop ; sleep .5
           else
-            echo "#⚫ Starting $_FNAME..." & service zram-config start ; sleep .5
+            echo "#• Starting $_FNAME..." & service zram-config start ; sleep .5
         fi
         ;;
     1)  return
@@ -1427,7 +1427,7 @@ sZRAM=$(yad --width="365" --fixed --height="150" --window-icon="$RUN_ICON" --tit
           opt_procedure="continue" ; checkPackageManager
 
           # uninstall zram
-          echo "#⚫ Removing $_FNAME..." ; sleep .5
+          echo "#• Removing $_FNAME..." ; sleep .5
           service zram-config stop 
           apt-get remove --purge zram-config -y | showProgress ; checkRemoval
           echo "#✔ zRAM successfully removed." ; sleep 2
@@ -1444,7 +1444,7 @@ done
 ZSWAP() {
 
 _FNAME="zSWAP"
-echo "#⚫ Getting $_FNAME status..." ; sleep .5
+echo "#• Getting $_FNAME status..." ; sleep .5
 
 # if zswap is not enable; enable it
 if grep -q 'N' "/sys/module/zswap/parameters/enabled"; then
@@ -1456,10 +1456,10 @@ if grep -q 'N' "/sys/module/zswap/parameters/enabled"; then
   
   if [[ "$?" = "0" ]]; then
     # enable zswap
-    echo "#⚫ Enabling zSWAP..." ; sleep 1
+    echo "#• Enabling zSWAP..." ; sleep 1
 
     # enable lz4 (for faster compression/decompression)
-    echo "#⚫ Enabling lz4 lz4_compress..." ; sleep 2
+    echo "#• Enabling lz4 lz4_compress..." ; sleep 2
 
     modprobe -v lz4 lz4_compress | showProgress
     printf \
@@ -1468,10 +1468,10 @@ lz4
 lz4_compress
 # ZSWAP UnlockMe' >> /etc/initramfs-tools/modules
 
-    echo "#⚫ Updating initramfs..." ; sleep 1
+    echo "#• Updating initramfs..." ; sleep 1
     update-initramfs -u | showProgress
 
-    echo "#⚫ Updating kernel boot parameters..." 
+    echo "#• Updating kernel boot parameters..." 
 
     # grub GRUB_CMDLINE_LINUX_DEFAULT var replacement
     VARZSWAPREPLACE=$(grep 'GRUB_CMDLINE_LINUX_DEFAULT' "/etc/default/grub" | sed 's/\"/ /2' |
@@ -1481,7 +1481,7 @@ lz4_compress
     sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT.*|$VARZSWAPREPLACE|" "/etc/default/grub" ; sleep 2
 
     # update grub
-    echo "#⚫ Updating grub..." ; sleep 1
+    echo "#• Updating grub..." ; sleep 1
     update-grub 2>&1 | showProgress
 
     echo "#✔ zSWAP has been enabled." && sleep 1
@@ -1501,18 +1501,18 @@ else
 
   if [[ "$?" = "0" ]]; then
     # disable zswap
-    echo "#⚫ Disabling zSWAP..." ; sleep 1
+    echo "#• Disabling zSWAP..." ; sleep 1
     sed -i -e '/UnlockMe/,+3d' /etc/initramfs-tools/modules ; sleep 1
 
-    echo "#⚫ Updating initramfs..." ; sleep 1
+    echo "#• Updating initramfs..." ; sleep 1
     update-initramfs -u | showProgress
 
-    echo "#⚫ Updating kernel boot parameters..." ; sleep 1
+    echo "#• Updating kernel boot parameters..." ; sleep 1
     # delete zswap kernel parameters
     sed -i 's/[ \t]zswap\.enabled=1//g ; s/[ \t]zswap\.compressor=lz4//g ; s/[ \t]zswap\.max_pool_percent=20//g ; s/[ \t]zswap\.zpool=z3fold//g' "/etc/default/grub"
 
     # update grub
-    echo "#⚫ Updating grub..." ; sleep 1
+    echo "#• Updating grub..." ; sleep 1
     update-grub 2>&1 | showProgress
     echo "#✔ zSWAP has been disabled." ; sleep 1
 

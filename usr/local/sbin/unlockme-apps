@@ -43,7 +43,7 @@ unlockds="/tmp/.unlockds"
 
 # when executed directly
 if [[ ! -f "$unlockusr" ]]; then
-  SOFTUSR=$(sudo -u ${SUDO_USER:-$USER} whoami)
+  SOFTUSR=$(whoami)
   echo "$SOFTUSR" > "$unlockusr" && chmod 600 "$unlockusr"
   echo "$DESKTOP_SESSION" > "$unlockds" ; chmod 600 "$unlockds"
 fi
@@ -126,7 +126,7 @@ Those processes will be terminated before continuing.\n\nWould you like to proce
 
   if [[ "$?" != "0" ]]; then ${opt_procedure[@]}
   else
-    echo "#⚫ Terminating processes..." ; sleep 1
+    echo "#• Terminating processes..." ; sleep 1
     killall -9 synaptic
     killall -9 apt
     killall -9 apt-get
@@ -203,7 +203,7 @@ updateSources() {
 # App Atom install / remove
 ATOM() {
 
-  echo "#⚫ Preparing..."
+  echo "#• Preparing..."
   # variables
   _FNAME="Atom"
   _TMPVer="/tmp/atom.txt"
@@ -216,7 +216,7 @@ ATOM() {
     checkOnline 
 
     # find latest stable release
-    echo "#⚫ Querying Github website..." ; sleep 1 ; echo "#⚫ Finding latest release..." ; sleep .5
+    echo "#• Querying Github website..." ; sleep 1 ; echo "#• Finding latest release..." ; sleep .5
 
     # find release version on github
     cd /tmp && curl https://github.com/atom/atom/releases/latest > "$_TMPVer"
@@ -228,21 +228,21 @@ ATOM() {
     _DLURL="https://atom-installer.github.com/v$_ATOMVer/atom-amd64.deb"
 
     # download atom
-    echo "#⚫ Downloading from Github..." && cd /tmp && /usr/local/sbin/get_download "$_DLURL"
+    echo "#• Downloading from Github..." && cd /tmp && /usr/local/sbin/get_download "$_DLURL"
 
     # install atom .deb
-    echo "#⚫ Installing ${_FNAME}..." && dpkg -i "$atompkg" | showProgress ; checkInstall
+    echo "#• Installing ${_FNAME}..." && dpkg -i "$atompkg" | showProgress ; checkInstall
     rm -f "$_TMPVer" ; echo "#✔ Installation completed." ; sleep 1
   
   # uninstall atom 
   else
-    echo "#⚫ Terminating any ${_FNAME} instances..."
+    echo "#• Terminating any ${_FNAME} instances..."
     if [[ -n "$(pgrep atom)" ]]; then killall -9 atom; fi ; sleep 2
     
-    echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+    echo "#• Uninstalling ${_FNAME}..." ; sleep 1
     apt-get remove --purge atom -y | showProgress ; checkRemoval
 
-    echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+    echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
     for desktopuser in ${_ALLUSERS}; do
       rm -f "/home/${desktopuser}/Desktop/atom.desktop"
@@ -265,7 +265,7 @@ if [[ -z "$(grep -F ' caja-dropbox ' <<< ${DPKGCHECKS[@]})" ]]; then
   apt-get install caja-dropbox -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling caja-dropbox..." 
+  echo "#• Uninstalling caja-dropbox..." 
   apt-get remove --purge caja-dropbox -y | showProgress ; checkRemoval
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -289,13 +289,13 @@ if [[ -z "$(grep -F ' catfish ' <<< ${DPKGCHECKS[@]})" ]]; then
   echo "#✔ Installation completed." ; sleep 1
 else
   # remove catfish
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
 
   if [[ -n "$(pgrep catfish)" ]]; then killall -9 catfish; fi ; sleep 1 
-  echo "#⚫ Uninstalling ${_FNAME}..."  
+  echo "#• Uninstalling ${_FNAME}..."  
   apt-get remove --purge catfish -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
     for desktopuser in ${_ALLUSERS}; do
       rm -f "/home/${desktopuser}/Desktop/catfish.desktop"
     done ; sleep 1
@@ -319,15 +319,15 @@ if [[ -z "$(grep -F ' clementine ' <<< ${DPKGCHECKS[@]})" ]]; then
   echo "#✔ Installation completed." ; sleep 1
 else
   # kill all clementine instances
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep clementine)" ]]; then killall -9 clementine; fi ; sleep 1
 
   # remove clementine
-  echo "#⚫ Uninstalling ${_FNAME}..."
+  echo "#• Uninstalling ${_FNAME}..."
   apt-get remove --purge clementine -y | showProgress ; checkRemoval
 
   # remove desktop icon from all accounts
-  echo "#⚫ Removing ${_FNAME} launchers..."
+  echo "#• Removing ${_FNAME} launchers..."
 
   for desktopuser in ${_ALLUSERS}; do
     rm -f "/home/${desktopuser}/Desktop/clementine.desktop"
@@ -347,28 +347,28 @@ _SOURCELIST="/etc/apt/sources.list.d/google-chrome.list"
 
 if [[ -z "$(grep -F ' google-chrome-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
   # check internet connection
-  echo "#⚫ Querying Google servers..." ; sleep 1 ; checkOnline 
+  echo "#• Querying Google servers..." ; sleep 1 ; checkOnline 
 
   # download google chrome
-  echo "#⚫ Downloading ${_FNAME}..."
+  echo "#• Downloading ${_FNAME}..."
   cd /tmp ; /usr/local/sbin/get_download https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
   # install google chrome .deb
-  echo "#⚫ Installing Google Chrome..." ; sleep 1
+  echo "#• Installing Google Chrome..." ; sleep 1
   dpkg -i "$_GCPKG" | showProgress ; checkInstall 
   echo "#✔ Installation completed." ; sleep 1
 
 # uninstall google chrome
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..." 
+  echo "#• Terminating any ${_FNAME} instances..." 
   if [[ -n "$(pgrep chrome)" ]]; then killall -9 chrome; fi ; sleep 2
 
     # remove google chrome
-    echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+    echo "#• Uninstalling ${_FNAME}..." ; sleep 1
     apt-get remove --purge google-chrome-stable -y | showProgress ; checkRemoval
 
     # remove repo and keys
-    echo "#⚫ Removing keys..." ; sleep 1
+    echo "#• Removing keys..." ; sleep 1
     [[ -f "$_SOURCELIST" || -f "${_SOURCELIST}.save" ]] && rm -f "$_SOURCELIST" "${_SOURCELIST}.save"
 
     _RMGPGKEY=$(wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
@@ -377,7 +377,7 @@ else
     apt-key del "$_RMGPGKEY" ; apt-key del "$_RMGPGKEY2"
 
     # remove google chrome cache folder from all users accounts
-    echo "#⚫ Removing ${_FNAME} cache..."
+    echo "#• Removing ${_FNAME} cache..."
 
     for desktopuser in ${_ALLUSERS}; do
       rm -rf "/home/${desktopuser}/.cache/google-chrome/"
@@ -397,7 +397,7 @@ _FNAME="Chromium"
 if [[ -z "$(grep ' chromium-browser\s ' <<< ${DPKGCHECKS[@]})" ]]; then
 
   # check internet connection
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1; checkOnline
 
   # install chromium
   apt-get install chromium-browser -y | showProgress ; checkInstall
@@ -405,15 +405,15 @@ if [[ -z "$(grep ' chromium-browser\s ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 # uninstall chromium
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep chromium-browser)" ]]; then killall -9 chromium-browser; fi ; sleep 1
 
   # remove chromium
-  echo "#⚫ Uninstalling Chromium..." ; sleep 1
+  echo "#• Uninstalling Chromium..." ; sleep 1
   apt-get remove --purge chromium-browser -y | showProgress ; checkRemoval
 
   # remove chromium cache folder from all users accounts
-  echo "#⚫ Removing ${_FNAME} cache..."
+  echo "#• Removing ${_FNAME} cache..."
   for desktopuser in ${_ALLUSERS}; do
     rm -rf "/home/${desktopuser}/.cache/chromium"
     rm -f "/home/${desktopuser}/Desktop/chromium-browser.desktop"
@@ -433,25 +433,25 @@ _SOURCELIST="/etc/apt/sources.list.d/teejee2008*.list"
 if [[ -z "$(grep -F ' conky-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
 
   # check internet connection
-  echo "#⚫ Downloading ${_FNAME}..." & sleep 1 ; checkOnline
+  echo "#• Downloading ${_FNAME}..." & sleep 1 ; checkOnline
 
     # if PPA is not installed; add it
     if [[ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep teejee2008)" ]]; then
 
       # add PPA
-      echo "#⚫ Adding PPA..."
+      echo "#• Adding PPA..."
       apt-add-repository ppa:teejee2008/ppa -y 
 
       # update cache after adding PPA
-      echo "#⚫ Updating the cache..." ; sleep 1 ; updateSources
+      echo "#• Updating the cache..." ; sleep 1 ; updateSources
 
       # install conky manager
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install conky-manager -y | showProgress ; checkInstall
 
     # if ppa exists, just install conky manager
     else
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install conky-manager -y | showProgress ; checkInstall
     fi
 
@@ -462,7 +462,7 @@ if [[ -z "$(grep -F ' conky-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
   7z d /usr/share/conky-manager/themepacks/default-themes-2.1.cmtp.7z .conky/{"Conky MIUI",Gotham,"Conky Seamod","Green Apple Desktop",TeejeeTech}
 
   # add UnlockForUs widgets
-  echo "#⚫ Adding widgets..." ; sleep 1
+  echo "#• Adding widgets..." ; sleep 1
   wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/repository/downloads/conky/unlockme.7z -O /tmp/unlockme.7z
 
   # if conky directory does not exist; create it
@@ -476,17 +476,17 @@ if [[ -z "$(grep -F ' conky-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 # uninstall conky manager
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..." ; sleep 1
+  echo "#• Terminating any ${_FNAME} instances..." ; sleep 1
   if [[ -n "$(pgrep conky-manager)" || -n "$(pgrep conky)" ]]; then killall -9 conky-manager conky; fi ; sleep 1
 
   # remove conky manager
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge conky-manager -y | showProgress ; checkRemoval
 
   [[ -d "/home/${_SOFTUSR}/.conky/unlockme" ]] && rm -rf /home/${_SOFTUSR}/.conky/unlockme
 
   # remove desktop icon from all accounts
-  echo "#⚫ Removing ${_FNAME} launchers..."
+  echo "#• Removing ${_FNAME} launchers..."
 
   for desktopuser in ${_ALLUSERS}; do
     rm -f "/home/${desktopuser}/Desktop/conky-manager.desktop"
@@ -504,15 +504,15 @@ _FNAME="dconf Editor"
 
 if [[ -z "$(grep -F ' dconf-editor ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; checkOnline
   apt-get install dconf-editor dconf-cli -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep dconf-editor)" ]]; then killall -9 dconf-editor; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge dconf-editor dconf-cli -y | showProgress ; checkRemoval
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -629,11 +629,11 @@ while (true); do
   
   case "$delugeOPT" in
 
-    0) echo "#⚫ Uninstalling Deluge Desktop and Web GUI..." ; sleep .8
+    0) echo "#• Uninstalling Deluge Desktop and Web GUI..." ; sleep .8
 
     if [[ -z "$(grep -F ' deluge ' <<< ${DPKGCHECKS[@]})" ]] && [[ -z "$(grep -F ' deluged ' <<< ${DPKGCHECKS[@]})" ]] ; then
 
-        echo "#⚫ No Deluge component is currently installed..." ; sleep .5
+        echo "#• No Deluge component is currently installed..." ; sleep .5
         zenity --question --width="320" --title="No installed component found" \
                --text="\nNo Deluge component is currently installed.\n\nWould you like to install a component at this time?" 2>/dev/null
 
@@ -645,7 +645,7 @@ while (true); do
     fi
        # stop app and services
        systemctl stop deluged && systemctl stop deluge-web && killall -9 deluge-gtk deluged deluge-web
-       echo "#⚫ Terminating instances..." ; sleep 2
+       echo "#• Terminating instances..." ; sleep 2
 
        apt-get remove --purge deluge deluge-gtk deluged deluge-web -y | showProgress ; checkRemoval
 
@@ -662,14 +662,14 @@ while (true); do
 
     1) echo "# Deluge Install Options..." & break 1
        ;;
-    2) echo "#⚫ Uninstalling Deluge Web GUI..." ; sleep .8
+    2) echo "#• Uninstalling Deluge Web GUI..." ; sleep .8
 
        if [[ -n "$(grep -F ' deluged ' <<< ${DPKGCHECKS[@]})" ]]; then
           
           if [[ -n "$(pgrep deluged)" ]]; then 
 
             # stop services
-            echo "#⚫ Terminating instances..."
+            echo "#• Terminating instances..."
             systemctl stop deluged && systemctl stop deluge-web ; killall -9 deluged deluge-web
           fi
           
@@ -684,21 +684,21 @@ while (true); do
           rm -f /usr/share/applications/deluge-web.desktop
 
        else
-        echo "#⚫ Deluge Web GUI not installed. No changes needed." ; sleep 2
+        echo "#• Deluge Web GUI not installed. No changes needed." ; sleep 2
         echo "# Deluge Uninstall Options..." & continue
        fi
        ;;
-    3) echo "#⚫ Uninstalling Deluge Desktop GUI..." ; sleep .8
+    3) echo "#• Uninstalling Deluge Desktop GUI..." ; sleep .8
 
       if [[ -n "$(grep -F ' deluge-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
 
         if [[ -n "$(pgrep deluge-gtk)" ]]; then
-          echo "#⚫ Terminating instances..." ;  killall -9 deluge-gtk ; sleep 1
+          echo "#• Terminating instances..." ;  killall -9 deluge-gtk ; sleep 1
         fi
         
         apt-get remove --purge deluge deluge-gtk -y | showProgress ; checkRemoval
       else
-        echo "#⚫ Deluge Desktop GUI not installed. No changes needed." ; sleep 2 
+        echo "#• Deluge Desktop GUI not installed. No changes needed." ; sleep 2 
         echo "# Deluge Uninstall Options..." & continue
       fi
        ;;
@@ -710,7 +710,7 @@ done
 }
 
   
-echo "#⚫ ${_FNAME} Options..." ; sleep 1 
+echo "#• ${_FNAME} Options..." ; sleep 1 
 
 while (true); do
 
@@ -733,7 +733,7 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
   
   case "$delugeOPT" in
 
-    0) echo "#⚫ Installing Deluge Desktop and Web GUI..." ; sleep .8 ; checkOnline
+    0) echo "#• Installing Deluge Desktop and Web GUI..." ; sleep .8 ; checkOnline
        
       if [[ -n "$(grep -F ' deluge ' <<< ${DPKGCHECKS[@]})" ]] && [[ -n "$(grep -F ' deluged ' <<< ${DPKGCHECKS[@]})" ]]; then
 
@@ -746,7 +746,7 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
             echo "# ..." & break 1
           fi 
 
-          #echo "#⚫ Deluge Desktop and Web GUI are already installed." ; sleep 2 ; echo "# ..." & break 1
+          #echo "#• Deluge Desktop and Web GUI are already installed." ; sleep 2 ; echo "# ..." & break 1
       else
           apt-get install deluge deluge-gtk deluged deluge-web -y | showProgress ; checkInstall ; delugeWebIcon
           service deluged stop && createDelugeServices ; addToDelugeGroup ; break
@@ -754,11 +754,11 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
       ;;
     1) echo "# Deluge Uninstall Options..." & removeDeluge
        ;;
-    2) echo "#⚫ Installing Deluge Web GUI..." ; sleep .8 ; checkOnline
+    2) echo "#• Installing Deluge Web GUI..." ; sleep .8 ; checkOnline
   
       if [[ -n "$(grep -F ' deluge-web ' <<< ${DPKGCHECKS[@]})" ]]; then
         
-        echo "#⚫ Deluge Web GUI is already installed." ; sleep 2
+        echo "#• Deluge Web GUI is already installed." ; sleep 2
         continue
 
       else
@@ -769,11 +769,11 @@ delugeOPT=$(yad --title="$_FNAME Install Options" --borders=10 --width="500" --h
       fi
       delugeWebIcon
       ;;
-    3) echo "#⚫ Installing Deluge Desktop GUI..." ; sleep .8 ; checkOnline
+    3) echo "#• Installing Deluge Desktop GUI..." ; sleep .8 ; checkOnline
 
       if [[ -n "$(grep ' deluge \| deluge-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-        echo "#⚫ Deluge Desktop GUI is already installed." ; sleep 2
+        echo "#• Deluge Desktop GUI is already installed." ; sleep 2
         continue
 
       else
@@ -816,11 +816,11 @@ _RM_DUPLICATE="dropbox.com"
   # function dropbox uninstall - when dropbox was installed from its website
   xDroboxUninstall() {
     # remove repo and key
-    echo "#⚫ Removing key..." ; sleep 1
+    echo "#• Removing key..." ; sleep 1
     apt-key del 5044912E
 
     # uninstall dropbox
-    echo "#⚫ Uninstalling dropbox..." ; sleep 1
+    echo "#• Uninstalling dropbox..." ; sleep 1
     apt-get remove --purge dropbox python-gpgme -y | showProgress ; checkRemoval
 
     # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
@@ -842,10 +842,10 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
   if [[ "$UBDENV" != "budgie-desktop" ]]; then
 
     # check internet connection
-    echo "#⚫ Querying dropbox servers..." ; sleep 1 ; checkOnline
+    echo "#• Querying dropbox servers..." ; sleep 1 ; checkOnline
 
     # add PPA
-    echo "#⚫ Adding PPA..." ; sleep 1
+    echo "#• Adding PPA..." ; sleep 1
   
     # linuxmint|linuxlite specific
     if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
@@ -856,15 +856,15 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
     fi
 
     # add key
-    echo "#⚫ Adding Dropbox Signing Key..." && addDropboxKey
+    echo "#• Adding Dropbox Signing Key..." && addDropboxKey
       while (true); do
-        echo "#⚫ Waiting on signing Key from pgp.mit.edu server..."
+        echo "#• Waiting on signing Key from pgp.mit.edu server..."
         if [[ -n "$(apt-key list 5044912E)" ]]; then break; fi
         addDropboxKey
       done
 
     # update sources after installing PPA and key
-    echo "#⚫ Updating the cache..." ; updateSources
+    echo "#• Updating the cache..." ; updateSources
 
     # install dropbox & python-gpgme
     echo "# Downloading and installing ${_FNAME}..." ; checkOnline 
@@ -901,7 +901,7 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
 # uninstall dropbox
 else
   # kill dropbox instances
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep dropbox)" ]]; then killall -9 dropbox; fi ; sleep 2
 
     # if not budgie-desktop call dropbox uninstall function
@@ -937,10 +937,10 @@ if [[ -z "$(grep -F ' evolution-common ' <<< ${DPKGCHECKS[@]})" ]]; then
   apt-get install evolution evolution-common evolution-ews evolution-plugins -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep evolution)" ]]; then killall -9 evolution; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..."
+  echo "#• Uninstalling ${_FNAME}..."
   apt-get remove evolution evolution-common evolution-ews evolution-plugins -y | showProgress ; checkRemoval
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -953,10 +953,10 @@ _FNAME="Filezilla"
 
 if [[ -z "$(grep -F ' filezilla ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; checkOnline 
+  echo "#• Downloading and installing ${_FNAME}..." ; checkOnline 
   apt-get install filezilla -y | showProgress ; checkInstall
 
-  echo "#⚫ Downloading ${_FNAME} themes..." ; sleep 1
+  echo "#• Downloading ${_FNAME} themes..." ; sleep 1
   wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-faenza.zip -O /tmp/lite-faenza.zip
   wget -q -c --connect-timeout=8 -t 3 https://unlockforus.com/downloads/linuxlite/filezilla/themes/lite-x.zip -O /tmp/lite-x.zip
 
@@ -969,10 +969,10 @@ if [[ -z "$(grep -F ' filezilla ' <<< ${DPKGCHECKS[@]})" ]]; then
   
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep filezilla)" ]]; then killall -9 filezilla; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..."
+  echo "#• Uninstalling ${_FNAME}..."
   apt-get remove filezilla -y | showProgress ; checkRemoval
 
   for desktopuser in ${_ALLUSERS}; do 
@@ -989,18 +989,18 @@ _FNAME="Firefox"
 
 if [[ -z "$(grep ' firefox\s ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; checkOnline
   apt-get install firefox -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep firefox)" ]]; then killall -9 firefox; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..."
+  echo "#• Uninstalling ${_FNAME}..."
   apt-get remove firefox -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} cache..." ; sleep 1
+  echo "#• Removing ${_FNAME} cache..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/.cache/mozilla/firefox
@@ -1018,37 +1018,37 @@ _FNAME="Geary"
 
 if [[ -z "$(grep -F ' geary ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep geary-team)" ]]; then
-      echo "#⚫ Adding PPA..." ; sleep 1
+      echo "#• Adding PPA..." ; sleep 1
       add-apt-repository ppa:geary-team/releases -y 
 
-      echo "#⚫ Updating the cache..."
+      echo "#• Updating the cache..."
       updateSources
 
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install geary -y | showProgress ; checkInstall
     else
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install geary -y | showProgress ; checkInstall
     fi
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep geary)" ]]; then killall -9 geary; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove geary -y | showProgress ; checkRemoval
 
-  echo "#⚫ Purging PPA..." ; sleep 1
+  echo "#• Purging PPA..." ; sleep 1
   ppa-purge ppa:geary-team/releases
   rm -f /etc/apt/sources.list.d/geary-team-releases-xenial.list
 
-  echo "#⚫ Removing key..." ; sleep 1
+  echo "#• Removing key..." ; sleep 1
   apt-key del 7A51D6F2
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do
     rm -f /home/${desktopuser}/Desktop/geary.desktop
@@ -1064,12 +1064,12 @@ _FNAME="gThumb"
 
 if [[ -z "$(grep -F ' gthumb ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
   apt-get install gthumb -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge gthumb -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1086,10 +1086,10 @@ if [[ -z "$(grep -F ' handbrake ' <<< ${DPKGCHECKS[@]})" ]]; then
   apt-get install handbrake -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge handbrake -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
   for desktopuser in ${_ALLUSERS}; do
     rm -f /home/${desktopuser}/Desktop/ghb.desktop
   done 
@@ -1109,10 +1109,10 @@ if [[ -z "$(grep -F ' hardinfo ' <<< ${DPKGCHECKS[@]})" ]]; then
   apt-get install hardinfo -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep hardinfo)" ]]; then killall -9 hardinfo; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove hardinfo -y | showProgress ; checkRemoval
 
   for i in ${_ALLUSERS}; do
@@ -1131,23 +1131,23 @@ _FNAME="KeePassXC"
     echo "# ${_FNAME}..." ; checkOnline
     
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep keepassxc)" ]]; then
-      echo "#⚫ Adding PPA..." ; sleep 1
+      echo "#• Adding PPA..." ; sleep 1
       add-apt-repository ppa:phoerious/keepassxc -y | showProgress
       updateSources
     fi
     
-    echo "#⚫ Installing ${_FNAME}..."
+    echo "#• Installing ${_FNAME}..."
     apt-get install keepassxc -y | showProgress ; checkInstall
     
     echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep keepassxc)" ]]; then killall -9 keepassxc; fi ; sleep 2
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge keepassxc -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing PPA..." ; sleep 1
+  echo "#• Removing PPA..." ; sleep 1
   apt-add-repository --remove ppa:phoerious/keepassxc | showProgress
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1163,7 +1163,7 @@ _FNAME="Lite Control Center"
     echo "# ${_FNAME}..." ; checkOnline
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
   
-      echo "#⚫ Adding Repository & key..." ; sleep 1
+      echo "#• Adding Repository & key..." ; sleep 1
 
       # linuxlite
       if [[ $(lsb_release -sc) = "xenial" ]]; then
@@ -1173,11 +1173,11 @@ _FNAME="Lite Control Center"
       fi
     fi
       # just install it
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install lite-controlcenter -y | showProgress ; checkInstall
       echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep -f lite-controlcenter)" ]]; then 
     signal_process=$(pgrep -f lite-controlcenter)
     for process in  ${signal_process}; do
@@ -1185,11 +1185,11 @@ else
     done
   fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge lite-controlcenter -y | showProgress ; checkRemoval
 
   # remove desktop icon
-  echo "#⚫ Removing ${_FNAME} launchers..."
+  echo "#• Removing ${_FNAME} launchers..."
   for desktopuser in ${_ALLUSERS}; do
     rm -f "/home/${desktopuser}/Desktop/lite-controlcenter.desktop"
   done ; sleep 1
@@ -1207,7 +1207,7 @@ _DLURL32="https://updates.messengerfordesktop.com/download/linux/latest/beta?arc
 _DLURL64="https://updates.messengerfordesktop.com/download/linux/latest/beta?arch=amd64&pkg=deb"
 
 if [[ -z "$(grep -F ' messengerfordesktop ' <<< ${DPKGCHECKS[@]})" ]]; then
-  echo "#⚫ Downloading ${_FNAME}..." ; checkOnline ; cd /tmp
+  echo "#• Downloading ${_FNAME}..." ; checkOnline ; cd /tmp
 
   if [[ ! -f "/tmp/messengerfordesktopi386.deb" && ! -f "messengerfordesktopamd64.deb" ]]; then
     
@@ -1220,12 +1220,12 @@ if [[ -z "$(grep -F ' messengerfordesktop ' <<< ${DPKGCHECKS[@]})" ]]; then
     fi
   fi
 
-  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  echo "#• Installing ${_FNAME}..." ; sleep 1
   apt-get install ./messengerfordesktop*.deb -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep -f messengerfordesktop)" ]]; then 
     signal_process=$(pgrep -f messengerfordesktop)
     for process in  ${signal_process}; do
@@ -1233,10 +1233,10 @@ else
     done
   fi ; sleep 2
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge messengerfordesktop -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
   for desktopuser in ${_ALLUSERS}; do 
     rm -rf /home/${desktopuser}/Desktop/messengerfordesktop.desktop
   done
@@ -1250,18 +1250,18 @@ MIDORIWB() {
 _FNAME="Midori"
 
 if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
   apt-get install midori -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep midori)" ]]; then killall -9 midori; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove midori -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} cache..."
+  echo "#• Removing ${_FNAME} cache..."
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/.cache/midori
     rm -f /home/${desktopuser}/Desktop/midori.desktop
@@ -1280,15 +1280,15 @@ _FNAME="MintStick"
     echo "# ${_FNAME}..." ; checkOnline
     [[ -f /tmp/mintstick_1.3.4_all.deb ]] && rm -f /tmp/mintstick_1.3.4_all.deb
 
-    echo "#⚫ Downloading ${_FNAME}..."
+    echo "#• Downloading ${_FNAME}..."
     cd /tmp ; wget -c -T5 -t2 http://packages.linuxmint.com/pool/main/m/mintstick/mintstick_1.3.4_all.deb
 
-    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+    echo "#• Installing ${_FNAME}..." ; sleep 1
     dpkg -i mintstick_1.3.4_all.deb | showProgress ; checkInstall
 
     echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge mintstick -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1304,7 +1304,7 @@ _FNAME="Update Manager"
     echo "# ${_FNAME}..." ; checkOnline
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
   
-      echo "#⚫ Adding Repository & key..." ; sleep 1
+      echo "#• Adding Repository & key..." ; sleep 1
 
       # linuxlite
       if [[ $(lsb_release -sc) = "xenial" ]]; then
@@ -1314,20 +1314,20 @@ _FNAME="Update Manager"
       fi
     fi
       # just install it
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install mintupdate-lite -y | showProgress ; checkInstall
       echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep mintUpdate)" ]]; then 
     signal_process=$(pgrep mintUpdate) ; kill "$signal_process" 
   fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge mintupdate-lite -y | showProgress ; checkRemoval
 
   # remove desktop icon
-  echo "#⚫ Removing ${_FNAME} launchers..."
+  echo "#• Removing ${_FNAME} launchers..."
   for desktopuser in ${_ALLUSERS}; do
     rm -f "/home/${desktopuser}/Desktop/mintUpdate.desktop"
   done ; sleep 1
@@ -1346,20 +1346,20 @@ if [[ -z "$(grep -F ' neofetch ' <<< ${DPKGCHECKS[@]})" ]]; then
   
   if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep neofetch)" ]]; then
     
-    echo "#⚫ Adding PPA..." ; sleep 1
+    echo "#• Adding PPA..." ; sleep 1
     add-apt-repository ppa:dawidd0811/neofetch -y | showProgress
     updateSources
   fi
 
-  echo "#⚫ Installing ${_FNAME}..."
+  echo "#• Installing ${_FNAME}..."
   apt-get install neofetch -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge neofetch -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing PPA..." ; sleep 1
+  echo "#• Removing PPA..." ; sleep 1
   apt-add-repository --remove ppa:dawidd0811/neofetch -y | showProgress
   echo "#✔ Uninstallation completed." ; sleep 1
 fi  
@@ -1374,7 +1374,7 @@ if [[ -z "$(grep -F ' nemo-compare ' <<< ${DPKGCHECKS[@]})" ]]; then
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling nemo-compare..." ; sleep 1
+  echo "#• Uninstalling nemo-compare..." ; sleep 1
   apt-get remove --purge nemo-compare -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1390,7 +1390,7 @@ if [[ -z "$(grep -F ' nemo-dropbox ' <<< ${DPKGCHECKS[@]})" ]]; then
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling nemo-dropbox..." ; sleep 1
+  echo "#• Uninstalling nemo-dropbox..." ; sleep 1
   apt-get remove nemo-dropbox -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1406,20 +1406,20 @@ if [[ -z "$(grep -F ' nextcloud-client ' <<< ${DPKGCHECKS[@]})" ]]; then
   echo "# Downloading ${_FNAME}..." ; checkOnline
 
   if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep nextcloud-devs)" ]]; then
-    echo "#⚫ Adding PPA..." ; sleep 1
+    echo "#• Adding PPA..." ; sleep 1
     add-apt-repository ppa:nextcloud-devs/client -y | showProgress
     updateSources
   fi
 
-  echo "#⚫ Installing ${_FNAME}..."
+  echo "#• Installing ${_FNAME}..."
   apt-get install nextcloud-client -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep nextcloud)" ]]; then killall -9 nextcloud; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove nextcloud-client -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1444,26 +1444,26 @@ _RM_DUPLICATE="operacdn.com"
 # if opera-stable is not installed; install it
 if [[ -z "$(grep -F ' opera-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
     # if repo and keys are not installed; install them
     if [[ -z "$(grep ^ "$_SOURCELISTUB" /etc/apt/sources.list.d/* | grep opera-stable)" ]]; then
-      echo "#⚫ Adding PPA..."
+      echo "#• Adding PPA..."
 
       # add PPA
       add-apt-repository 'deb http://deb.operacdn.com/opera-stable/ stable non-free' -y
       wget -qO- https://deb.operacdn.com/archive.key | apt-key add -
 
       # update sources after installing PPA and key
-      echo "#⚫ Updating the cache..." ; updateSources
+      echo "#• Updating the cache..." ; updateSources
 
       # install opera browser
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1 
+      echo "#• Installing ${_FNAME}..." ; sleep 1 
       DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | showProgress ; checkInstall
 
     # if opera browser repo and key were previously installed, just install opera
     else
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       DEBIAN_FRONTEND=noninteractive apt-get install opera-stable -y | showProgress ; checkInstall
     fi
 
@@ -1475,20 +1475,20 @@ if [[ -z "$(grep -F ' opera-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 # remove opera browser
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ ! -z "$(pgrep opera)" ]]; then killall -9 opera; fi ; sleep 1
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge opera-stable -y | showProgress ; checkRemoval
 
   # remove repo and keys
-  echo "#⚫ Removing repository & key..." ; sleep 1
+  echo "#• Removing repository & key..." ; sleep 1
   [[ -f "$_SOURCELIST" ]] && rm -f "$_SOURCELIST"
   _RMGPGKEY=$(wget -qO - https://deb.operacdn.com/archive.key | apt-key adv | awk '{print $2}' | head -n2 | tail -n1 | cut -d\/ -f2)
   apt-key del "$_RMGPGKEY"
   removeDuplicatedRepo
 
   # remove cache folder from all users accounts
-  echo "#⚫ Removing ${_FNAME} cache..."
+  echo "#• Removing ${_FNAME} cache..."
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/.cache/opera/Cache
     rm -rf /home/${desktopuser}/Desktop/opera.desktop
@@ -1508,18 +1508,18 @@ PLANK() {
     [[ -d /tmp/Plank-Themes ]] && rm -rf /tmp/Plank-Themes
 
     # download themes from github
-    echo "#⚫ Downloading ${_FNAME} themes..." ; sleep 1
+    echo "#• Downloading ${_FNAME} themes..." ; sleep 1
     git clone https://github.com/erikdubois/Plank-Themes /tmp/Plank-Themes
 
     #remove extra files
-    echo "#⚫ Processing download..." ; sleep 1
+    echo "#• Processing download..." ; sleep 1
     find /tmp/Plank-Themes -maxdepth 1 -type f -exec rm -rf '{}' \;
 
     zenity --question --width=240 --height="120" --title="Plank Themes" --cancel-label="For All Users" --ok-label="For Me Only" \
            --text="\nWould you like to install Plank themes for all users or just for your account?" 2>/dev/null
 
     if [[ "$?" = "0" ]]; then
-      echo "#⚫ Installing themes for current user only..." ; sleep 1
+      echo "#• Installing themes for current user only..." ; sleep 1
 
       # if folder doesn't exist, create it
       PTDIR="/home/${_SOFTUSR}/.local/share/plank/themes"
@@ -1527,7 +1527,7 @@ PLANK() {
       # copy themes
       cp -rf /tmp/Plank-Themes/* "$PTDIR" ; chown -R "$_SOFTUSR":"$_SOFTUSR" "$PTDIR"
     else
-      echo "#⚫ Installing themes for all users..." ; sleep 1
+      echo "#• Installing themes for all users..." ; sleep 1
       cp -rf /tmp/Plank-Themes/* /usr/share/plank/themes
     fi
   # cleanup tmp
@@ -1536,20 +1536,20 @@ PLANK() {
 
 if [[ -z "$(grep -F ' plank ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
   apt-get install plank -y | showProgress ; checkInstall
 
   plankThemes
   echo "#✔ Installation completed." ; sleep 1
 
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep plank)" ]]; then killall -9 plank; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove plank -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} themes..." ; sleep 1
+  echo "#• Removing ${_FNAME} themes..." ; sleep 1
   rm -rf /home/${_SOFTUSR}/.local/share/plank/themes/* && rm -rf /usr/share/plank/themes/*
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1562,12 +1562,12 @@ _FNAME="Screenfetch"
 
 if [[ -z "$(grep -F ' screenfetch ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
   apt-get install screenfetch -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge screenfetch -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1581,11 +1581,11 @@ _SMVERFL="/tmp/seamonkey-project.txt"
 _SMKDIR="/usr/local/seamonkey"
 
 if [[ ! -d "$_SMKDIR" ]]; then 
-  echo "#⚫ Downloading ${_FNAME}..."
+  echo "#• Downloading ${_FNAME}..."
   # find latest stable release
-  echo "#⚫ Querying ${_FNAME} website..." ; sleep 1 ; checkOnline
-  echo "#⚫ Finding latest release..." ; sleep 1
-  echo "#⚫ Downloading ${_FNAME}..."
+  echo "#• Querying ${_FNAME} website..." ; sleep 1 ; checkOnline
+  echo "#• Finding latest release..." ; sleep 1
+  echo "#• Downloading ${_FNAME}..."
   cd /tmp ; curl https://www.seamonkey-project.org/releases/ > "$_SMVERFL"
   _SMVER=$(grep -F '<b>SeaMonkey' "$_SMVERFL" | awk '{print $2}' | cut -d\< -f1)
   
@@ -1600,11 +1600,11 @@ if [[ ! -d "$_SMKDIR" ]]; then
     /usr/local/sbin/get_download "$_DLURL32"
   fi
 
-  echo "#⚫ Processing download..." ; sleep 1
+  echo "#• Processing download..." ; sleep 1
   tar xvjf seamonkey*.bz2 | showProgress ; checkDownload
 
-  echo "#⚫ Completing ${_FNAME} installation..." ; mv -if seamonkey "$_SMKDIR" ; sleep 1.5
-  echo "#⚫ Creating program menu shortcut..." ; sleep 1
+  echo "#• Completing ${_FNAME} installation..." ; mv -if seamonkey "$_SMKDIR" ; sleep 1.5
+  echo "#• Creating program menu shortcut..." ; sleep 1
   printf \
 '[Desktop Entry]
 Version=1.0
@@ -1623,13 +1623,13 @@ StartupNotify=false' > /usr/share/applications/seamonkey.desktop
   echo "#✔ Installation completed." ; sleep 1
 else
   # remove seamonkey browser
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep seamonkey)" ]]; then killall -9 seamonkey; fi ; sleep 2
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   rm -rf "$_SMKDIR" /usr/share/applications/seamonkey.desktop
 
-  echo "#⚫ Removing ${_FNAME} cache..." ; sleep 1
+  echo "#• Removing ${_FNAME} cache..." ; sleep 1
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/.cache/mozilla/seamonkey
     rm -rf /home/${desktopuser}/Desktop/seamonkey.desktop
@@ -1640,7 +1640,7 @@ fi
 
 SKYPEMS() {
 
-echo "#⚫ Preparing..."
+echo "#• Preparing..."
 
 # variables
 _FNAME="Skype"
@@ -1649,21 +1649,21 @@ _DLURL="https://repo.skype.com/latest/skypeforlinux-64.deb"
 
 if [[ -z "$(grep -F ' skypeforlinux ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading ${_FNAME}..." ; sleep 1 ; checkOnline
   cd /tmp ; /usr/local/sbin/get_download "$_DLURL"
 
-  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  echo "#• Installing ${_FNAME}..." ; sleep 1
   dpkg -i "$skpkg" ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..." ; sleep 1
+  echo "#• Terminating any ${_FNAME} instances..." ; sleep 1
   if [[ ! -z "$(pgrep skypeforlinux)" ]]; then killall -9 skypeforlinux; fi
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove skypeforlinux -y ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do 
     rm -rf /home/${desktopuser}/Desktop/skypeforlinux.desktop
@@ -1679,15 +1679,15 @@ _FNAME="Spotify"
 
 if [[ -z "$(grep -F ' spotify-client ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
   apt-get install spotify-client -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge spotify-client -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/Desktop/spotify.desktop
@@ -1703,34 +1703,34 @@ _FNAME="Sublime Text"
 
 if [[ -z "$(grep -F ' sublime-text ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
     if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep sublime-text)" ]]; then
-      echo "#⚫ Adding PPA..."
+      echo "#• Adding PPA..."
       wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | apt-key add -
 
       echo "deb https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list
-      echo "#⚫ Updating the cache..." ; updateSources
+      echo "#• Updating the cache..." ; updateSources
     fi
-    echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+    echo "#• Installing ${_FNAME}..." ; sleep 1
     apt-get install sublime-text -y | showProgress
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Terminating ${_FNAME} instances..."
+  echo "#• Terminating ${_FNAME} instances..."
   if [[ -n "$(pgrep sublime_text)" ]]; then killall -9 sublime_text; fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge sublime-text -y | showProgress
 
-  echo "#⚫ Removing repository and key..." ; sleep 1
+  echo "#• Removing repository and key..." ; sleep 1
 
   [[ -f "/etc/apt/sources.list.d/sublime-text.list" ]] && rm -f /etc/apt/sources.list.d/sublime-text.list
   [[ -f "/etc/apt/sources.list.d/sublime-text.list.save" ]] && rm -f /etc/apt/sources.list.d/sublime-text.list.save
   _RMGPGKEY=$(wget -qO- https://download.sublimetext.com/sublimehq-pub.gpg | apt-key adv | awk '{print $2}' | tail -n2 | head -n1 | cut -d\/ -f2)
   apt-key del "$_RMGPGKEY"
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do
     rm -f /home/${desktopuser}/Desktop/sublime_text.desktop
@@ -1760,13 +1760,13 @@ if [[ -z "$(grep -F ' teamviewer ' <<< ${DPKGCHECKS[@]})" ]]; then
     fi
   fi
 
-  echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+  echo "#• Installing ${_FNAME}..." ; sleep 1
   apt-get install ./teamviewer*.deb -y | showProgress ; checkInstall
 
   echo "#✔ Installation completed." ; sleep 1
 else
 
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   
   if [[ -n "$(pgrep -f teamviewer)" ]]; then 
     signal_process=$(pgrep -f teamviewer)
@@ -1776,10 +1776,10 @@ else
     done
   fi ; sleep 1
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1 ;
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1 ;
   apt-get remove --purge teamviewer -y | showProgress ; checkRemoval
 
-  echo "#⚫ Removing ${_FNAME} launchers..." ; sleep 1
+  echo "#• Removing ${_FNAME} launchers..." ; sleep 1
 
   for desktopuser in ${_ALLUSERS}; do
     rm -f /home/${desktopuser}/Desktop/com.teamviewer.TeamViewer.desktop
@@ -1800,7 +1800,7 @@ if [[ -z "$(grep -F 'thunar-dropbox-plugin' <<< ${DPKGCHECKS[@]})" ]]; then
 
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge thunar-dropbox-plugin -y | showProgress
 
   echo "#✔ Uninstallation completed." ; sleep 1
@@ -1819,26 +1819,26 @@ _RM_DUPLICATE="vivaldi.com"
 
 # if vivaldi-stable is not installed; install it
 if [[ -z "$(grep -F ' vivaldi-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
-  echo "#⚫ Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
     # if repo and keys are not installed; install them
     if [[ -z "$(grep ^ "$_SOURCELISTUB" /etc/apt/sources.list.d/* | grep vivaldi)" ]]; then
-      echo "#⚫ Adding repository and keys..."
+      echo "#• Adding repository and keys..."
 
       # add PPA
       add-apt-repository 'deb http://repo.vivaldi.com/archive/deb/ stable main' -y
       wget -qO- http://repo.vivaldi.com/stable/linux_signing_key.pub | apt-key add -
 
       # update sources after installing PPA and key
-      echo "#⚫ Updating the cache..." ; updateSources
+      echo "#• Updating the cache..." ; updateSources
 
       # install vivaldi browser
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install vivaldi-stable -y | showProgress ; checkInstall
 
     # if vivaldi browser repo and key were previously installed, just install vivaldi
     else
-      echo "#⚫ Installing ${_FNAME}..." ; sleep 1
+      echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install vivaldi-stable -y | showProgress ; checkInstall
     fi
     removeDuplicatedRepo
@@ -1847,14 +1847,14 @@ if [[ -z "$(grep -F ' vivaldi-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 # remove vivaldi browser
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep vivaldi-bin)" ]]; then killall -9 vivaldi-bin; fi ; sleep 2
 
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge vivaldi-stable -y | showProgress ; checkRemoval
 
   # remove repo and keys
-  echo "#⚫ Removing repository and keys..."
+  echo "#• Removing repository and keys..."
 
   # repo removal
   [[ -f "$_SOURCELIST" ]] && rm -f "$_SOURCELIST"
@@ -1866,7 +1866,7 @@ else
   apt-key del 7B8B44A1
 
   # remove cache folder from all users accounts
-  echo "#⚫ Removing ${_FNAME}  cache..."
+  echo "#• Removing ${_FNAME}  cache..."
   for desktopuser in ${_ALLUSERS}; do 
     rm -rf /home/${desktopuser}/.cache/vivaldi
     rm -f /home/${desktopuser}/Desktop/vivaldi-stable.desktop
@@ -1885,7 +1885,7 @@ _WFDIR="/usr/lib/waterfox"
 
 # if package has been installed, remove it
 if [[ -n "$(grep -F ' waterfox ' <<< ${DPKGCHECKS[@]})" ]]; then
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove --purge waterfox -y | showProgress ; checkDownload 
   continue
 fi
@@ -1893,20 +1893,20 @@ fi
 # if available in repository, install from repo
 INSTOPT=$(apt-cache policy waterfox | grep -q 'waterfox' ; echo $?)   #  <= THIS IS EXTREMELY UGLY, NEEDS WORK!!
   if [[ "$INSTOPT" = "0" ]]; then
-    echo "#⚫ Installing Waterfox..." ; sleep 1
+    echo "#• Installing Waterfox..." ; sleep 1
     apt-get install waterfox -y | showProgress ; checkInstall
     echo "#✔ Installation completed." ; sleep 1
     continue
   fi
 
 # if waterfox is not installed and not in a repo, then install from main site
-if [[ ! -d "$_WFDIR" ]]; then echo "#⚫ No repository found..." ; sleep 1
+if [[ ! -d "$_WFDIR" ]]; then echo "#• No repository found..." ; sleep 1
 
   # check internet connection
-  echo "#⚫ Querying Waterfox website..." ; sleep 1 ; checkOnline 
+  echo "#• Querying Waterfox website..." ; sleep 1 ; checkOnline 
 
   # find latest stable release
-  echo "#⚫ Finding latest release..."
+  echo "#• Finding latest release..."
   cd /tmp ; curl https://www.waterfoxproject.org/downloads > "$_WFVERFL"
   _WFVER=$(grep -F 'linux64/installer/waterfox' "$_WFVERFL" | awk '{print $2}' | cut -d\" -f2) ; sleep .5
 
@@ -1917,15 +1917,15 @@ if [[ ! -d "$_WFDIR" ]]; then echo "#⚫ No repository found..." ; sleep 1
   /usr/local/sbin/get_download "$_WFVERHTTP"
 
   # untar and check download
-  echo "#⚫ Processing download..." ; sleep 1
+  echo "#• Processing download..." ; sleep 1
   tar xvjf waterfox*.bz2 | showProgress ; checkDownload 
 
   # move extracted files
-  echo "#⚫ Completing ${_FNAME} installation..."
+  echo "#• Completing ${_FNAME} installation..."
   mv -if waterfox "$_WFDIR" ; sleep 1
 
   # create menu shortcut in /usr/share/applications/
-  echo "#⚫ Creating program menu shortcut..." ; sleep 1
+  echo "#• Creating program menu shortcut..." ; sleep 1
   printf \
 '[Desktop Entry]
 Version=1.0
@@ -1953,13 +1953,13 @@ Exec=/usr/lib/waterfox/waterfox -private-window' > /usr/share/applications/water
 
 # remove waterfox browser
 else
-  echo "#⚫ Terminating any ${_FNAME} instances..."
+  echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep waterfox)" ]]; then killall -9 waterfox; fi ; sleep 2
-  echo "#⚫ Uninstalling ${_FNAME}..." ; sleep 1
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   rm -rf "$_WFDIR" ; rm -f /usr/share/applications/waterfox.desktop
 
   # remove cache folder from all users accounts
-  echo "#⚫ Removing ${_FNAME} cache..."
+  echo "#• Removing ${_FNAME} cache..."
   for desktopuser in ${_ALLUSERS}; do
     rm -rf /home/${desktopuser}/.cache/waterfox
     rm -rf /home/${desktopuser}/Desktop/waterfox.desktop
@@ -1974,11 +1974,11 @@ ZIPPERS() {
 
 if [[ -z "$(grep '\(p7zip-rar\s\|p7zip-full\s\|\sunace\s\|\sunrar\s\)' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "#⚫ Downloading and installing data compressors..." ; sleep 1 ; checkOnline 
+  echo "#• Downloading and installing data compressors..." ; sleep 1 ; checkOnline 
   apt-get install p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | showProgress ; checkInstall
   echo "#✔ Installation completed." ; sleep 1
 else
-  echo "#⚫ Uninstalling data compressors..." ; sleep 1
+  echo "#• Uninstalling data compressors..." ; sleep 1
   apt-get remove --purge p7zip-rar p7zip-full unace unrar zip unzip sharutils rar uudeview mpack arj cabextract file-roller -y | showProgress ; checkRemoval
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -2370,5 +2370,4 @@ fi
 RUN
 done
 exit 0
-
 
