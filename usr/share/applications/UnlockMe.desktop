@@ -6,5 +6,5 @@ Icon=unlockme
 Terminal=false
 Type=Application
 Encoding=UTF-8
-Categories=XFCE;GTK;Settings;DesktopSettings;X-XFCE-SettingsDialog;
+Categories=XFCE;GTK;Application;System;Settings;X-XFCE-SettingsDialog;
 StartupNotify=false

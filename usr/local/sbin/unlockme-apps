@@ -1011,6 +1011,25 @@ else
 fi
 }
 
+FONTMANAGERAPP() {
+
+_FNAME="Font Manager"
+
+if [[ -z "$(grep -F ' font-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
+
+  echo "# Installing ${_FNAME}..."; sleep 1 ; checkOnline
+  apt-get install font-manager -y | showProgress ; checkInstall
+
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge font-manager -y | showProgress ; checkRemoval
+
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+
+}
+
 GEARY() {
 
 # variables
@@ -1807,6 +1826,24 @@ else
 fi
 }
 
+UBUNTUREXTRAS() {
+
+_FNAME="Ubuntu Restricted Extras"
+
+if [[ -z "$(grep -F ' ubuntu-restricted-extras ' <<< ${DPKGCHECKS[@]})" ]]; then
+
+  echo "# Installing ${_FNAME}..."; sleep 1 ; checkOnline
+  apt-get install ubuntu-restricted-extras -y | showProgress ; checkInstall
+
+  echo "#✔ Installation completed." ; sleep 1
+else
+  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
+  apt-get remove --purge ubuntu-restricted-extras -y | showProgress ; checkRemoval
+
+  echo "#✔ Uninstallation completed." ; sleep 1
+fi
+}
+
 # App vivaldi - install / remove
 VIVALDIWB() {
 
@@ -2011,8 +2048,9 @@ RUN() {
       zenity --error --width="260" --title="UnlockMe" --text="An error occurred while executing:\n\n ${line}" 2>/dev/null
       exit 1
     fi
-    done | yad --text-align="center" --borders="10" --no-buttons --undecorated --progress --pulsate --auto-close --auto-kill \
-               --fixed --center --skip-taskbar --width="340" --height="110" --text="\n<span font='13'>UnlockMe</span>"
+    done | yad --width="340" --height="110" --text-align="center" --borders="10" --no-buttons --undecorated \
+               --fixed --center --skip-taskbar --progress --pulsate --auto-close --auto-kill \
+               --text="\n<span font='13'>UnlockMe</span>"
 }
 
 # Execute checks
@@ -2108,6 +2146,13 @@ fi
 if [[ -z "$(grep -F ' firefox ' <<< ${DPKGCHECKS[@]})" ]]; then
      _firefoxwb=(False "$_APPICONS/firefox.png" "FIREFOXWB" "Firefox" "Web Browser" "No" "People-first open-source web browser by the Mozilla Foundation")
 else _firefoxwb=(False "$_APPICONS/firefox.png" "FIREFOXWB" "Firefox" "Web Browser" "<span foreground='green'>Select to Remove</span>" "People-first open-source web browser by the Mozilla Foundation")
+fi
+
+# check for font manager
+if [[ -z "$(grep -F ' font-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
+    _fontmanager=(False "$_APPICONS/font-viewer.png" "FONTMANAGERAPP" "Font Manager" "Utility" "No" "Better way to manage, install and remove fonts in your system")
+  else 
+    _fontmanager=(False "$_APPICONS/font-viewer.png" "FONTMANAGERAPP" "Font Manager" "Utility" "<span foreground='green'>Select to Remove</span>" "Better way to manage, install and remove fonts in your system")
 fi
 
 # check for geary
@@ -2274,6 +2319,12 @@ if [[ "$LMDENV" =~ "Xfce" || "$LLDENV" =~ "Lite" ]]; then
 else _thunardropbox=()
 fi
 
+# check for ubuntu-restricted-extras
+if [[ -z "$(grep -F ' ubuntu-restricted-extras ' <<< ${DPKGCHECKS[@]})" ]]; then
+     _ubunturextras=(False "$_APPICONS/gnome-package.png" "UBUNTUREXTRAS" "Restricted Extras" "Package" "No" "Commonly used media codecs and fonts for Ubuntu and derivatives (Recommended)")
+else _ubunturextras=(False "$_APPICONS/gnome-package.png" "UBUNTUREXTRAS" "Restricted Extras" "Package" "<span foreground='green'>Select to Remove</span>" "Commonly used media codecs and fonts for Ubuntu and derivatives")
+fi
+
 # check for vivaldi web browser
 if [[ -z "$(grep -F ' vivaldi-stable ' <<< ${DPKGCHECKS[@]})" ]]; then
      _vivaldiwb=(False "$_APPICONS/vivaldi.png" "VIVALDIWB" "Vivaldi" "Web Browser" "No" "A free, ultra-fast web browser highly customizable")
@@ -2331,6 +2382,7 @@ selection=$(yad --list --checklist --width="900" --height="640" --image="$DLGICO
 "${_evolutionapp[@]}" \
 "${_filezilla[@]}" \
 "${_firefoxwb[@]}" \
+"${_fontmanager[@]}" \
 "${_geary[@]}" \
 "${_gthumbapp[@]}" \
 "${_handbrakeapp[@]}" \
@@ -2354,6 +2406,7 @@ selection=$(yad --list --checklist --width="900" --height="640" --image="$DLGICO
 "${_sublimeapp[@]}" \
 "${_teamviewerapp[@]}" \
 "${_thunardropbox[@]}" \
+"${_ubunturextras[@]}" \
 "${_vivaldiwb[@]}" \
 "${_waterfoxwb[@]}" 2>/dev/null)
 
@@ -2370,4 +2423,5 @@ fi
 RUN
 done
 exit 0
+
 
