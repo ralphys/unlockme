@@ -4,8 +4,7 @@ Type=Application
 Name=Compton
 Comment=Start Compton Compositor for X11
 Exec=compton -b
-OnlyShowIn=XFCE;
+OnlyShowIn=XFCE;LXDE;
 StartupNotify=false
 Terminal=false
 Hidden=true
-

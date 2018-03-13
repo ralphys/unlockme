@@ -214,7 +214,23 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
 
         export -f defaultConfig
 
-        compositorConfig() {
+        editComConfig() {
+
+          origen="/home/${USER}/.config/compton.conf"
+          testmode="/tmp/.comptontestmode"
+          touch "$origen" "$testmode"
+
+          compton-conf && wait
+
+          if [[ "$origen" -nt "$testmode" ]]; then
+            killall -9 compton
+            compton -b
+          fi
+        }
+
+        export -f editComConfig
+
+        configOptions() {
 
         yad --form --width="140" --text-align="center" --window-icon="$ICON" --buttons-layout="center" --undecorated --skip-taskbar \
             --image-on-top --title="$_FNAME" --text="<span font='12'>Compton Configuration</span>\n" --button="Close":1 --borders="20" \
@@ -227,16 +243,16 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
 
         }
 
-        export -f compositorConfig
+        export -f configOptions
 
 # the loop
 while (true); do
-echo "#• Configuring ${_FNAME}..."
+echo "#• ${_FNAME}..."
 
 XFWM4PROCESS4=$(xfconf-query -c xfwm4 -p /general/use_compositing -t bool)
 
 # check if compton compositor is installed
-if [[ -z  "$(dpkg -l | grep -E '^ii' | grep 'compton')" ]]; then
+if [[ -z  "$(dpkg -l | grep -E '^ii' | grep -F ' compton ')" ]]; then
   
   # if not installed, prompt user for installation
   if zenity --question --width="340" --height="80" --title=" $_APPNAME" \
@@ -279,7 +295,7 @@ else
   [[ ! -f "/home/${USER}/.config/compton.conf" ]] && cp -f /usr/share/unlockme/tools/compton.conf "/home/${USER}/.config/"
   
   # check if compton is running and assign variables
-  [[ $(pgrep 'compton') ]] && _status="Enabled" COMPTONPROCESS="1" || _status="Disabled" COMPTONPROCESS=""
+  [[ $(pgrep -f 'compton -b') ]] && _status="Enabled" COMPTONPROCESS="1" || _status="Disabled" COMPTONPROCESS=""
   grep -qFx 'Hidden=false' "$AUTOSTART" && LOGONAUTO="will" || LOGONAUTO="<b>will not</b>"
 
   # compton Status
@@ -292,23 +308,29 @@ else
 * ${_FNAME} ${LOGONAUTO} autostart on logon</span>\n\n\
 <b>Important</b>: No other display compositor must be enable while Compton is running. To enable the default display compositing in \
 <i>Settings >> Window Manager Tweaks >> Compositor | Enable display compositing</i>, you should first disable or uninstall Compton to prevent \
-display compositing conflicts."
+display compositing conflicts.\n"
     YBTN="Disable compton"
     DLGSIZE="--width=480 --height=150"
+    COMPTON=$(yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" \
+                           --title="$_FNAME" --text="$MDTXT" --borders="8" \
+                           --button="Uninstall":2 \
+                           --button="...":'bash -c "configOptions"' \
+                           --button="Config!gtk-edit":'bash -c "editComConfig"' \
+                           --button="$YBTN"\!gtk-apply:0 ; echo $?)
   else
     MDTXT="\n<span font='Bold 10'>          Compton Status</span>: <span foreground='red'>${_status}</span>\n\n\
 *<span font='9'> ${_FNAME} is disabled\n\
 * ${_FNAME} ${LOGONAUTO} autostart on logon</span>\n"
     YBTN="Enable compton"
     DLGSIZE="--width=370 --height=150"
+    COMPTON=$(yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" --buttons-layout="center" \
+                           --title="$_FNAME" --text="$MDTXT" --borders="8" \
+                           --button="Uninstall":2 \
+                           --button="$YBTN"\!gtk-apply:0 ; echo $?)
   fi
 
   # compton Main dialog
-  COMPTON=$(yad ${DLGSIZE} --window-icon="$ICON" --image="$ICON" \
-                           --title="$_FNAME" --text="$MDTXT" --borders="8" \
-                           --button="...":'bash -c "compositorConfig"' \
-                           --button="Uninstall":2 \
-                           --button="$YBTN"\!gtk-apply:0 ; echo $?)
+  
   case $COMPTON in
     0)  if [[ "$_status" = "Enabled" ]]; then # stop
             echo "#• Stopping ${_FNAME}..." ; sleep 1 ; killall -9 compton ; sleep .5
@@ -956,9 +978,9 @@ else _chromiumprofile=()
 fi
 
 # check for compton compositor
-if [[ "$LMDENV" = "Xfce" || "$LLDENV" = "Lite" ]]; then
+if [[ "$LMDENV" = "Xfce" || "$LLDENV" = "Lite" || "$PPMDENV" =~ "PeppermintOS" ]]; then
   if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
-       _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Compton Compositor for beautiful tear free compositing in Xfce")
+       _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Compton Compositor for beautiful tear free compositing")
   else _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "<span foreground='green'>Compton Compositor is currently installed - (select to modify)</span>")
   fi
 else  _comptonwc=()

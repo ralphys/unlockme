@@ -446,7 +446,8 @@ if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
   # install compton
   echo "# Installing ${_FNAME}..." ; sleep 1
   opt_procedure="exit 1" ; checkPackageManager    # check if package manager is running
-  apt-get install compton -y | showProgress ; checkInstall
+  apt-get install compton compton-conf -y | showProgress ; checkInstall
+  rm -f /usr/share/applications/compton-conf.desktop
 
   if [[ -f "/home/${SOFTUSR}/.config/compton.conf" ]]; then
     if zenity --question --width="320" --icon-name="gtk-dialog-warning" \
@@ -490,7 +491,7 @@ else
 Would you like to backup the existing configuration first?" 2>/dev/null; then
 
       szSavePath=$(zenity --file-selection --title=" Save ${_FNAME} configuration" --width="550" --height="380" \
-                          --filename="/home/${SOFTUSR}/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
+                          --filename="/home/${SOFTUSR}/Desktop/compton.conf" --window-icon="$ICONSAVE" --file-filter='*.conf' \
                           --file-filter='All files | *' --save --confirm-overwrite)
       if [[ "$?" = "0" ]]; then
         cp -f "/home/${SOFTUSR}/.config/compton.conf" "$szSavePath"
@@ -504,7 +505,7 @@ Would you like to backup the existing configuration first?" 2>/dev/null; then
     rm -f "/home/${desktopuser}/.config/autostart/compton.desktop"
   done ; sleep 2
 
-  apt-get remove --purge compton -y | showProgress ; checkRemoval
+  apt-get remove --purge compton compton-conf -y | showProgress ; checkRemoval
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
