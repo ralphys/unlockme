@@ -23,7 +23,7 @@ echo -e " --------------------\n"
 
 # remove desktop shortcut
 function remove_shortcut() {
-	echo -e "⚫ Removing desktop shortcut if any...\n"
+	echo -e "• Removing desktop shortcut if any...\n"
 	for desktopuser in ${_ALLUSERS}; do
       [[ -f "/home/${desktopuser}/Desktop/UnlockMe.desktop" ]] && \
       rm -f /home/${desktopuser}/Desktop/UnlockMe.desktop
@@ -34,7 +34,7 @@ function remove_shortcut() {
 
 function scripts_removal() {
 
-	echo -e "\n⚫ Removing UnlockMe..." ; sleep .5
+	echo -e "\n• Removing UnlockMe..." ; sleep .5
 
 		rm -rf /usr/share/unlockme
 		rm -f /usr/share/applications/UnlockMe.desktop
@@ -48,7 +48,7 @@ function scripts_removal() {
 
 function remove_unlockme() {
 	
-	echo -e "⚫ Uninstalling Unlockme...\n" ; sleep .5
+	echo -e "• Uninstalling Unlockme...\n" ; sleep .5
 	echo -e "   Unlockme scripts are about to be removed. Please be advised, you should"
 	echo -e "   revert any changes made to your system by the Unlockme scripts before"
 	echo -e "   uninstalling it if you are unhappy with the results. This uninstaller"

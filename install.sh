@@ -34,7 +34,7 @@ function quiet_git() {
 
 function install_git () {
 	echo -e " <git> is not installed.\n" ; sleep 1
-	echo -e "⚫ Installing git. Please wait..." && sudo apt-get install -qq -o=Dpkg::Use-Pty=0 git -y > /dev/null
+	echo -e "• Installing git. Please wait..." && sudo apt-get install -qq -o=Dpkg::Use-Pty=0 git -y > /dev/null
 	if which git > /dev/null; then echo -e "✔ done!\n"
 	else echo -e "  \nAn error occurred while installing 'git'... aborting installer :( \n" ; exit 1
 	fi
@@ -42,12 +42,12 @@ function install_git () {
 
 function install_unlockme () {
 	if which git > /dev/null; then
-		echo -e "⚫ Git cloning UnlockMe into /tmp/unlockme..." && cd /tmp
+		echo -e "• Git cloning UnlockMe into /tmp/unlockme..." && cd /tmp
 		quiet_git clone https://github.com/ralphys/unlockme && cd unlockme && echo -e "✔ done!\n"
 	fi
-	echo -e "⚫ ${VARUPD} UnlockMe..." ; sleep .5
+	echo -e "• ${VARUPD} UnlockMe..." ; sleep .5
 		cp -rf usr / && echo -e "✔ done!\n"
-	echo -e "⚫ Setting files and folders permissions..." ; sleep .5
+	echo -e "• Setting files and folders permissions..." ; sleep .5
 		find /usr/share/unlockme -type d -print0 | xargs -0 chmod 755
 		find /usr/share/unlockme -type f -print0 | xargs -0 chmod 644
 		cd /usr/local/sbin
