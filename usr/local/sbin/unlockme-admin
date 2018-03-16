@@ -59,6 +59,22 @@ DENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk
 LLD=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMD=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
+# DISTRO
+if [[ -f "$mintinfo" ]]; then 
+    
+    # check if peppermint
+    if [[ "$PPMD" =~ "PeppermintOS" ]]; then
+      DISTRO="$PPMD"
+    else
+      # assume linuxmint
+      DISTRO="Linux Mint"
+    fi
+
+# check if linuxlite
+elif [[ -f "$liteinfo" ]]; then
+  DISTRO="Linux Lite"
+fi
+
 # desktop users
 ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
 
@@ -1008,30 +1024,34 @@ done
 OPENASROOT_THUNAR() {
 
 _FNAME="Thunar"
-_CAFILE=".config/Thunar/uca.xml"
+_UCAFILE=".config/Thunar/uca.xml"
 echo "# ${_FNAME} Custom Action - Open as Root..."
 
-if [[ -z $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+if [[ -z $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
 
   killThunar
   
   echo "# Updating Custom Action - Open as Root..." ; sleep 1
 
   for desktopuser in ${ALLUSERS}; do
-    sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
-    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
+    sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
+    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
   done
 
   if [[ "$LLD" = "Lite" ]]; then 
 
-    if [[ -n $(grep 'gksudo exo-open %f' "/etc/skel/${_CAFILE}") ]]; then
-      sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_CAFILE}"
+    if [[ -n $(grep 'gksudo exo-open %f' "/etc/skel/${_UCAFILE}") ]]; then
+      sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_UCAFILE}"
     else
-      sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_CAFILE}"
+      sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/skel/${_UCAFILE}"
     fi
   fi
+
+  if [[ "$DISTRO" = "Linux Mint" && "$DENV" = "Xfce" ]]; then
+    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/xdg/xdg-xfce/Thunar/uca.xml"
+  fi
   
-  if [[ -n $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+  if [[ -n $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
     echo "# pkexec PolicyKit applied." ; sleep 2
   else
     echo "# An error occurred while applying changes." ; sleep 1
@@ -1042,13 +1062,20 @@ else
   killThunar
 
   for desktopuser in ${ALLUSERS}; do
-    sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/home/${desktopuser}/${_CAFILE}"
+    sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
   done
 
-  if [[ "$LLD" = "Lite" ]]; then sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/skel/${_CAFILE}" ; fi
+  # restore linuxlite
+  if [[ "$LLD" = "Lite" ]]; then
+    sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/skel/${_UCAFILE}"
+  fi
 
+  # restore linuxmint
+  if [[ "$DISTRO" = "Linux Mint" && "$DENV" = "Xfce" ]]; then
+    sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/xdg/xdg-xfce/Thunar/uca.xml"
+  fi
 
-  if [[ -n $(grep '<command>gksu Thunar %F</command>' "/home/${SOFTUSR}/${_CAFILE}") ]]; then
+  if [[ -n $(grep '<command>gksu Thunar %F</command>' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
     echo "# Custom Action reverted." ; sleep 2
   else
     echo "# An error occurred while applying changes." ; sleep 1
@@ -1060,7 +1087,7 @@ fi
 OPENTERM_HERE() {
 
 _FNAME="Open Terminal Here"
-_CAFILE=".config/Thunar/uca.xml"
+_UCAFILE=".config/Thunar/uca.xml"
 _CHKFILE="/etc/skel/.config/Thunar/uca.xml"
 _CHKLINE="<command>x-terminal-emulator -t &quot;Command Line&quot; --working-directory=%f"
 
@@ -1075,8 +1102,8 @@ if [[ -z $(grep -F "$_CHKLINE" "$_CHKFILE") ]]; then
   echo "# Updating for all users..." ; sleep 1
 
   for desktopuser in ${ALLUSERS}; do
-    if [[ -z $(grep -F "$_CHKLINE" "/home/${desktopuser}/${_CAFILE}") ]]; then
-      sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "/home/${desktopuser}/${_CAFILE}"
+    if [[ -z $(grep -F "$_CHKLINE" "/home/${desktopuser}/${_UCAFILE}") ]]; then
+      sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "/home/${desktopuser}/${_UCAFILE}"
     fi
   done
   echo "# Custom Action update applied." ; sleep 2
@@ -1089,7 +1116,7 @@ else
   sed -i 's/\s--working-directory=%f//' "$_CHKFILE"
 
   for desktopuser in ${ALLUSERS}; do
-    sed -i 's/\s--working-directory=%f//' "/home/${desktopuser}/${_CAFILE}"
+    sed -i 's/\s--working-directory=%f//' "/home/${desktopuser}/${_UCAFILE}"
   done
   echo "# Custom Action update reverted." ; sleep 2
 fi

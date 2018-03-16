@@ -643,51 +643,52 @@ while (true); do
             echo "# ..." & break 2
           fi 
     fi
-       # stop app and services
-       systemctl stop deluged && systemctl stop deluge-web && killall -9 deluge-gtk deluged deluge-web
-       echo "#• Terminating instances..." ; sleep 2
+      # stop app and services
+      systemctl stop deluged && systemctl stop deluge-web && killall -9 deluge-gtk deluged deluge-web
+      echo "#• Terminating instances..." ; sleep 2
 
-       apt-get remove --purge deluge deluge-gtk deluged deluge-web -y | showProgress ; checkRemoval
+      apt-get remove --purge deluge deluge-gtk deluged deluge-web -y | showProgress ; checkRemoval
 
-       # remove services and usergroup membership
-       removeDelugeServices ; remFromDelugeGroup
+      # remove services and usergroup membership
+      removeDelugeServices ; remFromDelugeGroup
 
-       # remove shortcuts
-       [[ -f "/usr/share/applications/deluge-web.desktop" ]] && rm -f /usr/share/applications/deluge-web.desktop   
-       for i in ${_ALLUSERS}; do 
-          rm -f "/home/${i}/Desktop/deluge.desktop" ; rm -f /home/${i}/Desktop/deluge-web.desktop
-        done
-        break 2
-       ;;
+      # remove shortcuts
+      [[ -f "/usr/share/applications/deluge-web.desktop" ]] && rm -f /usr/share/applications/deluge-web.desktop
+
+      for desktopuser in ${_ALLUSERS}; do 
+        rm -f "/home/${desktopuser}/Desktop/deluge.desktop" "/home/${desktopuser}/Desktop/deluge-web.desktop"
+      done
+      break 2
+      ;;
 
     1) echo "# Deluge Install Options..." & break 1
-       ;;
+      ;;
     2) echo "#• Uninstalling Deluge Web GUI..." ; sleep .8
 
-       if [[ -n "$(grep -F ' deluged ' <<< ${DPKGCHECKS[@]})" ]]; then
+      if [[ -n "$(grep -F ' deluged ' <<< ${DPKGCHECKS[@]})" ]]; then
           
-          if [[ -n "$(pgrep deluged)" ]]; then 
+        if [[ -n "$(pgrep deluged)" ]]; then 
 
-            # stop services
-            echo "#• Terminating instances..."
-            systemctl stop deluged && systemctl stop deluge-web ; killall -9 deluged deluge-web
-          fi
+          # stop services
+          echo "#• Terminating instances..."
+          systemctl stop deluged && systemctl stop deluge-web ; killall -9 deluged deluge-web
+        fi
           
-          # remove deluged deluge-web
-          apt-get remove --purge deluged deluge-web -y | showProgress ; checkRemoval
-          remFromDelugeGroup
+        # remove deluged deluge-web
+        apt-get remove --purge deluged deluge-web -y | showProgress ; checkRemoval
+        remFromDelugeGroup
 
-          # remove shortcut from all users desktop 
-          for i in ${_ALLUSERS}; do
-            rm -f /home/${i}/Desktop/deluge-web.desktop
-          done
-          rm -f /usr/share/applications/deluge-web.desktop
+        # remove shortcut from all users desktop 
+        for desktopuser in ${_ALLUSERS}; do
+          rm -f "/home/${desktopuser}/Desktop/deluge-web.desktop"
+        done
+        rm -f /usr/share/applications/deluge-web.desktop
 
-       else
+      else
         echo "#• Deluge Web GUI not installed. No changes needed." ; sleep 2
         echo "# Deluge Uninstall Options..." & continue
-       fi
-       ;;
+      fi
+      ;;
     3) echo "#• Uninstalling Deluge Desktop GUI..." ; sleep .8
 
       if [[ -n "$(grep -F ' deluge-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
@@ -701,9 +702,9 @@ while (true); do
         echo "#• Deluge Desktop GUI not installed. No changes needed." ; sleep 2 
         echo "# Deluge Uninstall Options..." & continue
       fi
-       ;;
+      ;;
     *) break 2 && echo "# ..." 
-       ;;
+      ;;
   esac
   echo "#✔ Uninstallation completed." ; sleep 1 
 done
@@ -822,6 +823,10 @@ _RM_DUPLICATE="dropbox.com"
     # uninstall dropbox
     echo "#• Uninstalling dropbox..." ; sleep 1
     apt-get remove --purge dropbox python-gpgme -y | showProgress ; checkRemoval
+
+    for desktopuser in ${_ALLUSERS}; do 
+        rm -f "/home/${desktopuser}/.config/autostart/dropbox.desktop"
+    done
 
     # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
     if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove --purge nemo-dropbox -y | showProgress; fi
@@ -942,6 +947,11 @@ else
 
   echo "#• Uninstalling ${_FNAME}..."
   apt-get remove evolution evolution-common evolution-ews evolution-plugins -y | showProgress ; checkRemoval
+
+  for desktopuser in ${_ALLUSERS}; do 
+        rm -f "/home/${desktopuser}/.config/autostart/evolution-alarm-notify.desktop"
+  done
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -1134,8 +1144,8 @@ else
   echo "#• Uninstalling ${_FNAME}..." ; sleep 1
   apt-get remove hardinfo -y | showProgress ; checkRemoval
 
-  for i in ${_ALLUSERS}; do
-    rm -f /home/${i}/Desktop/hardinfo.desktop
+  for desktopuser in ${_ALLUSERS}; do
+    rm -f "/home/${desktopuser}/Desktop/hardinfo.desktop"
   done
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -2437,5 +2447,4 @@ fi
 RUN
 done
 exit 0
-
 
