@@ -520,7 +520,10 @@ else
 
   echo "#• Removing Firefox theme..." ; sleep 1
   rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/{Vertex,Vertex-Dark,Vertex-Light}
-  rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
+
+  if [[ -s "/usr/share/unlockme/set/VERTEXFFTH" ]]; then
+  	rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
+  fi
   rm -f "/usr/share/unlockme/set/VERTEXFFTH"
 
   echo "#✔ Uninstallation completed." ; sleep 1
