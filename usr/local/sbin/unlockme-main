@@ -172,6 +172,32 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
 
         export -f showActProgress
 
+        componentInstall() {
+
+        if zenity --question --width="320" --height="110" --title="Missing component" \
+                  --text="\nCompton Compositor is already installed but the Settings Editor component is missing.\n\n\
+Would you like to install it now?" 2>/dev/null; then
+
+          # elevate for compton-conf installation
+          bash -c "pkexec unlockme-admin COMPTONCONFINST"
+      
+          if [[ "${PIPESTATUS[@]}" = "126" ]]; then
+            break
+          else
+            if [[ "$?" = "1" ]]; then
+              if [[ -z  "$(dpkg -l | grep -E '^ii' | grep -F ' compton-conf ')" ]]; then
+                zenity --warning --width="320" --height="110" --title="Missing component" \
+                       --text="\nCompton Settings Editor component is missing. You will not be able \
+to edit compton configuration from UI." 2>/dev/null
+                :
+              fi
+            fi
+          fi
+        fi
+        }
+
+        export -f componentInstall
+
         # function save configuration 
         saveConfig() {
 
@@ -215,6 +241,10 @@ export THEME=$(xfconf-query -c xsettings -p /Net/IconThemeName)
         export -f defaultConfig
 
         editComConfig() {
+
+          if [[ -z "$(dpkg -l | grep -E '^ii' | grep -F ' compton-conf ')" ]]; then
+             componentInstall
+          fi
 
           origen="/home/${USER}/.config/compton.conf"
           testmode="/tmp/.comptontestmode"
@@ -291,6 +321,12 @@ if [[ -z  "$(dpkg -l | grep -E '^ii' | grep -F ' compton ')" ]]; then
   fi # exit on cancel
 else
 
+  # ensure compton-conf is installed
+  if [[ -z "$(dpkg -l | grep -E '^ii' | grep -F ' compton-conf ')" ]]; then
+    
+    componentInstall
+  fi
+
   # if a compton.conf file doesn't exist, add it
   [[ ! -f "/home/${USER}/.config/compton.conf" ]] && cp -f /usr/share/unlockme/tools/compton.conf "/home/${USER}/.config/"
   
@@ -332,8 +368,15 @@ display compositing conflicts.\n"
   # compton Main dialog
   
   case $COMPTON in
-    0)  if [[ "$_status" = "Enabled" ]]; then # stop
+    0)  if [[ "$_status" = "Enabled" ]]; then
+
+            # stop compton
             echo "#• Stopping ${_FNAME}..." ; sleep 1 ; killall -9 compton ; sleep .5
+
+            # ensure compton autostart exists
+            [[ ! -f "$AUTOSTART" ]] && cp -f /usr/share/unlockme/tools/compton.desktop "$AUTOSTART"
+
+            # disable compton autostart
             sed -i 's/Hidden=.*/Hidden=true/' "$AUTOSTART"
           else
             echo "#• Starting ${_FNAME}..." ; sleep 1
@@ -343,7 +386,14 @@ display compositing conflicts.\n"
               xfconf-query -c xfwm4 -p /general/use_compositing -t bool -s false ; sleep 2
               echo "#• Enabling ${_FNAME}..." ; sleep 1
             fi
+
+            # start compton
             compton -b ; sleep .5
+
+            # ensure compton autostart exists 
+            [[ ! -f "$AUTOSTART" ]] && cp -f /usr/share/unlockme/tools/compton.desktop "$AUTOSTART"
+
+            # enable compton autostart
             sed -i 's/Hidden=.*/Hidden=false/' "$AUTOSTART"
         fi
         ;;

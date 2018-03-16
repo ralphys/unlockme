@@ -152,6 +152,7 @@ ADMRUN="$@"
   if [[ $(grep "AUTOREMOVE" <<< "$ADMRUN") ]]; then ARRAYC+=('AUTOREMOVE'); fi
   if [[ $(grep "BYPASSPSWADMPKEXEC" <<< "$ADMRUN") ]]; then ARRAYC+=('BYPASSPSWADMPKEXEC'); fi
   if [[ $(grep "COMPTONWCPUSH" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONWCPUSH'); fi 
+  if [[ $(grep "COMPTONCONFINST" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONCONFINST'); fi 
   if [[ $(grep "COMPTONWCINST" <<< "$ADMRUN") ]]; then ARRAYC+=('COMPTONWCINST'); fi  
   if [[ $(grep "DNSCACHE" <<< "$ADMRUN") ]]; then ARRAYC+=('DNSCACHE'); fi
   if [[ $(grep "FIXDBXFCE2" <<< "$ADMRUN") ]]; then ARRAYC+=('FIXDBXFCE2'); fi
@@ -434,6 +435,27 @@ CONFPUSH=$(sed '/'"$SOFTUSR"'/d' <<< "$ALLUSERS" | awk '{ print $1}')
               --text="\n<span font='13'>UnlockMe</span>"
 echo "100"
 exit 0
+}
+
+# compton-conf install
+COMPTONCONFINST() {
+
+_FNAME="Compton Settings Editor"
+
+echo "# Installing ${_FNAME}..." ; sleep 1
+
+# check if package manager is running
+opt_procedure="exit 1" ; checkPackageManager
+
+( # install compton-conf
+echo "# Installing ${_FNAME}..."
+
+apt-get install compton-conf -y | showProgress ; checkInstall
+rm -f /usr/share/applications/compton-conf.desktop
+
+echo "#✔ Installation completed." ; sleep 1 ) | 
+      yad --text-align=center --progress --pulsate --auto-close --auto-kill --width="360" --height="110" --on-top \
+          --fixed --center --borders="10" --skip-taskbar --undecorated --no-buttons --text="<span font='13'>\nUnlockMe</span>"
 }
 
 # tweak compton compositor

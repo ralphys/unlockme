@@ -1036,7 +1036,7 @@ if  [[ -z "$(grep -F ' git ' <<< ${DPKGCHECKS[@]})" ]] ||
 	# check for running package manager
 	opt_procedure="break" ; checkPackageManager
 	echo "#• Installing requirements..." ; sleep 1 ; checkOnline 
-	apt-get install git automake autoconf pkg-config -y | showProgress
+	apt-get install git automake autoconf pkg-config libgtk-3-dev -y | showProgress
 fi
 
 # run checks

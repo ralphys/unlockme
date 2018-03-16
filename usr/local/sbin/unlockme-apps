@@ -2355,6 +2355,20 @@ _SOFTUSR=$(< "$unlockusr")
 # installed packages var
 DPKGCHECKS=$(dpkg -l | grep -E '^ii' | awk '{print $2}' | tail -n+5)
 
+# install missing requirements if needed
+if  [[ -z "$(grep -F ' git ' <<< ${DPKGCHECKS[@]})" ]] || 
+  [[ -z "$(grep -F ' curl ' <<< ${DPKGCHECKS[@]})" ]] ||
+  [[ -z "$(grep -F ' automake ' <<< ${DPKGCHECKS[@]})" ]] ||
+  [[ -z "$(grep -F ' autoconf ' <<< ${DPKGCHECKS[@]})" ]] ||
+  [[ -z "$(grep -F 'libgtk-3-dev' <<< ${DPKGCHECKS[@]})" ]] ||
+  [[ -z "$(grep -F ' pkg-config ' <<< ${DPKGCHECKS[@]})" ]]; then
+
+  # check for running package manager
+  opt_procedure="break" ; checkPackageManager
+  echo "#• Installing requirements..." ; sleep 1 ; checkOnline 
+  apt-get install git automake autoconf pkg-config libgtk-3-dev -y | showProgress
+fi
+
 # first run the checks
 CHECK
 
