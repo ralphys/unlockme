@@ -58,16 +58,18 @@ function install_unlockme () {
 
 	echo -e "✔ done!\n"
 
+	if [[ ! -f "/home/${_ADMUSER}/Desktop/UnlockMe.desktop" ]]; then
 	while true; do
     	read -p "  Would you like to add UnlockMe shortcut to your Desktop (y/n)?" yn
     	case $yn in
-        	[Yy]* ) yes | cp "/usr/share/applications/UnlockMe.desktop" "/home/$_ADMUSER/Desktop/"
-					chown "$_ADMUSER":"$_ADMUSER" "/home/$_ADMUSER/Desktop/UnlockMe.desktop" ; sleep .5
+        	[Yy]* ) yes | cp "/usr/share/applications/UnlockMe.desktop" "/home/${_ADMUSER}/Desktop/"
+					chown "$_ADMUSER":"$_ADMUSER" "/home/${_ADMUSER}/Desktop/UnlockMe.desktop" ; sleep .5
 					echo -e "✔ Shortcut created.\n" ; break ;;
         	[Nn]* ) echo -e "\n"; break ;;
         		* ) echo -e "\n  Please answer [Y]es or [N]o.\n" ;;
     	esac
 	done
+	fi
 	echo -e " ${VARINST} completed."
 	echo -e " -----------------------\n"
 }
