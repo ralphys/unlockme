@@ -481,7 +481,7 @@ _FFDEF=$(ls /home/${_SOFTUSR}/.mozilla/firefox/ | grep '.default')
 
 	rm -rf /usr/share/themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
 
-	for desktopuser in "${_ALLUSERS}"; do
+	for desktopuser in "$_ALLUSERS"; do
 
 		rm -rf /home/${desktopuser}/.local/share/themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
 		rm -rf /home/${desktopuser}/.themes/{Vertex,Vertex-Dark,Vertex-Light,Vertex-Gnome-Shell,Vertex-Gnome-Shell-3.16,Vertex-Cinnamon}
@@ -507,7 +507,7 @@ _FFDEF=$(ls /home/${_SOFTUSR}/.mozilla/firefox/ | grep '.default')
 	if  [[ -n "$(grep -F ' firefox ' <<< ${DPKGCHECKS[@]})" ]]; then
 
 		echo "#• Adding Vertex theme to Firefox..." ; sleep 1
-		cp -rf /tmp/vertex-theme/extra/Firefox/* "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
+		cp -rf /tmp/vertex-theme/extra/Firefox/* /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/
 		chown "$_SOFTUSR":"$_SOFTUSR" /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/{Vertex,Vertex-Dark,Vertex-Light}
 	fi
 	echo "#✔ Installation completed." ; sleep 1
@@ -521,7 +521,7 @@ else
   echo "#• Removing Firefox theme..." ; sleep 1
   rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/{Vertex,Vertex-Dark,Vertex-Light}
   rm -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
-  rm -f /usr/share/unlockme/set/VERTEXFFTH
+  rm -f "/usr/share/unlockme/set/VERTEXFFTH"
 
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
@@ -566,8 +566,8 @@ if [[ "$OPT" = "vdef" ]]; then
 
 	echo "#• Applying default Vertext theme..." ; sleep 1
 
-	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
-	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
+	cp -rf home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex/chrome /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
 
 	echo "vdef" > "$_LGFILE"
 	
@@ -575,8 +575,8 @@ elif [[ "$OPT" = "vdark" ]]; then
 
 	echo "#• Applying Dark Vertext theme..." ; sleep 1
 
-	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Dark/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
-	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
+	cp -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Dark/chrome /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
 
 	echo "vdark" > "$_LGFILE"
 
@@ -584,8 +584,8 @@ elif [[ "$OPT" = "vlight" ]]; then
 
 	echo "#• Applying Light Vertext theme..." ; sleep 1
 
-	cp -rf "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Light/chrome" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}"
-	chown -R "$_SOFTUSR":"$_SOFTUSR" "/home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome"
+	cp -rf /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/Vertex-Light/chrome /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/
+	chown -R "$_SOFTUSR":"$_SOFTUSR" /home/${_SOFTUSR}/.mozilla/firefox/${_FFDEF}/chrome
 
 	echo "vlight" > "$_LGFILE"
 
@@ -618,7 +618,7 @@ _TMPDIR="/tmp/arc-icon-theme"
 
 if [[ ! -d  "/usr/share/icons/Arc" ]]; then
 
-	echo "#• Downloading & Installing Arc Icon Theme..." ; sleep 1 ; checkOnline
+	echo "#• Downloading and installing Arc Icon Theme..." ; sleep 1 ; checkOnline
 	[[ -d "$_TMPDIR" ]] && rm -rf "$_TMPDIR"
 
 	if [[ ! -d "/usr/share/icons/Moka" ]]; then
@@ -938,7 +938,7 @@ else _arccolora=()
 fi
 
 # check for vertex-theme
-if [[ ! -d  "/usr/share/themes/Vertex" ]] || [[ ! -d  "/usr/share/themes/Vertex-Dark" ]] || [[ ! -d  "/usr/share/themes/Vertex-Light" ]] ; then
+if [[ ! -d  "/usr/share/themes/Vertex" ]] || [[ ! -d  "/usr/share/themes/Vertex-Dark" ]] || [[ ! -d  "/usr/share/themes/Vertex-Light" ]]; then
      _vertexth=(FALSE "$ICONDESKTHEME" "VERTEXTH" "Vertex Theme" "Desktop Theme" "Not Installed" "Vertext Desktop Theme")
 else _vertexth=(FALSE "$ICONDESKTHEME" "VERTEXTH" "Vertex Theme" "Desktop Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Vertext Desktop Theme")
 fi
