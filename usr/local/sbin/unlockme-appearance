@@ -351,7 +351,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 			for folders in ${_REMOCT}; do
 				rm -rf "$folders"
 			done
-			rm -f /usr/share/unlockme/set/BREEZELHCT
+			rm -f "/usr/share/unlockme/set/BREEZELHCT"
 		fi
 	fi
 
@@ -408,7 +408,7 @@ if [[ ! -f "$_LGFILE" ]]; then
 			for folders in ${_REMOCT}; do
 				rm -rf "$folders"
 			done
-			rm -f /usr/share/unlockme/set/BREEZECT
+			rm -f "/usr/share/unlockme/set/BREEZECT"
 		fi
 	fi
 
