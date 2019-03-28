@@ -1,0 +1,13 @@
+Kernel Swappiness:
+
+    The Linux kernel provides a tweakable setting that controls how often the
+    swap file is used, called swappiness.
+    
+    A high value improves file-system performance, while aggressively swapping
+    less active processes out of physical memory. A low value avoids swapping
+    processes out of memory, which usually decreases latency, at the cost of I/O 
+    performance.
+
+    Ubuntu system's default value is 60. Systems with adequate RAM for any expected 
+    task may want to drastically lower the setting.
+

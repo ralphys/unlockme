@@ -42,6 +42,9 @@ mintinfo="/etc/linuxmint/info"
 liteinfo="/etc/llver"
 ppminfo=$mintinfo
 
+# variable version
+lite_version=$(grep -F 'Lite' "$liteinfo" | cut -d \e -f2 | tr -d \.)
+
 # desktop environment file
 unlockds="/tmp/.unlockds"
 
@@ -1186,10 +1189,14 @@ fi
 
 # check for open as root - Thunar custom action 
 if which Thunar > /dev/null; then
-  if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep -i 'pkexec Thunar %F' "${_CAFILE}") ]]; then
-    _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "<span foreground='green'>Using pkexec to open folders in Thunar as Root (select to revert)</span>")
-  else 
-    _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "Use pkexec PolicyKit to open folders as Root in Thunar")
+  # if linuxlite version is newer than 4.2 hide this tweak
+  if [[ "$LLDENV" = "Lite" ]] && [[ "$lite_version" > 42 ]]; then
+    if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep -i 'pkexec Thunar %F' "${_CAFILE}") ]]; then
+      _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "<span foreground='green'>Using pkexec to open folders in Thunar as Root (select to revert)</span>")
+    else 
+      _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "Use pkexec PolicyKit to open folders as Root in Thunar")
+    fi
+  else openasroot_thunar=()
   fi
 fi
 
@@ -1327,16 +1334,6 @@ if [[ "$LLDENV" = "Lite" ]]; then
 fi
 } 
 
-
-
-
-
-
-
-
-
-
-
 # Function to display additional info in the second paned tab
 function displayInfo() {
   
@@ -1358,6 +1355,7 @@ case $2 in
   IPV6) echo -e "$(<${DETAILS}ipv6)" > "$info_pipe" ;;
   CHNAMEHOST) echo -e "$(<${DETAILS}chnamehost)" > "$info_pipe" ;;
   SYSCACHEPR) echo -e "$(<${DETAILS}syscachepr)" > "$info_pipe" ;;
+  SYSSWAP) echo -e "$(<${DETAILS}sysswap)" > "$info_pipe" ;;
   #*) echo "$(<${DETAILS}no_desc)" > "$info_pipe" ;;
   *) echo "$2" > "$info_pipe" ;;
   esac

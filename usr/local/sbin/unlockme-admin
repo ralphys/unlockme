@@ -1358,14 +1358,7 @@ _SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog
 _MDIALOGTITLE="UnlockMe - Adjust System Swappiness"
-_MDIALOGTXT="<span font='Bold 11'>\nSwappiness</span>\n
-The Linux kernel provides a ratio of preference to which the system favors anonymous memory\n or the page cache, known as swappiness.\n
-A high value improves file-system performance, while aggressively swapping less active processes
-out of physical memory. A low value avoids swapping processes out of memory, which usually
-decreases latency, at the cost of I/O performance.
-\nUbuntu system\'s default value is 60. Systems with more than adequate RAM for any expected 
-task may want to drastically lower the setting.
-\n<span font='Bold 11'>Recommended Swappiness Values</span>\n
+_MDIALOGTXT="<span font='Bold 11'>\n\nRecommended Swappiness Values</span>\n\n
 - Swappiness = 10  Recommended when sufficient RAM exists in a system
 - Swappiness = 60  Default system value
 - Swappiness = 100 The kernel will swap aggressively
@@ -1375,7 +1368,7 @@ A * 10 = B   (A, times 10, equals B)
 B   (the amount -in Megabytes- of free RAM left in the system before swapping)
 \n  ▼ <span font='12'> Set System Swappiness</span>"
 
-VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="590" --fixed --center \
+VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="520" --fixed --center \
             --title="$_MDIALOGTITLE" --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
             --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
