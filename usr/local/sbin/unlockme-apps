@@ -1544,7 +1544,7 @@ PLANK() {
     echo "#• Processing download..." ; sleep 1
     find /tmp/Plank-Themes -maxdepth 1 -type f -exec rm -rf '{}' \;
 
-    zenity --question --width=240 --height="120" --title="Plank Themes" --cancel-label="For All Users" --ok-label="For Me Only" \
+    zenity --question --width=280 --height="120" --title="Plank Themes" --cancel-label="For All Users" --ok-label="For Me Only" \
            --text="\nWould you like to install Plank themes for all users or just for your account?" 2>/dev/null
 
     if [[ "$?" = "0" ]]; then
@@ -2360,7 +2360,7 @@ fi
 
 # Main loop
 while (true); do
-  echo "# loading..."
+  echo "# ..."
 _SOFTUSR=$(< "$unlockusr")
 
 # installed packages var
@@ -2448,3 +2448,5 @@ fi
 RUN
 done
 exit 0
+
+

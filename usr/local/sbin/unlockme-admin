@@ -1291,7 +1291,7 @@ _MDIALOGTITLE="UnlockMe - Kernel Cache Pressure"
 # Main dialog
 VALCP=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="500" --height="320" --borders="8" \
             --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title="$_MDIALOGTITLE" \
-            --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+            --button=" Reset"\!gtk-refresh:2 --button="gtk-close":1 --button="gtk-apply":0 \
             --text="<span font='Bold 11'>\nRecommended Value</span>\n
 vfs_cache_pressure = 50\n
 * Increasing cache pressure significantly beyond 100 may have negative performance impact.
@@ -1369,7 +1369,7 @@ B   (the amount -in Megabytes- of free RAM left in the system before swapping)
 \n  ▼ <span font='12'> Set System Swappiness</span>"
 
 VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="520" --fixed --center \
-            --title="$_MDIALOGTITLE" --borders="8" --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
+            --title="$_MDIALOGTITLE" --borders="8" --button=" Reset"\!gtk-refresh:2 --button="gtk-close":1 --button="gtk-apply":0 \
             --scale --min-value="1" --max-value="100" --value="$_SWPNSS" --text="$_MDIALOGTXT")
 
   case $? in
