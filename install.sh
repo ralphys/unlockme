@@ -64,7 +64,7 @@ function install_unlockme () {
     	case $yn in
         	[Yy]* ) yes | cp "/usr/share/applications/UnlockMe.desktop" "/home/${_ADMUSER}/Desktop/"
 					chown "$_ADMUSER":"$_ADMUSER" "/home/${_ADMUSER}/Desktop/UnlockMe.desktop" 
-					chmod +x "$_ADMUSER":"$_ADMUSER" "/home/${_ADMUSER}/Desktop/UnlockMe.desktop" ; sleep .5
+					chmod +x "/home/${_ADMUSER}/Desktop/UnlockMe.desktop" ; sleep .5
 					echo -e "✔ Shortcut created.\n" ; break ;;
         	[Nn]* ) echo -e "\n"; break ;;
         		* ) echo -e "\n  Please answer [Y]es or [N]o.\n" ;;
