@@ -1,4 +1,5 @@
 Blacklist Generator:
+
     Downloads and aggregates a combination of actively maintained lists from
     GitHub to generate a custom blacklist.conf file used to block ads, adware,
     malware and tracking domains, via DNS. You can also whitelist and blacklist

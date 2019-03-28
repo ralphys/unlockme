@@ -1,9 +1,10 @@
 Browser cache:
-	The browser cache, sometimes also referred to as the temporary Internet files
-	folder, contains files from web sites you’ve visited. All modern web browsers
-	maintain a cache of files for one important reason - faster display of web pages
-	the next time you open those web sites.
 
-	Thus, instead of being retrieved from the online web server (the computer that
-	hosts the web site) each time, the files are picked from the browser cache (on
-	your computer) which speeds up the display of the web page.
+    The browser cache, sometimes also referred to as the temporary Internet files
+    folder, contains files from web sites you’ve visited. All modern web browsers
+    maintain a cache of files for one important reason - faster display of web pages
+    the next time you open those web sites.
+
+    Thus, instead of being retrieved from the online web server (the computer that
+    hosts the web site) each time, the files are picked from the browser cache (on
+    your computer) which speeds up the display of the web page.

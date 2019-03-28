@@ -1,4 +1,5 @@
 DNS Cache:
+
     A DNS (Domain Name System) cache is a temporary database, that contains records
     of recent DNS lookups that your computer can quickly refer to when it is trying
     to figure out how to load a website.\n
