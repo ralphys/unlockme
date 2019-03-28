@@ -1,0 +1,12 @@
+Kernel Cache Pressure:
+    Defines how the system will choose to cache inode and dentry information over
+    other data.\n
+    Basically, this is access data about the filesystem. It is generally very costly
+    to look up and also very frequently requested, so it's an excellent thing for
+    your system to cache.\n
+    At the default value (100), the kernel will attempt to reclaim dentries and
+    inodes at a 'fair' rate with respect to pagecache and swapcache reclaim.\n
+    Decreasing cache pressure causes the kernel to prefer to retain dentry and
+    inode caches.\n 
+    Increasing cache pressure beyond 100 causes the kernel to prefer to reclaim
+    dentries and inodes.

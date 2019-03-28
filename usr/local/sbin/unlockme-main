@@ -28,7 +28,7 @@ export NO_AT_BRIDGE=1
 
 # check for additional instances
 if pidof -o %PPID -x "unlockme-main" >/dev/null; then
-        zenity --info --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
+        zenity --info --width="300" --title="Unclockme" --text="\nAnother Unlockme instance is already running." 2>/dev/null
         exit 0
 fi
 
@@ -56,6 +56,9 @@ PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 # desktop users
 ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
 
+# get linuxlite lsb_release
+[[ -f "$liteinfo" ]] && lsb_rel="$(lsb_release -sc)"
+
 # check requirements
 if [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\syad\s')" ]] || 
    [[ -z  "$(dpkg -l | grep -E '^ii' | grep '\sgit\s')" ]] || 
@@ -82,7 +85,7 @@ yad --width="340" --height="110" --info --center --skip-taskbar --undecorated --
                   --text='\n\n\n<span font="14">Getting Ready</span>\n<span font="11"> \n  please wait...\n</span>' & 
 
 # linuxlite specific | failsafe not to use default linuxlite yad package
-if [[ "$LLDENV" == "Lite" ]]; then grep -q "yad" < /etc/apt/preferences
+if [[ "$LLDENV" = "Lite" ]] && [[ "$liteinfo" = "xenial" ]]; then grep -q "yad" < /etc/apt/preferences
     
     if [[ "$?" != "0" ]]; then
      bash unlock-req-install
@@ -824,34 +827,27 @@ ARRAYA=()    # Array for non-admin tasks
 ARRAYB=()    # Array for admin tasks
 
 # array A definitions
-ARRAYADEF=(BLOCKHOSTS CHROMECACHE CHROMEPROFILE CHROMIUMCACHE CHROMIUMPROFILE COMPTONWC FIREFOXCACHE FFOXPROFILE FIXDBCIN \
-           FIXDBXFCE ICONTHEMESERIK MIDORICACHE MIDORIPROFILE OPERACACHE OPERAPROFILE PALEMOONCACHE PALEMOONPROFILE \
-           PRELOAD SEAMONKEYCACHE SEAMONKEYPROFILE SYSSWAP THUMBNAILS TRASHBIN VIVALDICACHE \
-           VIVALDIPROFILE WATERFOXCACHE WATERFOXPROFILE WHISKERMREST ZRAM ZSWAP NULL)
-
-# array B definitions
-ARRAYBDEF=(AUTOREMOVE BYPASSPSWADMPKEXEC DNSCACHE IPV6 MGMTSAVESESSION OPENASROOT_THUNAR OPENTERM_HERE THEMING SOFTINST LITECCMODS \
-           LOGARCHIVES LXTERMWINSIZE CHNAMEHOST PACKAGECACHE RESIDCONFIG SYSCACHEPR SAMBASVR NULL)
-
- SELECTRUN=${#selection[@]}
-
-# construct arrays from user selection
-for (( i=0; i<${SELECTRUN}; i++ ))
- do
-  grep -q "${selection[${i}]}" <<< "${ARRAYADEF[@]}" && ARRAYA+=("${selection[${i}]}")
-  grep -q "${selection[${i}]}" <<< "${ARRAYBDEF[@]}" && ARRAYB+=("${selection[${i}]}")
-
-  # remove selections
-  # remove preload from array
-  if grep -q 'PRELOAD' <<< "${selection[${i}]}"; then
-
-      # if kernel swappiness is set in /etc/sysctl.conf display info  
-      if [[ -n "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]]; then
-
-      # remove
-      REMOVE="PRELOAD"
-      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
-
+if [[ $(grep "BLOCKHOSTS" < "$selection_temp") ]]; then ARRAYA+=('BLOCKHOSTS'); fi
+if [[ $(grep "CHROMECACHE" < "$selection_temp") ]]; then ARRAYA+=('CHROMECACHE'); fi
+if [[ $(grep "CHROMEPROFILE" < "$selection_temp") ]]; then ARRAYA+=('CHROMEPROFILE'); fi
+if [[ $(grep "CHROMIUMCACHE" < "$selection_temp") ]]; then ARRAYA+=('CHROMIUMCACHE'); fi
+if [[ $(grep "CHROMIUMPROFILE" < "$selection_temp") ]]; then ARRAYA+=('CHROMIUMPROFILE'); fi
+if [[ $(grep "COMPTONWC" < "$selection_temp") ]]; then ARRAYA+=('COMPTONWC'); fi
+if [[ $(grep "FIREFOXCACHE" < "$selection_temp") ]]; then ARRAYA+=('FIREFOXCACHE'); fi
+if [[ $(grep "FFOXPROFILE" < "$selection_temp") ]]; then ARRAYA+=('FFOXPROFILE'); fi
+if [[ $(grep "FIXDBCIN" < "$selection_temp") ]]; then ARRAYA+=('FIXDBCIN'); fi
+if [[ $(grep "FIXDBXFCE" < "$selection_temp") ]]; then ARRAYA+=('FIXDBXFCE'); fi
+if [[ $(grep "ICONTHEMESERIK" < "$selection_temp") ]]; then ARRAYA+=('ICONTHEMESERIK'); fi
+if [[ $(grep "MIDORICACHE" < "$selection_temp") ]]; then ARRAYA+=('MIDORICACHE'); fi
+if [[ $(grep "MIDORIPROFILE" < "$selection_temp") ]]; then ARRAYA+=('MIDORIPROFILE'); fi
+if [[ $(grep "OPERACACHE" < "$selection_temp") ]]; then ARRAYA+=('OPERACACHE'); fi
+if [[ $(grep "OPERAPROFILE" < "$selection_temp") ]]; then ARRAYA+=('OPERAPROFILE'); fi
+if [[ $(grep "PALEMOONCACHE" < "$selection_temp") ]]; then ARRAYA+=('PALEMOONCACHE'); fi
+if [[ $(grep "PALEMOONPROFILE" < "$selection_temp") ]]; then ARRAYA+=('PALEMOONPROFILE'); fi
+if [[ $(grep "PRELOAD" < "$selection_temp") ]]; then
+  
+  # if kernel swappiness is set in /etc/sysctl.conf display info  
+  if [[ -n "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]]; then
         zenity --warning --width="380" --window-icon="info" --icon-name="info" \
                --title="Custom kernel swappiness detected" \
                --text="\nYou must reset Kernel Swappiness to defaults before enabling Preload. \
@@ -859,21 +855,16 @@ for (( i=0; i<${SELECTRUN}; i++ ))
 It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness set in the system while also using Preload. \
 \n\nYou can reset Kernel Swappiness using UnlockMe App Kernel Swappiness tweak.\n" 2>/dev/null
-      else
-        ARRAYB+=('PRELOAD')
-      fi
+  else
+       ARRAYB+=('PRELOAD')
   fi
-
-  # remove kernel swappiness from array
-  if grep -q 'SYSSWAP' <<< "${selection[${i}]}"; then
-    
-      # if preload is installed display info
-      if [[ -n "$(dpkg -l | grep -E '^ii' | grep '\spreload\s\s')" ]]; then
-
-      # remove
-      REMOVE="SYSSWAP"
-      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
-
+fi
+if [[ $(grep "SEAMONKEYCACHE" < "$selection_temp") ]]; then ARRAYA+=('SEAMONKEYCACHE'); fi
+if [[ $(grep "SEAMONKEYPROFILE" < "$selection_temp") ]]; then ARRAYA+=('SEAMONKEYPROFILE'); fi
+if [[ $(grep "SYSSWAP" < "$selection_temp") ]]; then 
+  
+  # if preload is installed display info
+  if [[ -n "$(dpkg -l | grep -E '^ii' | grep '\spreload\s\s')" ]]; then
         zenity --warning --width="420" --title="preload daemon detected" --window-icon="info" --icon-name="info" \
                --text="\nYou must remove Preload from the system before manually adjusting kernel swappiness. \
 \n\nPreload is an adaptive readahead daemon that prefetches files mapped by applications from the disk to reduce their startup time. \
@@ -881,62 +872,71 @@ It already favors and makes use of the kernel page cache. \
 \n\nContrary to common online tweakguides advises, there should not be a custom vm.swappiness defined while also running Preload. \
 \nYou can remove Preload using UnlockMe App or by executing the following command from Terminal: \
 \n\n~$ <b>sudo apt-get remove preload -y</b> \n" 2>/dev/null
-      else
-        ARRAYB+=('SYSSWAP')  
-      fi
-  fi 
+    else
+      ARRAYB+=('SYSSWAP')  
+    fi
+fi 
+if [[ $(grep "THUMBNAILS" < "$selection_temp") ]]; then ARRAYA+=('THUMBNAILS'); fi
+if [[ $(grep "TRASHBIN" < "$selection_temp") ]]; then ARRAYA+=('TRASHBIN'); fi
+if [[ $(grep "VIVALDICACHE" < "$selection_temp") ]]; then ARRAYA+=('VIVALDICACHE'); fi
+if [[ $(grep "VIVALDIPROFILE" < "$selection_temp") ]]; then ARRAYA+=('VIVALDIPROFILE'); fi
+if [[ $(grep "WATERFOXCACHE" < "$selection_temp") ]]; then ARRAYA+=('WATERFOXCACHE'); fi
+if [[ $(grep "WATERFOXPROFILE" < "$selection_temp") ]]; then ARRAYA+=('WATERFOXPROFILE'); fi
+if [[ $(grep "WHISKERMREST" < "$selection_temp") ]]; then ARRAYA+=('WHISKERMREST'); fi
+if [[ $(grep "ZRAM" < "$selection_temp") ]]; then 
 
-  # remove zram from array
-  if grep -q 'ZRAM' <<< "${selection[${i}]}"; then
-    
-      # if zswap is installed display info
-      if [[ "$VARZSWAP" == "Y" || -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
-
-        # remove
-        REMOVE="ZRAM"
-        ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
-
+    #if zswap is installed display info
+    if [[ "$VARZSWAP" == "Y" || -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
         zenity --warning --width="340" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
                --text="\nZSWAP is currently enabled in your system. ZSWAP and ZRAM must not be enabled at the same time. \
 \n\nPlease disable ZSWAP before enabling ZRAM." 2>/dev/null
-      else
+    else
         ARRAYB+=('ZRAM')
-      fi
-  fi
-
-  # remove zswap from array
-  if grep -q 'ZSWAP' <<< "${selection[${i}]}"; then
-    
-    # check for pending restart
-    if [[ "$VARZSWAP" == "Y" && -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]] || [[ "$VARZSWAP" == "N" && -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+    fi
+fi
+if [[ $(grep "ZSWAP" < "$selection_temp") ]]; then
+  # check for pending restart
+  if [[ "$VARZSWAP" == "Y" && -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]] || 
+     [[ "$VARZSWAP" == "N" && -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
       
-      # display restart pending message
-      zenity --question --width="360" --height="120" --title=" Pending Restart" \
-             --text="\nThe computer must be restarted for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
+    # display restart pending message
+    zenity --question --width="360" --height="120" --title=" Pending Restart" \
+           --text="\nThe computer must be restarted for changes to take effect.\n\nWould you like to reboot now?" 2>/dev/null
 
       # restart if acknowledged  
-        if [[ "$?" = "0" ]]; then
-          systemctl reboot
-        else
-          continue
-        fi
-    fi
+      if [[ "$?" = "0" ]]; then systemctl reboot; else return; fi
+  fi
 
-    # if zram is installed display info
-    if [[ "$VARZRAM" == "ii" ]]; then
-
-      # remove
-      REMOVE="ZSWAP"
-      ARRAYB=( "${ARRAYB[@]/$REMOVE}" )
+  # if zram is installed display info
+  if [[ "$VARZRAM" == "ii" ]]; then
 
       zenity --warning --width="360" --height="80" --title=" zRAM detected" --window-icon="info" --icon-name="info" \
              --text="\nzRAM is currently enabled in your system. zRAM and zSWAP must not be enabled at the same time.\n\n\
 Please disable zRAM before enabling zSWAP." 2>/dev/null
-    else
-      ARRAYB+=('ZSWAP')
-    fi
+  else
+    ARRAYB+=('ZSWAP')
   fi
-done
+fi
+
+# array B definitions
+if [[ $(grep "AUTOREMOVE" < "$selection_temp") ]]; then ARRAYB+=('AUTOREMOVE'); fi
+if [[ $(grep "BYPASSPSWADMPKEXEC" < "$selection_temp") ]]; then ARRAYB+=('BYPASSPSWADMPKEXEC'); fi
+if [[ $(grep "DNSCACHE" < "$selection_temp") ]]; then ARRAYB+=('DNSCACHE'); fi
+if [[ $(grep "IPV6" < "$selection_temp") ]]; then ARRAYB+=('IPV6'); fi
+if [[ $(grep "MGMTSAVESESSION" < "$selection_temp") ]]; then ARRAYB+=('MGMTSAVESESSION'); fi
+if [[ $(grep "OPENASROOT_THUNAR" < "$selection_temp") ]]; then ARRAYB+=('OPENASROOT_THUNAR'); fi
+if [[ $(grep "OPENTERM_HERE" < "$selection_temp") ]]; then ARRAYB+=('OPENTERM_HERE'); fi
+if [[ $(grep "THEMING" < "$selection_temp") ]]; then ARRAYB+=('THEMING'); fi
+if [[ $(grep "SOFTINST" < "$selection_temp") ]]; then ARRAYB+=('SOFTINST'); fi
+if [[ $(grep "LITECCMODS" < "$selection_temp") ]]; then ARRAYB+=('LITECCMODS'); fi
+if [[ $(grep "LOGARCHIVES" < "$selection_temp") ]]; then ARRAYB+=('LOGARCHIVES'); fi
+if [[ $(grep "LXTERMWINSIZE" < "$selection_temp") ]]; then ARRAYB+=('LXTERMWINSIZE'); fi
+if [[ $(grep "CHNAMEHOST" < "$selection_temp") ]]; then ARRAYB+=('CHNAMEHOST'); fi
+if [[ $(grep "PACKAGECACHE" < "$selection_temp") ]]; then ARRAYB+=('PACKAGECACHE'); fi
+if [[ $(grep "RESIDCONFIG" < "$selection_temp") ]]; then ARRAYB+=('RESIDCONFIG'); fi
+if [[ $(grep "SYSCACHEPR" < "$selection_temp") ]]; then ARRAYB+=('SYSCACHEPR'); fi
+if [[ $(grep "SAMBASVR" < "$selection_temp") ]]; then ARRAYB+=('SAMBASVR'); fi
+
 }
 
 RUN() {
@@ -984,7 +984,7 @@ fi
 # Check Autoremove packages
 if [[ -f "$_DRYAPT" ]] && [[ "$(head -n+1 < "$_DRYAPT")" -gt 0 ]]; then
      _DRYAPTVAL=$(head -n+1 < "$_DRYAPT")
-     _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "You can remove ${_DRYAPTVAL} packages that are no longer necessary")
+     _autoremove=(FALSE "AUTOREMOVE" "Autoremove Packages" "Cleanup" "System" "${_DRYAPTVAL} unnecessary packages found")
 else _autoremove=()
 fi
 
@@ -992,7 +992,7 @@ fi
 if [[ -s /etc/NetworkManager/dnsmasq.d/blacklist ]]; then
       blocked_count=$(wc -l /etc/NetworkManager/dnsmasq.d/blacklist | cut -d\/ -f1)
      _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "<span foreground='green'>${blocked_count} undesirable hosts blacklisted - (select to modify)</span>")
-else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware and tracking domains")
+else _blockhosts=(FALSE "BLOCKHOSTS" "Blacklist Generator" "Management" "System" "Block ads, adware, malware, tracking domains")
 fi
 
 # Check for bypass pkexec password prompt
@@ -1030,8 +1030,8 @@ fi
 # check for compton compositor
 if [[ "$LMDENV" = "Xfce" || "$LLDENV" = "Lite" || "$PPMDENV" =~ "PeppermintOS" ]]; then
   if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
-       _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Compton Compositor for beautiful tear free compositing")
-  else _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "<span foreground='green'>Compton Compositor is currently installed - (select to modify)</span>")
+       _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Beautiful tear free compositing")
+  else _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "<span foreground='green'>Currently installed - (select to modify)</span>")
   fi
 else  _comptonwc=()
 fi
@@ -1039,7 +1039,7 @@ fi
 # Check for dns cache tweak
 if [[ ! -f "/etc/NetworkManager/dnsmasq.d/cache" ]]; then
      _dnscache=(FALSE "DNSCACHE" "Enable DNS Cache" "Management" "System" "Enable DNS Cache")
-else _dnscache=(FALSE "DNSCACHE" "DNS Cache" "Management" "System" "<span foreground='green'>DNS Cache Enabled - (select to modify)</span>")
+else _dnscache=(FALSE "DNSCACHE" "DNS Cache" "Management" "System" "<span foreground='green'>DNS Cache enabled - (select to modify)</span>")
 fi
 
 # check for dropbox Cinnamon Fix
@@ -1077,7 +1077,7 @@ fi
 # check for firefox browser cache
 if [[ -d "${HOME}/.cache/mozilla/firefox" && $(du -sb "${HOME}/.cache/mozilla/firefox" | cut -f1) -ge 1048576 ]]; then
      FFCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/firefox/" 2>&1 | awk '{print $1"B"}')
-     firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from your Firefox browser cache")
+     firefoxcache=(FALSE "FIREFOXCACHE" "Firefox Cache" "Cleanup" "User" "You can remove $FFCACHESIZE from the browser cache")
 else firefoxcache=()
 fi
 
@@ -1089,14 +1089,14 @@ fi
 
 # Check enable / disable IPv6 tweak
 if [[ $(< /proc/sys/net/ipv6/conf/all/disable_ipv6) = "1" ]]; then
-     _ipv6=(FALSE "IPV6" "Enable IPv6" "Management" "System" "<span foreground='green'>IPv6 has been disabled - Select to Enable IPv6</span>")
+     _ipv6=(FALSE "IPV6" "Enable IPv6" "Management" "System" "<span foreground='green'>IPv6 disabled - Select to Enable IPv6</span>")
 else _ipv6=(FALSE "IPV6" "Disable IPv6" "Management" "System" "Disable IPv6")
 fi
 
 # check for kernel cache pressure
 if [[ $(< /proc/sys/vm/vfs_cache_pressure) != "100" ]]; then
-     _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom kernel cache pressure applied - (select to modify)</span>")
-else _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Controls how the kernel reclaims memory used for caching")
+     _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom seetings applied - (select to modify)</span>")
+else _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Tune kernel memory caching")
 fi
 
 # check for kernel swappiness
@@ -1117,7 +1117,7 @@ if [[ "$LLDENV" = "Lite" && -n "$(dpkg -l | grep -E '^ii' | grep '\s\slite-contr
 fi
 
 # lxterminal geometry size | linuxlite specific
-if [[ "$LLDENV" = "Lite" ]]; then
+if [[ "$LLDENV" = "Lite" ]] && [[ "lsb_rel" = "xenial" ]]; then
        _lxtermwinsize=(FALSE "LXTERMWINSIZE" "LXTerminal Geometry" "Management" "System" "Change default LXTerminal geometry in Linux Lite (system-wide)")
   else _lxtermwinsize=()
 fi
@@ -1163,10 +1163,10 @@ fi
 
 # Check for Change Hostname 
 if [[ "$LMDENV" =~ "Cinnamon" ]]; then
-     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (Logout required)")
+     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Management" "System" "Change computer hostname (logout required)")
 elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LMDENV" =~ "MATE" ]] || [[ "$LLDENV" =~ "Lite" ]] || 
      [[ "$PPMDENV" =~ "PeppermintOS" ]] || [[ $DESKTOP_SESSION = 'budgie-desktop' ]]; then
-     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Change Hostname" "System" "Change the computer hostname. (no restart required)")
+     _chnamehost=(FALSE "CHNAMEHOST" "Hostname" "Management" "System" "Change computer hostname")
 else _chnamehost=()
 fi
 
@@ -1186,7 +1186,7 @@ fi
 
 # check for open as root - Thunar custom action 
 if which Thunar > /dev/null; then
-  if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep 'pkexec Thunar %F' "${_CAFILE}") ]]; then
+  if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep -i 'pkexec Thunar %F' "${_CAFILE}") ]]; then
     _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "<span foreground='green'>Using pkexec to open folders in Thunar as Root (select to revert)</span>")
   else 
     _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "Use pkexec PolicyKit to open folders as Root in Thunar")
@@ -1196,11 +1196,11 @@ fi
 # check for Open terminal Here - linuxlite specific 
 if [[ "$LLDENV" = "Lite" ]]; then
   _CHKFILE="/etc/skel/.config/Thunar/uca.xml"
-  _CHKNEWL="<command>x-terminal-emulator -t &quot;Command Line&quot; --working-directory=%f"
+  _CHKNEWL="<command>exo-open --working-directory %f --launch TerminalEmulator"
   if [[ -n $(grep -F "$_CHKNEWL" "$_CHKFILE") && -n $(grep 'Open Terminal Here' "${_CHKFILE}") ]]; then
-    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "<span foreground='green'>Terminal opens in the selected folder (select to revert)</span>")
+    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "<span foreground='green'>Opens in the selected folder (select to revert)</span>")
   else 
-    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "Fixes custom action so that LXTerminal opens in the selected folder")
+    _openterm_here=(FALSE "OPENTERM_HERE" "Open Terminal Here" "Custom Action" "User" "Fix custom action to open Terminal in the selected folder")
   fi
 fi
 
@@ -1291,10 +1291,10 @@ if [[ $(cat /boot/config-$(uname -r) | grep -i zswap | cut -d= -f2) == "y" ]]; t
   else 
       if [[ "$VARZSWAP" == "Y" ]] && [[ -z "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
        # pending reboot for removal
-        _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "Performance" "System" "<span foreground='green'>zSWAP is currently enabled - (select to modify)</span>")
+        _zswap=(FALSE "ZSWAP" "zSWAP <span foreground='red'>(Pending restart) ¡¡</span>" "Performance" "System" "<span foreground='green'>zSWAP enabled - (select to modify)</span>")
       else
        # zswap installed
-       _zswap=(FALSE "ZSWAP" "zSWAP" "Performance" "System" "<span foreground='green'>zSWAP is currently enabled - (select to modify)</span>")
+       _zswap=(FALSE "ZSWAP" "zSWAP" "Performance" "System" "<span foreground='green'>zSWAP enabled - (select to modify)</span>")
      fi
   fi
 fi
@@ -1326,6 +1326,43 @@ if [[ "$LLDENV" = "Lite" ]]; then
   fi
 fi
 } 
+
+
+
+
+
+
+
+
+
+
+
+# Function to display additional info in the second paned tab
+function displayInfo() {
+  
+# description folder path  
+DETAILS="/usr/share/unlockme/tools/descriptions/"
+
+# Formfeed character \f clears text info diaolg
+echo -e "\f" > "$info_pipe"
+
+case $2 in
+  THEMING) echo -e "$(<${DETAILS}theming)" > "$info_pipe" ;;
+  SOFTINST) echo -e "$(<${DETAILS}softinst)" > "$info_pipe" ;;
+  AUTOREMOVE) echo -e "$(<${DETAILS}autoremove)" > "$info_pipe" ;;
+  BLOCKHOSTS) echo -e "$(<${DETAILS}blockhosts)" > "$info_pipe" ;;
+  COMPTONWC) echo -e "$(<${DETAILS}comptonwc)" > "$info_pipe" ;;
+  DNSCACHE) echo -e "$(<${DETAILS}dnscache)" > "$info_pipe" ;;
+  FIREFOXCACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  ICONTHEMESERIK) echo -e "$(<${DETAILS}iconthemeserik)" > "$info_pipe" ;;
+  IPV6) echo -e "$(<${DETAILS}ipv6)" > "$info_pipe" ;;
+  CHNAMEHOST) echo -e "$(<${DETAILS}chnamehost)" > "$info_pipe" ;;
+  SYSCACHEPR) echo -e "$(<${DETAILS}syscachepr)" > "$info_pipe" ;;
+  #*) echo "$(<${DETAILS}no_desc)" > "$info_pipe" ;;
+  *) echo "$2" > "$info_pipe" ;;
+  esac
+}
+export -f displayInfo
 
 # Main loop
 while (true); do
@@ -1372,16 +1409,28 @@ elif [[ $(uname -a | grep -F "ubuntu-mate" | awk '{print $2}') == 'ubuntu-mate' 
 else DISTRO="$(cut -d\\ -f1 < /etc/issue)"
 fi
 
+# Create a key for the plug dialog
+unlockme_key="$(($RANDOM * $$))"
+
+export info_pipe="$(mktemp -u /tmp/UnLockmE_XXXXX).$RANDOM-$$"
+mkfifo -m 0600 "$info_pipe"
+
+# temp file to export selection
+export selection_temp="$(mktemp  /tmp/SeleXXXion_XXXXX_UnlockMe)"
+
+# Trap to remove temp files
+trap "rm -f $info_pipe $selection_temp" EXIT
+
+exec 3<> $info_pipe
+
 # main dialog
-selection=$(yad --list --checklist --width="880" --height="600" --window-icon="$ICON" --image="$ICON" --separator=" " \
-                --search-column="3" --image-on-top --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --title=" $_APPNAME" \
+
+yad --plug="$unlockme_key" \
+                --tabnum=1 --list --checklist  --separator=" " --search-column="3" --hide-column="2" --print-column=2 \
                 --column="Select" --column="SELECTION" --column="Name" --column="Task" \
-                --column="Category" --column="Description" --hide-column="2" --print-column=2 \
-                --text="<span font='9'>${DISTRO}\n</span> 
-<span font='9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
-You can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>" \
-"FALSE" "THEMING" "Appearance" "Install or Remove" "System" "A selection of popular desktop themes, icons and cursors" \
-"FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Install and remove selected commonly used applications" \
+                --column="Category" --column="Description" --select-action='bash -c "displayInfo %s"' \
+"FALSE" "THEMING" "Appearance" "Install or Remove" "System" "Icons, cursors and desktop themes" \
+"FALSE" "SOFTINST" "Application Software" "Install or Remove" "System" "Commonly used applications collection" \
 "${_autoremove[@]}" \
 "${_blockhosts[@]}" \
 "${chromecache[@]}" \
@@ -1394,7 +1443,7 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_ipv6[@]}" \
 "${firefoxcache[@]}" \
 "${_chnamehost[@]}" \
-"FALSE" "ICONTHEMESERIK" "Icon Themes" "Install or Remove" "User" "Colorful icon themes collection for linux desktops by Erik Dubois" \
+"FALSE" "ICONTHEMESERIK" "Icon Themes" "Install or Remove" "User" "Colorful icon themes collection by Erik Dubois" \
 "${_syscachepr[@]}" \
 "${_sysswap[@]}" \
 "${_logarchives[@]}" \
@@ -1426,11 +1475,19 @@ You can select multiple tasks for sequential execution (Administrative privilege
 "${_seamonkeyprofile[@]}" \
 "${_vivaldiprofile[@]}" \
 "${_waterfoxprofile[@]}" \
-"${_sambasrv[@]}")
+"${_sambasrv[@]}" >$selection_temp &
+
+yad --plug="$unlockme_key" --tabnum=2 --text="Details" --text-info <&3  &
+
+yad --center --paned --key="$unlockme_key" --button="gtk-quit:1" --button=" Begin"\!gtk-apply:0 --width="900" --height="640" \
+    --window-icon="$ICON" --image-on-top --image="$ICON" --title=" $_APPNAME" --orient=vert --splitter=400 \
+    --text="<span font='9'>${DISTRO}\n</span>
+<span font='9'>Select the task(s) you wish to perform, then click the Begin button. Sort by clicking on the columns header. 
+You can select multiple tasks for sequential execution (Administrative privileges are required for some tasks).</span>\n" 
 
 if [[ "$?" = "1" || "$?" = "252" ]]; then _CLEANUP; exit 0 ; fi # If Quit or (X) is clicked then exit
 
-grep -q '[a-zA-Z0-9]' <<< "$selection"
+grep -q '[a-zA-Z0-9]' "$selection_temp"
 
 if [[ "$?" != "0" ]]; then
   zenity --info --ok-label="Go Back" --width="260" --height="80" --title=" $_APPNAME" \

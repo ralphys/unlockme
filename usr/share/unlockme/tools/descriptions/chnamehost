@@ -1,0 +1,9 @@
+Hostname:
+    A hostname is the label (the name) assigned to a device (a host) on a network
+    and is used to distinguish one device from another on a specific network or over
+    the internet.\n
+    The hostname for a computer on a home network may be something like UserLaptop,
+    Guest-Desktop, or FamilyPC.\n
+    Hostnames are also used by DNS servers so you can access a website by a common,
+    easy-to-remember name to avoid having to remember a string of numbers
+    (an IP address) just to open a website.

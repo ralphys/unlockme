@@ -1,0 +1,19 @@
+IPv6:
+    If your PC is connecting to a network that doesn't use or need IPv6 support,
+    (most home networks for example) you can disable IPv6.\n
+    IPv6 is short for "Internet Protocol Version 6". IPv6 is the Internet's
+    next-generation protocol, designed to replace the current Internet Protocol,
+    IP Version 4.\n
+    In order to communicate over the Internet, computers and other devices must have
+    sender and receiver addresses. These numeric addresses are known as Internet
+    Protocol addresses. As the Internet and the number of people using it grows
+    exponentially, so does the need for IP addresses.\n
+    IPv6 is a standard developed by the Internet Engineering Task Force, an organization
+    that develops Internet technologies. The IETF, anticipating the need for more IP
+    addresses, created IPv6 to accommodate the growing number of users and devices
+    accessing the Internet.\n 
+    IPv6 allows more users and devices to communicate on the Internet by using bigger
+    numbers to create IP addresses. Under IPv4, every IP address is 32 bits long, which
+    allows 4.3 billion unique addresses. In comparison, IPv6 addresses are 128 bits, 
+    which allow for approximately three hundred and forty trillion, trillion unique IP
+    addresses.

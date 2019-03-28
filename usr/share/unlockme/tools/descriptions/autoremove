@@ -1,0 +1,4 @@
+Autoremove:
+    Autoremove is used to remove packages that were automatically installed to satisfy
+    dependencies for other packages and are now no longer needed. These packages are
+    generally safe to remove.

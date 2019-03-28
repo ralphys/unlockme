@@ -26,7 +26,10 @@ export LANG=C.UTF-8
 
 _APPNAME="UnlockMe"
 _APPICON="/usr/share/unlockme/icons/ui/run.png"
-LLDENV="$(awk '{print $2, $3}' < /etc/llver | cut -d. -f1)"
+
+if [[ -f "/etc/llver" ]]; then
+  LLDENV="$(awk '{print $2, $3}' < /etc/llver | cut -d. -f1)"
+fi
 
 check_internet=$(wget -q -t2 --spider https://www.google.com ; echo $?) 
 
@@ -67,8 +70,11 @@ Those processes will be terminated before continuing.\n\nWould you like to proce
 fi
 
 # add webupd8 repo
-if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]]; then
-  add-apt-repository ppa:nilarimogard/webupd8 -y
+if [[ "$LLDENV" != "Lite 4" ]]; then
+  if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep 'webupd8\s')" ]]; then
+    add-apt-repository ppa:nilarimogard/webupd8 -y
+  fi
+else :
 fi
 
 ) | zenity --progress --pulsate --window-icon="$_APPICON" --width="400" --height="80" \

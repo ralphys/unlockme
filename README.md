@@ -1,19 +1,14 @@
 # UnlockMe
 ## License ![License](https://img.shields.io/badge/license-GPLv2-green.svg)
-Bash script App based on Yad and Zenity for Linux Mint Xfce, Cinnamon, MATE, Linux Lite and others
+Bash script App based on Yad and Zenity for Linux Lite, Linux Mint Xfce, Linux Mint Cinnamon & Linux Mint MATE
 
 ## Authors
 - [Ralphy](https://github.com/ralphys)
 
 ## Tested on
 
-- Linux Mint Cinnamon 18.x (xenial)
-- Linux Mint MATE 18.x (xenial)
-- Linux Mint Xfce 18.x (xenial)
 - Linux Lite 3.x (xenial)
-- Ubuntu MATE 16.04 (xenial)
-- Ubuntu Budgie (budgie-remix) 16.04 (xenial)
-- Peppermint 8 (xenial)
+- Linux Lite 4.x (bionic)
 
 Report issues and feel free to suggest your own fixes/tweaks/script improvements.
 

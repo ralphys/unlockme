@@ -953,9 +953,13 @@ else _vertexffth=()
 fi
 
 # check for papirus-icon-theme
-if  [[ -z "$(grep -F ' papirus-icon-theme ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _papirusit=(FALSE "$ICONICTHEME" "PAPIRUSIT" "Papirus" "Icon Theme" "Not Installed" "Papirus, Papirus Dark, Papirus Light, ePapirus")
-else _papirusit=(FALSE "$ICONICTHEME" "PAPIRUSIT" "Papirus" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Papirus, Papirus Dark, Papirus Light, ePapirus")
+if [[ -f "$liteinfo" ]] && [[ "$(awk '{print $2, $3}' < ${liteinfo} | cut -d. -f1)" = "Lite 4" ]]; then
+	_papirusit=()
+else
+	if  [[ -z "$(grep -F ' papirus-icon-theme ' <<< ${DPKGCHECKS[@]})" ]]; then
+    	 _papirusit=(FALSE "$ICONICTHEME" "PAPIRUSIT" "Papirus" "Icon Theme" "Not Installed" "Papirus, Papirus Dark, Papirus Light, ePapirus")
+	else _papirusit=(FALSE "$ICONICTHEME" "PAPIRUSIT" "Papirus" "Icon Theme" "<span foreground='green'>Installed - Select to Remove</span>" "Papirus, Papirus Dark, Papirus Light, ePapirus")
+	fi
 fi
 
 # check for arc icon theme

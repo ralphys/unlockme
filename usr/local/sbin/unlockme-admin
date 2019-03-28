@@ -59,6 +59,9 @@ DENV=$(test -f "$mintinfo" && grep -F 'EDITION' "$mintinfo" | cut -d\" -f2 | awk
 LLD=$(test -f "$liteinfo" && grep -F 'Lite' "$liteinfo" | awk '{print $2}')
 PPMD=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 
+# get lsb_release
+lsb_rel="$(lsb_release -sc)"
+
 # DISTRO
 if [[ -f "$mintinfo" ]]; then 
     
@@ -614,18 +617,18 @@ else
 fi
 
 _MDIALOGTITLE="UnlockMe - Manage DNS Cache"
-_MDIALOGTXT="\nNetwork Manager DNS Cache\n
-Only enable DNS cache if you are a single user on your computer 
-and you're in network that you control such as your home network.\n
-Do not use DNS cache if you are connected to public networks,
-otherwise protect and encrypt your dns requests with DNSCrypt.\n
+_MDIALOGTXT="\nOnly enable DNS cache if you are in network that you control
+such as your home network.\n
 • DNSSEC Validation
-  Your upstream DNS provider must support DNSSEC,
-  otherwise you will lose connectivity.\n"
+  For DNSSEC Validation your upstream DNS provider must support
+  DNSSEC, otherwise your computer will lose DNS resolution.\n
+  DNSSEC aware Upstream Providers:
+  Cloudflare - DNS servers: 1.1.1.1, 1.0.0.1
+  Google DNS - DNS servers: 8.8.8.8, 8.8.4.4\n"
 
-answd=$(yad --list --checklist --fixed --center --borders=8 --width=420 --height=390 --window-icon="$RUN_ICON" \
+answd=$(yad --list --checklist --fixed --center --borders=8 --width=440 --height=420 --window-icon="$RUN_ICON" \
             --title="$_MDIALOGTITLE" --text="$_MDIALOGTXT" --dclick-action= --no-selection --image="$DLGICON" --icon-name="$RUN_ICON" \
-            --separator="|" --no-headers --button=gtk-close:1 --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-apply:0 \
+            --separator="|" --no-headers --button=" Flush DNS"\!gtk-refresh:2 --button=gtk-close:1 --button=gtk-apply:0 \
             --column="Select" --column="Selector" --column="Description" --hide-column="2" --print-column="2" \
             ${_cachestatus} "cachestatus" "$_cachetxt" \
             ${_dnssecstatus} "dnssecstatus" "$_dnssectxt" \
@@ -641,11 +644,15 @@ fi
 # flush dns cache
 if [[ "$execute" = "2" ]]; then 
 
-  echo "# Flushing DNS cache..."
+  echo "# Flushing DNS cache..." ; sleep 1
   if [[ -n  "$(dpkg -l | grep -E '^ii' | grep '\snscd\s')" ]]; then
     /etc/init.d/nscd restart ; sleep 3
   else
-    service network-manager restart ; sleep 3
+    if [[ "$lsb_rel" != "bionic" ]]; then
+      service network-manager stop && service network-manager start ; sleep 3
+    else
+      systemd-resolve --flush-caches
+    fi
   fi
   echo "#✔ DNS cache flushed." ; sleep 1
   continue
@@ -724,6 +731,23 @@ max-cache-ttl=86400' > "$_TTL" ; sleep 1
 echo "#• Restarting Network Manager..." 
 service network-manager restart ; sleep 2
 
+fail_dialog="Don't panic. Your internet connectivity failed after applying the latest changes. \
+All changes will be reverted. Report this issue to the developer at https://unlockforus.com/contact/."
+
+let COUNT=0
+  until ping -q -c1 google.com >/dev/null
+  do
+      echo "#• Waiting for Network Manager to restart..."
+      sleep 3
+      let COUNT=COUNT+1
+    if (( $COUNT == "3" )); then
+      echo "# Internet not reachable..."
+      zenity --error --width="340" --height="160" --title="Oppss, something went wrong" --text="$fail_dialog" 2>/dev/null
+      echo "#• Disabling DNS Cache..." ; sleep 1
+      disableDnsCache
+      exit 1
+    fi
+  done
 done
 }
 
@@ -1027,14 +1051,14 @@ _FNAME="Thunar"
 _UCAFILE=".config/Thunar/uca.xml"
 echo "# ${_FNAME} Custom Action - Open as Root..."
 
-if [[ -z $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
+if [[ -z $(grep -i 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
 
   killThunar
   
   echo "# Updating Custom Action - Open as Root..." ; sleep 1
 
   for desktopuser in ${ALLUSERS}; do
-    sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
+    sed -i 's/<command>gksudo exo-open %f<\/command>/<command>pkexec Thunar %f<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
     sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
   done
 
@@ -1048,10 +1072,10 @@ if [[ -z $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
   fi
 
   if [[ "$DISTRO" = "Linux Mint" && "$DENV" = "Xfce" ]]; then
-    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %F<\/command>/' "/etc/xdg/xdg-xfce/Thunar/uca.xml"
+    sed -i 's/<command>gksu Thunar %F<\/command>/<command>pkexec Thunar %f<\/command>/' "/etc/xdg/xdg-xfce/Thunar/uca.xml"
   fi
   
-  if [[ -n $(grep 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
+  if [[ -n $(grep -i 'pkexec Thunar %F' "/home/${SOFTUSR}/${_UCAFILE}") ]]; then
     echo "# pkexec PolicyKit applied." ; sleep 2
   else
     echo "# An error occurred while applying changes." ; sleep 1
@@ -1063,11 +1087,13 @@ else
 
   for desktopuser in ${ALLUSERS}; do
     sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
+    sed -i 's/<command>pkexec thunar %f<\/command>/<command>gksu Thunar %F<\/command>/' "/home/${desktopuser}/${_UCAFILE}"
   done
 
   # restore linuxlite
   if [[ "$LLD" = "Lite" ]]; then
     sed -i 's/<command>pkexec Thunar %F<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/skel/${_UCAFILE}"
+    sed -i 's/<command>pkexec thunar %f<\/command>/<command>gksu Thunar %F<\/command>/' "/etc/skel/${_UCAFILE}"
   fi
 
   # restore linuxmint
@@ -1089,7 +1115,7 @@ OPENTERM_HERE() {
 _FNAME="Open Terminal Here"
 _UCAFILE=".config/Thunar/uca.xml"
 _CHKFILE="/etc/skel/.config/Thunar/uca.xml"
-_CHKLINE="<command>x-terminal-emulator -t &quot;Command Line&quot; --working-directory=%f"
+_CHKLINE="<command>exo-open --working-directory %f --launch TerminalEmulator"
 
 echo "# ${_FNAME}..."
 
@@ -1097,13 +1123,14 @@ if [[ -z $(grep -F "$_CHKLINE" "$_CHKFILE") ]]; then
   
   echo "# Updating Custom Action..." ; sleep 1
   killThunar
-  sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "$_CHKFILE"
+  sed  -i 's/<command>x-terminal-emulator -t.*/<command>exo-open --working-directory %f --launch TerminalEmulator<\/command>/' "$_CHKFILE"
 
   echo "# Updating for all users..." ; sleep 1
 
   for desktopuser in ${ALLUSERS}; do
     if [[ -z $(grep -F "$_CHKLINE" "/home/${desktopuser}/${_UCAFILE}") ]]; then
-      sed  -i 's/\(<command>x-terminal-emulator -t &quot;Command\sLine&quot;\)/\1 --working-directory=%f/' "/home/${desktopuser}/${_UCAFILE}"
+      sed  -i 's/<command>x-terminal-emulator -t.*/<command>exo-open --working-directory %f --launch TerminalEmulator<\/command>/' \
+      "/home/${desktopuser}/${_UCAFILE}"
     fi
   done
   echo "# Custom Action update applied." ; sleep 2
@@ -1113,10 +1140,11 @@ else
   echo "# Reverting Custom Action update..." ; sleep 1 
   killThunar
 
-  sed -i 's/\s--working-directory=%f//' "$_CHKFILE"
+  sed  -i 's/exo-open --working-directory %f --launch TerminalEmulator/x-terminal-emulator -t "Command Line"/' "$_CHKFILE"
 
   for desktopuser in ${ALLUSERS}; do
-    sed -i 's/\s--working-directory=%f//' "/home/${desktopuser}/${_UCAFILE}"
+    sed  -i 's/exo-open --working-directory %f --launch TerminalEmulator/x-terminal-emulator -t "Command Line"/' \
+    "/home/${desktopuser}/${_UCAFILE}"
   done
   echo "# Custom Action update reverted." ; sleep 2
 fi
@@ -1261,18 +1289,13 @@ _CACHEPR="$(cat /proc/sys/vm/vfs_cache_pressure)"
 _MDIALOGTITLE="UnlockMe - Kernel Cache Pressure"
 
 # Main dialog
-VALCP=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height="540" --borders="8" \
-            --fixed --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title="$_MDIALOGTITLE" \
+VALCP=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="500" --height="320" --borders="8" \
+            --center --scale --value="$_CACHEPR" --min-value="1" --max-value="150" --title="$_MDIALOGTITLE" \
             --button="gtk-close":1 --button=" Reset"\!gtk-refresh:2 --button="gtk-apply":0 \
-            --text="<span font='Bold 11'>\nCache Pressure</span>\n\nDefines how the system will choose to cache inode and dentry information over other data.
-\nBasically, this is access data about the filesystem. It is generally very costly to look up and also\nvery frequently requested, so it's an excellent thing for your system to cache.
-\nAt the default value (100), the kernel will attempt to reclaim dentries and inodes at a 'fair' rate\nwith respect to pagecache and swapcache reclaim.
-\nDecreasing cache pressure causes the kernel to prefer to retain dentry and inode caches. 
-Increasing cache pressure beyond 100 causes the kernel to prefer to reclaim dentries and inodes.
-\n<span font='Bold 11'>Recommended Value</span>\n
-vfs_cache_pressure = 50
+            --text="<span font='Bold 11'>\nRecommended Value</span>\n
+vfs_cache_pressure = 50\n
 * Increasing cache pressure significantly beyond 100 may have negative performance impact.
-\n\n  ▼ <span font='Bold 12'> Set Cache Pressure</span>")
+\n\n  ▼ <span font='Bold 11'> Set Cache Pressure</span>")
 
   case $? in
       0)  if [[ "$_CACHEPR" = "$VALCP" ]]; then
@@ -1583,7 +1606,7 @@ SAMBASVR() {
   echo "# Disabling samba service..."
 
   if [[ -n $(pgrep -f 'smbd') ]]; then
-    if zenity --question --title="$APPNAME - Confirm" --text="\nYou are about to disable Samba. Would you like to proceed?" 2>/dev/null; then
+    if zenity --question --width="340" --title="$APPNAME - Confirm" --text="\nYou are about to disable Samba. Would you like to proceed?" 2>/dev/null; then
       
       # disable services smbd, nmbd
       systemctl stop smbd && systemctl disable smbd

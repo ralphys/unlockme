@@ -1,0 +1,10 @@
+Blacklist Generator:
+    Downloads and aggregates a combination of actively maintained lists from
+    GitHub to generate a custom blacklist.conf file used to block ads, adware,
+    malware and tracking domains, via DNS. You can also whitelist and blacklist
+    specific domains manually during the generation wizard.\n
+    Undesirable domains are blocked using services already available in your system
+    such as Network Manager and dnsmasq. When a blacklisted domain is requested, dnsmasq
+    responds with a non-routable address that describes an invalid or unknown target.\n
+    Optionally, you can enable DNS cache (see Enable DNS Cache tweak)
+    for increased performance.

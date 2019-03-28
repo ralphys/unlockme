@@ -98,6 +98,9 @@ PPMDENV=$(test -f "$ppminfo" && grep -F 'DESCRIPTION' "$ppminfo" | cut -d\" -f2)
 # desktop users
 _ALLUSERS=$(grep "/bin/bash" < /etc/passwd | grep "[1][0-9][0-9][0-9]" | cut -d: -f1)
 
+# get linuxlite lsb_release
+[[ -f "$liteinfo" ]] && lite_lsb_rel="$(lsb_release -sc)"
+
 # Set up log facilities
 # Example output: [02/06/15 20:03:12] message input
 LOGFILE="/var/log/unlockme.log"
@@ -1324,23 +1327,20 @@ else
 fi 
 }
 
+# MintUpdate-lite for linuxlite
 MINTUPDATEAPP() {
 
 _FNAME="Update Manager"
 
-  if [[ -z "$(grep -F ' mintupdate-lite ' <<< ${DPKGCHECKS[@]})" ]]; then
+if [[ -z "$(grep -F ' mintupdate-lite ' <<< ${DPKGCHECKS[@]})" ]]; then
   
     echo "# ${_FNAME}..." ; checkOnline
-    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-${lite_lsb_rel})" ]]; then
   
-      echo "#• Adding Repository & key..." ; sleep 1
-
-      # linuxlite
-      if [[ $(lsb_release -sc) = "xenial" ]]; then
-        echo "deb https://unlockforus.com/repository/dists/xenial/ /" | tee /etc/apt/sources.list.d/unlockforus-xenial.list
-        curl -s https://unlockforus.com/repository/keyFile | apt-key add -
-        updateSources
-      fi
+          echo "#• Adding Repository & key..." ; sleep 1
+          echo "deb https://unlockforus.com/repository/dists/${lite_lsb_rel}/ /" | tee /etc/apt/sources.list.d/unlockforus-${lite_lsb_rel}.list
+          curl -s https://unlockforus.com/repository/keyFile | apt-key add -
+          updateSources
     fi
       # just install it
       echo "#• Installing ${_FNAME}..." ; sleep 1
@@ -2224,11 +2224,12 @@ if [[ "$LLDENV" = "Lite" ]]; then
 fi
 
 # check for mintupdate-lite
-if [[ "$LLDENV" = "Lite" ]]; then
+if [[ "$LLDENV" = "Lite" ]] && [[ "$lite_lsb_rel" = "xenial" || "$lite_lsb_rel" = "bionic" ]]; then
   if [[ -z "$(grep -F ' mintupdate-lite ' <<< ${DPKGCHECKS[@]})" ]]; then
        _mintupdateapp=(False "$_APPICONS/mintupdate.png" "MINTUPDATEAPP" "Update Manager" "Utility" "No" "Helps installing security updates and new versions of packages")
   else _mintupdateapp=(False "$_APPICONS/mintupdate.png" "MINTUPDATEAPP" "Update Manager" "Utility" "<span foreground='green'>Select to Remove</span>" "Helps installing security updates and new versions of packages")
   fi
+else _mintupdateapp=()
 fi
 
 # check for neofetch
@@ -2447,4 +2448,3 @@ fi
 RUN
 done
 exit 0
-
