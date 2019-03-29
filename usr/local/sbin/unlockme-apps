@@ -438,6 +438,10 @@ if [[ -z "$(grep -F ' conky-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
   # check internet connection
   echo "#• Downloading ${_FNAME}..." & sleep 1 ; checkOnline
 
+# Xenial 16.x
+
+  if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+
     # if PPA is not installed; add it
     if [[ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep teejee2008)" ]]; then
 
@@ -457,6 +461,48 @@ if [[ -z "$(grep -F ' conky-manager ' <<< ${DPKGCHECKS[@]})" ]]; then
       echo "#• Installing ${_FNAME}..." ; sleep 1
       apt-get install conky-manager -y | showProgress ; checkInstall
     fi
+  fi
+
+  # Bionic 18.x
+
+  if [[ $(lsb_release -sc) =~ ^(tara|tessa|diamond|bionic)$ ]]; then
+
+    cd /tmp
+
+        # install conky manager if not installed
+          if [[ -z "$(grep -F ' conky ' <<< ${DPKGCHECKS[@]})" ]]; then
+            echo "#• Installing conky..." ; sleep 1
+            apt-get install conky -y | showProgress ; checkInstall
+          fi
+
+        # install realpath if not installed
+          if [[ -z "$(grep -F ' realpath ' <<< ${DPKGCHECKS[@]})" ]]; then
+            echo "#• Downloading realpath..." ; sleep 1
+            get_download http://launchpadlibrarian.net/340091846/realpath_8.26-3ubuntu4_all.deb
+            echo "#• Installing realpath..." ; sleep 1
+            dpkg -i realpath_8.26-3ubuntu4_all.deb && rm -f realpath_8.26-3ubuntu4_all.deb
+          fi
+
+    # install conky manager
+    echo "#• Downloading ${_FNAME}..." ; sleep 1
+    if [[ "$ARCH" = "x86_64" ]]; then 
+      # download 64 bit
+      get_download https://github.com/teejee2008/conky-manager/releases/download/v2.4/conky-manager-v2.4-amd64.deb
+        
+      # install 64 bit
+      echo "#• Installing ${_FNAME}..." ; sleep 1
+      dpkg -i conky-manager-v2.4-amd64.deb && rm -f conky-manager-v2.4-amd64.deb
+
+    else
+      # download 32 bit
+      get_download https://github.com/teejee2008/conky-manager/releases/download/v2.4/conky-manager-v2.4-i386.deb
+        
+      # install 32 bit
+      echo "#• Installing ${_FNAME}..." ; sleep 1
+      dpkg -i conky-manager-v2.4-i386.deb      
+    fi
+
+  fi
 
   # check if ZIPPERS are installed; if not add them now
   if [[ -z "$(grep -F ' p7zip-full ' <<< ${DPKGCHECKS[@]})" ]]; then ZIPPERS; fi
@@ -484,7 +530,7 @@ else
 
   # remove conky manager
   echo "#• Uninstalling ${_FNAME}..." ; sleep 1
-  apt-get remove --purge conky-manager -y | showProgress ; checkRemoval
+  apt-get remove --purge conky-manager realpath -y | showProgress ; checkRemoval
 
   [[ -d "/home/${_SOFTUSR}/.conky/unlockme" ]] && rm -rf /home/${_SOFTUSR}/.conky/unlockme
 
@@ -2448,4 +2494,3 @@ fi
 RUN
 done
 exit 0
-
