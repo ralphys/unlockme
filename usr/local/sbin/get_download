@@ -69,7 +69,7 @@ DYNAMIC_COUNTER="1"
 
 # Set GUI variables up
 TITLE="UnlockMe - Downloading..."                 # dialog title
-TEXT="\n<b>Download</b> in progress:\n- ${FILENAME}\n\n<span font='8'>** Downloads are always resumed. **</span>" # dialog text
+TEXT="\n<b>Download</b> in progress:\n- ${FILENAME}\n" # dialog text
 ICON="emblem-downloads"                     # window icon (appears in launcher)
 IMAGE="browser-download"                    # window image (appears in dialog)
 

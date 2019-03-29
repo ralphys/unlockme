@@ -973,18 +973,11 @@ grep 'SaveSession=NONE' < "$kioskrc" && selector3="TRUE" || selector3="FALSE"
 grep 'SaveSession=%sudo' < "$kioskrc" && selector2="TRUE" || selector2="FALSE"
 
 # mgmtsavesession main dialog
-dialog='\nYou have probably noticed the "Save session for future logins"
-option in the shutdown dialog.\n
-Some users may inadvertently save their sessions on logout
-and become confused wondering why there are so many 
-applications popping up during login.\n
-As Administrator you can enable, limit or disable the ability
-to save sessions on logout.\n'
 
 answd=$(yad --list --radiolist --dclick-action= --title="$APPNAME" --window-icon="$RUN_ICON" \
-            --text="$dialog" --fixed --no-selection --borders="8" --center --width="580" --height="350" \
+            --text="\n" --fixed --no-selection --borders="8" --center --width="500" --height="340" \
             --image="$_imgheader" --button="gtk-close:1" --button="gtk-apply:0" --print-column=2 --separator="" \
-            --column="▼":RD --column="ANSW":HD --column="Save Session Options":TEXT \
+            --column=" ▼":RD --column="ANSW":HD --column="Save Session Options":TEXT \
             ${selector1} "30" "Enable for all users" \
             ${selector2} "20" "Enable for administrators" \
             ${selector3} "10" "Disable for all users")

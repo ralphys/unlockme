@@ -99,6 +99,7 @@ fi
 _CLEANUP() {
   [[ -e "$TMPUSRFL" ]] && rm -f "$TMPUSRFL"
   [[ -e "$unlockds" ]] && rm -f "$unlockds"         # desktop session file
+  rm -f /tmp/SeleXXXion_* /tmp/UnLockmE_*
 }
 
 # function - remove browser profile 
@@ -980,7 +981,7 @@ _CAFILE="${HOME}/.config/Thunar/uca.xml"                                # Custom
 
 # Manage Save Session
 if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
-     _mgmtsavesession=(FALSE "MGMTSAVESESSION" "Manage Save Session" "Management" "System" "Enable or disable users ability of saving their session on logout")
+     _mgmtsavesession=(FALSE "MGMTSAVESESSION" "Manage Save Session" "Management" "System" "Set users ability of saving sessions on logout")
 else _mgmtsavesession=()
 fi
 
@@ -1356,6 +1357,7 @@ case $2 in
   CHNAMEHOST) echo -e "$(<${DETAILS}chnamehost)" > "$info_pipe" ;;
   SYSCACHEPR) echo -e "$(<${DETAILS}syscachepr)" > "$info_pipe" ;;
   SYSSWAP) echo -e "$(<${DETAILS}sysswap)" > "$info_pipe" ;;
+  MGMTSAVESESSION) echo -e "$(<${DETAILS}mgmtsessions)" > "$info_pipe" ;;
   #*) echo "$(<${DETAILS}no_desc)" > "$info_pipe" ;;
   *) echo "$2" > "$info_pipe" ;;
   esac

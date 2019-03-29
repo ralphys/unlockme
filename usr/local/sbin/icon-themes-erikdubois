@@ -154,16 +154,17 @@ PackSelect=($(yad --list --checklist --width=760 --height=550 --separator=" " --
             --title="$IconTPS" --text="$ITPMDTEXT" \
             --column "▼"  --column "Icon Theme" \
             "${list[@]}" \
-            --button="gtk-cancel":1 \
-            --button="Clear all!gtk-clear":'bash -c "clearAll"' \
             --button="Select all!gtk-refresh":'bash -c "selectAll"' \
+            --button="Clear all!gtk-clear":'bash -c "clearAll"' \
+            --button="gtk-cancel":1 \
             --button="Next!gtk-ok":0 \
             --listen --print-column=2 < $PIPE_03))
 action=$?
 
 # When Quit or (X) is clicked break
 if [[ "$action" = "1" || "$action" = "252" ]]; then
-  rm -rf "$TMPDIR" & break 1  
+  echo "# Cancelling..."
+  rm -rf "$TMPDIR" ; sleep 1 ; exit 0
 fi 
 
 Pack_Selected="${PackSelect[@]}"
@@ -216,8 +217,8 @@ echo "#• ${FNAME} icons..." ; checkOnline
 
 FILELG="$INSTLOG/Sardi"
 export TMPDIR="/tmp/sardi"
-PKGVER=$(curl -s https://sourceforge.net/projects/sardi/files/?source=navbar | grep 'class="name">sardi-icons-9' | tail -n1 | cut -d\> -f2 | cut -d\< -f1)
-URLDL="https://svwh.dl.sourceforge.net/project/sardi/$PKGVER"
+PKGVER=$(curl -s https://unlockforus.com/repository/downloads/icon-themes/sardi | grep 'sardi-icons-' | head -n1 | cut -d\> -f2 | cut -d\< -f1)
+URLDL="https://unlockforus.com/repository/downloads/icon-themes/sardi/$PKGVER"
 FNAMEDL=$PKGVER
 
   # check if installed
@@ -226,7 +227,7 @@ FNAMEDL=$PKGVER
     # if not installed and no previous download is found in /tmp, download 
     if [[ ! -f "/tmp/$FNAMEDL" ]]; then
       echo "#• Downloading $FNAME icons..." ; sleep 1 ; checkOnline 
-      cd /tmp ; get_download "$URLDL"
+      cd /tmp ;  get_download "$URLDL"
     fi
 
     cd /tmp
@@ -290,7 +291,7 @@ export FNAME="Sardi-Extra"
 FNAMEDL="sardi-extra.zip"
 FILELG="$INSTLOG/Sardi_Extra"
 export TMPDIR="/tmp/Sardi-Extra-master"
-URLDL="https://github.com/erikdubois/Sardi-Extra/archive/master.zip"
+URLDL="https://unlockforus.com/repository/downloads/icon-themes/sardi/master.zip"
 
 echo "#• $FNAME icons..." && sleep 1
 
@@ -341,8 +342,9 @@ Surfn() {
 export FNAME="Surfn"
 FNAMEDL="surfn.zip"
 FILELG="$INSTLOG/Surfn"
-export TMPDIR="/tmp/Surfn-master"
-URLDL="https://github.com/erikdubois/Surfn/archive/master.zip"
+TMPTOPDIR="/tmp/Surfn-master"
+export TMPDIR="/tmp/Surfn-master/surfn-icons"
+URLDL="https://unlockforus.com/repository/downloads/icon-themes/surfn/master.zip"
 
 echo "#• ${FNAME} icons..." ; sleep 1
 
@@ -355,20 +357,20 @@ echo "#• ${FNAME} icons..." ; sleep 1
         
       cd /tmp 
       [[ -f master.zip ]] && mv -f master.zip "$FNAMEDL"
-      [[ -d "$TMPDIR" ]] && rm -rf "$TMPDIR"
+      [[ -d "$TMPTOPDIR" ]] && rm -rf "$TMPTOPDIR"
 
       echo "#• Extracting $FNAME download..." ; sleep 1
       unzip "$FNAMEDL" | showProgress ; checkDownload
 
-      find "$TMPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
+      find "$TMPTOPDIR" -maxdepth 1 -type f -exec rm -rf '{}' \;
       echo "#• ${IconTPS}..." ; sleep .5
 
       # icon theme selector
       ICONTHEMESELECTOR
 
       echo "#• Installing ${FNAME} icons..." ; sleep 1
-      cd "$TMPDIR"
-        for i in ${Pack_Selected[@]}; do
+      cd "$TMPDIR/"
+      for i in ${Pack_Selected[@]}; do
         cp -rf $i "$ICONFLD"
       done
 
@@ -379,7 +381,7 @@ echo "#• ${FNAME} icons..." ; sleep 1
       echo "$FNAME" > "$FILELG"
       echo "${Pack_Selected[@]}" | tr " " "\n" | tee -a "$FILELG" && sed -i 's#^#'"$ICONFLD/"'#' "$FILELG" 
 
-      rm -rf "$TMPDIR" 
+      rm -rf "$TMPTOPDIR" 
       echo "#✔ Installation completed." ; sleep 1
       
   else
@@ -443,7 +445,7 @@ MDTEXT="\n<span font='13'>Colourful Icon Theme Collection For The Linux Desktop<
 ICONPACK=$(yad --list --multiple --dclick-action= --width=900 --height=600 --image="$APPICON" --window-icon="$APPICON" \
                --column=" :IMG" --column="Name" --column="Description" --hide-column="2" --print-column=2 --separator=" " \
                --button=" Update icon theme cache"\!gtk-refresh:2 --button="gtk-close":1 --button="Go"\!gtk-ok:0 \
-               --title="Icon Theme Installer" --text="$MDTEXT" --wrap --wrap-width="350" \
+               --title="Icon Themes By Erik Dubois" --text="$MDTEXT" --wrap --wrap-width="350" \
                "$PREVIMG0" "Sardi"        "$Sardi_description" \
                "$PREVIMG1" "Sardi-Extra"  "$Sardi_Extra_description" \
                "$PREVIMG2" "Surfn"        "$Surfn_description") 
