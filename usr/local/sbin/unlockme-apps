@@ -530,7 +530,11 @@ else
 
   # remove conky manager
   echo "#• Uninstalling ${_FNAME}..." ; sleep 1
-  apt-get remove --purge conky-manager realpath -y | showProgress ; checkRemoval
+  apt-get remove --purge conky-manager -y | showProgress ; checkRemoval
+
+    if [[ $(lsb_release -sc) =~ ^(tara|tessa|diamond|bionic)$ ]]; then
+      apt-get remove --purge realpath -y | showProgress ; checkRemoval
+    fi
 
   [[ -d "/home/${_SOFTUSR}/.conky/unlockme" ]] && rm -rf /home/${_SOFTUSR}/.conky/unlockme
 
@@ -2494,3 +2498,4 @@ fi
 RUN
 done
 exit 0
+
