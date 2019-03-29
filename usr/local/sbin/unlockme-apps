@@ -861,8 +861,26 @@ _RM_DUPLICATE="dropbox.com"
       elif [[ "$LMDENV" =~ "MATE" ]]; then
         echo "# Installing integration for Caja..."; apt-get install caja-dropbox -y
       elif [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then
-        echo "# Installing integration for Thunar..."; apt-get install python-gpgme -y ; locale-gen ; apt-get install thunar-dropbox-plugin -y
-      else :
+
+        echo "# Installing integration for Thunar..."
+        if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+            # kill thunar if running 
+            if [[ -n $(pidof Thunar) ]]; then 
+              echo "# Terminating Thunar instances..." ; sleep 2 ; killall Thunar 
+            fi
+              echo "# Installing integration for Thunar..."
+              apt-get install python-gpgme thunar-dropbox-plugin -y | showProgress ; checkInstall
+              pkill -HUP xfdesktop ; sleep 1
+        else
+          # kill thunar if running
+            if [[ -n $(pidof Thunar) ]]; then 
+              echo "# Terminating Thunar instances..." ; sleep 2 ; killall Thunar 
+            fi
+              echo "# Installing integration for Thunar..."
+              apt-get install python-gpg thunar-dropbox-plugin -y | showProgress ; checkInstall
+              pkill -HUP xfdesktop ; sleep 1
+        fi
+      else continue
       fi
     fi
   }
@@ -875,17 +893,20 @@ _RM_DUPLICATE="dropbox.com"
 
     # uninstall dropbox
     echo "#• Uninstalling dropbox..." ; sleep 1
-    apt-get remove --purge dropbox python-gpgme -y | showProgress ; checkRemoval
+    if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+      apt-get remove --purge dropbox python-gpgme -y | showProgress ; checkRemoval
+    else
+      apt-get remove --purge dropbox python-gpg -y | showProgress ; checkRemoval
+    fi
 
     for desktopuser in ${_ALLUSERS}; do 
         rm -f "/home/${desktopuser}/.config/autostart/dropbox.desktop"
     done
 
-    # uninstall file manager extension linuxmint|linuxlite|budgie - nemo, caja, thunar, nautilus
+    # uninstall file manager extension linuxmint|linuxlite - nemo, caja, thunar
     if [[ "$LMDENV" =~ "Cinnamon" ]]; then apt-get remove --purge nemo-dropbox -y | showProgress; fi
     if [[ "$LMDENV" =~ "MATE" ]]; then apt-get remove --purge caja-dropbox -y | showProgress; fi
-    if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then apt-get remove --purge thunar-dropbox-plugin -y | showProgress; fi
-    if [[ "$UBDENV" =~ "budgie-desktop" ]]; then apt-get remove --purge nautilus-dropbox -y | showProgress; fi
+    if [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then apt-get remove --purge thunar-dropbox-plugin -y | showProgress ; checkRemoval ; fi
 
     removeDuplicatedRepo
   }
@@ -905,9 +926,14 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
     # add PPA
     echo "#• Adding PPA..." ; sleep 1
   
-    # linuxmint|linuxlite specific
+    # linuxmint|linuxlite specific 16.x xenial
     if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
       add-apt-repository "deb http://linux.dropbox.com/ubuntu xenial main"
+    fi
+
+    # linuxmint|linuxlite specific 18.x bionic
+    if [[ $(lsb_release -sc) =~ ^(tara|tessa|diamond|bionic)$ ]]; then
+      add-apt-repository "deb http://linux.dropbox.com/ubuntu bionic main"
     else
       # ubuntu general
       add-apt-repository "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main"
@@ -927,12 +953,15 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
     # install dropbox & python-gpgme
     echo "# Downloading and installing ${_FNAME}..." ; checkOnline 
 
-    apt-get install dropbox python-gpgme -y | showProgress ; checkInstall
+    if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
+      apt-get install dropbox python-gpgme -y | showProgress ; checkInstall
+    else
+      apt-get install dropbox python-gpg -y | showProgress ; checkInstall
+    fi
 
     # install file manager extension linuxmint|linuxlite - nemo, caja, thunar
     if  [[ "$LMDENV" =~ "Cinnamon" ]] || [[ "$LMDENV" =~ "MATE" ]] ||
-        [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]] ||
-        [[ "$PPMDENV" =~ "PeppermintOS" ]]; then 
+        [[ "$LMDENV" =~ "Xfce" ]] || [[ "$LLDENV" =~ "Lite" ]]; then 
       instExtensionFM
     fi
 
@@ -941,9 +970,14 @@ if [[ -z "$(grep '\(\sdropbox\s\s\|\snautilus-dropbox\s\)' <<< ${DPKGCHECKS[@]})
     # add dropbox.list repo to /etc/apt/sources.list.d/
     [[ ! -f "$_SOURCELIST" ]] && touch "$_SOURCELIST"
 
-    # linuxmint|linuxlite specific
+    # linuxmint|linuxlite specific 16.x xenial
     if [[ $(lsb_release -sc) =~ ^(sarah|serena|sonya|sylvia|citrine)$ ]]; then
       echo "deb http://linux.dropbox.com/ubuntu xenial main" | tee "$_SOURCELIST"
+    fi
+
+    # linuxmint|linuxlite specific 18.x bionic
+    if [[ $(lsb_release -sc) =~ ^(tara|tessa|diamond|bionic)$ ]]; then
+      echo "deb http://linux.dropbox.com/ubuntu bionic main" | tee "$_SOURCELIST"
     else
       # ubuntu general
       echo "deb http://linux.dropbox.com/ubuntu $(lsb_release -sc) main" | tee "$_SOURCELIST"
@@ -1977,7 +2011,6 @@ fi
 WATERFOXWB() {
 
 _FNAME="Waterfox"
-_WFVERFL="/tmp/waterfox-project.txt"
 _WFDIR="/usr/lib/waterfox"
 
 # if package has been installed, remove it
@@ -2002,16 +2035,10 @@ if [[ ! -d "$_WFDIR" ]]; then echo "#• No repository found..." ; sleep 1
   # check internet connection
   echo "#• Querying Waterfox website..." ; sleep 1 ; checkOnline 
 
-  # find latest stable release
-  echo "#• Finding latest release..."
-  cd /tmp ; curl https://www.waterfoxproject.org/downloads > "$_WFVERFL"
-  _WFVER=$(grep -F 'linux64/installer/waterfox' "$_WFVERFL" | awk '{print $2}' | cut -d\" -f2) ; sleep .5
-
-  # use http instead of https in repo list
-  _WFVERHTTP=$(echo $_WFVER | sed 's/https/http/')
-
   # get_download  waterfox
-  /usr/local/sbin/get_download "$_WFVERHTTP"
+  cd /tmp
+  echo "#• Downloading Waterfox..." ; sleep 1
+  get_download https://storage-waterfox.netdna-ssl.com/releases/linux64/installer/waterfox-56.2.8.en-US.linux-x86_64.tar.bz2
 
   # untar and check download
   echo "#• Processing download..." ; sleep 1
@@ -2498,4 +2525,5 @@ fi
 RUN
 done
 exit 0
+
 
