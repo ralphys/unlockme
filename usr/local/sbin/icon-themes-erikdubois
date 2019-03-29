@@ -6,7 +6,7 @@ export LANG=C.UTF-8
 export NO_AT_BRIDGE=1
 
 # commonly used variables
-APPNAME=" Icon Theme Installer"
+APPNAME=" Icon Themes Installer"
 APPICON="/usr/share/unlockme/icons/ui/themes.png"
 PREVIMG0="/usr/share/unlockme/icons/ui/sardi.png"
 PREVIMG1="/usr/share/unlockme/icons/ui/sardi-extra.png"
@@ -391,7 +391,7 @@ echo "#• ${FNAME} icons..." ; sleep 1
 
 # main dialog loop
 while (true); do
-echo "# Icon Theme Installer"
+echo "# Icon Themes Installer"
 
 # echo each element in packname and write status 
 for (( i=0;i<$STATUS;i++)); do

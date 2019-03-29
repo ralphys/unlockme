@@ -482,7 +482,7 @@ COMPTONWCINST() {
 
 _FNAME="Compton Compositor"
 
-if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
+if [[ -z $(dpkg -l | grep -E '^ii' | grep ' compton ') ]]; then
 
   # install compton
   echo "# Installing ${_FNAME}..." ; sleep 1
@@ -1314,7 +1314,7 @@ vfs_cache_pressure = 50\n
                      --text="\nAn error occurred applying new values." 2>/dev/null
               continue
           else
-              zenity --info --width="360" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
+              zenity --info --width="360" --height="60" --ok-label="OK" --timeout="8" --title=" Information" \
                      --text="\nNew cache pressure value has been successfully applied." 2>/dev/null
                 sysctl -p
           fi ;;
@@ -1351,7 +1351,7 @@ _SWPNSS="$(< /proc/sys/vm/swappiness)"
 
 # Main dialog
 _MDIALOGTITLE="UnlockMe - Adjust System Swappiness"
-_MDIALOGTXT="<span font='Bold 11'>\n\nRecommended Swappiness Values</span>\n\n
+_MDIALOGTXT="<span font='Bold 11'>\nRecommended Swappiness Values</span>\n\n
 - Swappiness = 10  Recommended when sufficient RAM exists in a system
 - Swappiness = 60  Default system value
 - Swappiness = 100 The kernel will swap aggressively
@@ -1391,7 +1391,7 @@ VALUE=$(yad --image="$DLGICON" --window-icon="$RUN_ICON" --width="740" --height=
                      --text="\nAn error occurred applying new values." 2>/dev/null
               continue
           else
-              zenity --info --width="320" --height="60" --ok-label="Awesome!" --timeout="8" --title=" Information" \
+              zenity --info --width="320" --height="60" --ok-label="OK" --timeout="8" --title=" Information" \
                      --text="\nNew swappiness value has been successfully applied." 2>/dev/null
               sysctl -p
           fi ;;

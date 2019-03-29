@@ -922,6 +922,18 @@ Please disable zRAM before enabling zSWAP." 2>/dev/null
   fi
 fi
 
+if [[ $(grep "SYSCACHEPR" < "$selection_temp") ]]; then 
+  # if zswap is installed display info
+  if [[ "$VARZSWAP" == "Y" ]] || [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+
+    zenity --warning --width="360" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
+             --text="\nzSWAP is currently enabled in your system and the Kernel Cache Pressure is already managed by zSWAP.\n\n\
+You must disable zSWAP to manually adjust the Kernel Cache Pressure." 2>/dev/null
+  else
+    ARRAYB+=('SYSCACHEPR')
+  fi
+fi
+
 # array B definitions
 if [[ $(grep "AUTOREMOVE" < "$selection_temp") ]]; then ARRAYB+=('AUTOREMOVE'); fi
 if [[ $(grep "BYPASSPSWADMPKEXEC" < "$selection_temp") ]]; then ARRAYB+=('BYPASSPSWADMPKEXEC'); fi
@@ -938,7 +950,6 @@ if [[ $(grep "LXTERMWINSIZE" < "$selection_temp") ]]; then ARRAYB+=('LXTERMWINSI
 if [[ $(grep "CHNAMEHOST" < "$selection_temp") ]]; then ARRAYB+=('CHNAMEHOST'); fi
 if [[ $(grep "PACKAGECACHE" < "$selection_temp") ]]; then ARRAYB+=('PACKAGECACHE'); fi
 if [[ $(grep "RESIDCONFIG" < "$selection_temp") ]]; then ARRAYB+=('RESIDCONFIG'); fi
-if [[ $(grep "SYSCACHEPR" < "$selection_temp") ]]; then ARRAYB+=('SYSCACHEPR'); fi
 if [[ $(grep "SAMBASVR" < "$selection_temp") ]]; then ARRAYB+=('SAMBASVR'); fi
 
 }
@@ -1033,7 +1044,7 @@ fi
 
 # check for compton compositor
 if [[ "$LMDENV" = "Xfce" || "$LLDENV" = "Lite" || "$PPMDENV" =~ "PeppermintOS" ]]; then
-  if [[ -z $(dpkg -l | grep -E '^ii' | grep 'compton') ]]; then
+  if [[ -z $(dpkg -l | grep -E '^ii' | grep ' compton ') ]]; then
        _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "Beautiful tear free compositing")
   else _comptonwc=(FALSE "COMPTONWC" "Compton Compositor" "Compositing" "User" "<span foreground='green'>Currently installed - (select to modify)</span>")
   fi
@@ -1100,7 +1111,12 @@ fi
 # check for kernel cache pressure
 if [[ $(< /proc/sys/vm/vfs_cache_pressure) != "100" ]]; then
      _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "<span foreground='green'>Custom seetings applied - (select to modify)</span>")
-else _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Tune kernel memory caching")
+else 
+    if [[ "$VARZSWAP" == "Y" ]] || [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+      _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure ¡¡" "" "" " -- ")
+    else
+    _syscachepr=(FALSE "SYSCACHEPR" "Kernel Cache Pressure" "Performance" "System" "Tune kernel memory caching")
+  fi
 fi
 
 # check for kernel swappiness
@@ -1215,7 +1231,7 @@ fi
 # Check package cache 
 if [[ "$(find /var/cache/apt/archives/ -maxdepth 1 -size +100k)" ]]; then
      APTCACHESIZE=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1"B"}')
-     _packagecache=(FALSE "PACKAGECACHE" "Packages Cache" "Cleanup" "System" "You can remove $APTCACHESIZE worth of files from the packages cache")
+     _packagecache=(FALSE "PACKAGECACHE" "Packages Cache" "Cleanup" "System" "You can remove $APTCACHESIZE from the packages cache")
 else _packagecache=()
 fi
 
@@ -1224,7 +1240,7 @@ if [[ -z "$(dpkg -l | grep -E '^ii' | grep '\spreload\s')" ]]; then
   if [[ -z "$(grep -F 'vm.swappiness' /etc/sysctl.conf)" ]];then
      _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "Fetch commonly used apps into RAM for faster startup times")
    else
-     _preload=(FALSE "PRELOAD" "Preload Apps ¡¡" "" "" "Fetch commonly used apps into RAM for faster startup times")
+     _preload=(FALSE "PRELOAD" "Preload Apps ¡¡" "" "" " -- ")
    fi
 else _preload=(FALSE "PRELOAD" "Preload Apps" "Performance" "System" "<span foreground='green'>Preload is currently installed - (select to modify)</span>")
 fi
@@ -1272,7 +1288,7 @@ fi
 # Check for zram
 if [[ -z "$VARZRAM" ]]; then
   if [[ "$VARZSWAP" == "Y" ]] || [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
-     _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" "Compressed RAM based block device for faster I/O")
+     _zram=(FALSE "ZRAM" "zRAM ¡¡" "" "" " -- ")
    else
      _zram=(FALSE "ZRAM" "zRAM" "Performance" "System" "Compressed RAM based block device for faster I/O")
    fi
@@ -1329,7 +1345,7 @@ fi
 # Check for samba service -Linux Lite
 if [[ "$LLDENV" = "Lite" ]]; then
   if [[ -n $(pgrep -f 'smbd') ]]; then
-     _sambasrv=(FALSE "SAMBASVR" " -- Service: samba" "Performance" "System" "If not using this PC as a file server, this service can safely disabled")
+     _sambasrv=(FALSE "SAMBASVR" " -- Service: samba" "Performance" "System" "If this PC is not a file server, this service can be disabled")
   else _sambasrv=(FALSE "SAMBASVR" " -- Service: samba" "Performance" "System" "<span foreground='green'>Samba is disabled (select to enable samba)</span>")
   fi
 fi
