@@ -1198,7 +1198,7 @@ _FNAME="Handbrake"
 
 if [[ -z "$(grep -F ' handbrake-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "# Quering launchpad.net for ${_FNAME}..." ; sleep 1 ; checkOnline
+  echo "# Querying launchpad.net for ${_FNAME}..." ; sleep 1 ; checkOnline
 
     # if PPA is not installed; add it
     if [[ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep stebbins)" ]]; then
@@ -1292,24 +1292,24 @@ LITECCAPP() {
 
 _FNAME="Lite Control Center"
 
-  if [[ -z "$(grep -F ' lite-controlcenter ' <<< ${DPKGCHECKS[@]})" ]]; then
+if [[ -z "$(grep -F ' lite-controlcenter ' <<< ${DPKGCHECKS[@]})" ]]; then
   
-    echo "# ${_FNAME}..." ; checkOnline
-    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-xenial)" ]]; then
+    echo "# Querying UnlockForUs servers..." ; checkOnline
+
+    if [[ -z "$(grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/* | grep unlockforus-${lite_lsb_rel})" ]] ; then
   
       echo "#• Adding Repository & key..." ; sleep 1
 
       # linuxlite
-      if [[ $(lsb_release -sc) = "xenial" ]]; then
-        echo "deb https://unlockforus.com/repository/dists/xenial/ /" | tee /etc/apt/sources.list.d/unlockforus-xenial.list
-        curl -s https://unlockforus.com/repository/keyFile | apt-key add -
-        updateSources
-      fi
+      echo "deb https://unlockforus.com/repository/dists/${lite_lsb_rel}/ /" | tee /etc/apt/sources.list.d/unlockforus-${lite_lsb_rel}.list
+      curl -s https://unlockforus.com/repository/keyFile | apt-key add -
+      updateSources
     fi
-      # just install it
-      echo "#• Installing ${_FNAME}..." ; sleep 1
-      apt-get install lite-controlcenter -y | showProgress ; checkInstall
-      echo "#✔ Installation completed." ; sleep 1
+      
+    # just install it
+    echo "#• Installing ${_FNAME}..." ; sleep 1
+    apt-get install lite-controlcenter -y | showProgress ; checkInstall
+    echo "#✔ Installation completed." ; sleep 1
 else
   echo "#• Terminating any ${_FNAME} instances..."
   if [[ -n "$(pgrep -f lite-controlcenter)" ]]; then 
@@ -2543,3 +2543,4 @@ fi
 RUN
 done
 exit 0
+
