@@ -1196,19 +1196,37 @@ HANDBREAKEAPP() {
 
 _FNAME="Handbrake"
 
-if [[ -z "$(grep -F ' handbrake ' <<< ${DPKGCHECKS[@]})" ]]; then
+if [[ -z "$(grep -F ' handbrake-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
 
-  echo "# Downloading and installing ${_FNAME}..." ; checkOnline
-  apt-get install handbrake -y | showProgress ; checkInstall
-  echo "#✔ Installation completed." ; sleep 1
+  echo "# Quering launchpad.net for ${_FNAME}..." ; sleep 1 ; checkOnline
+
+    # if PPA is not installed; add it
+    if [[ -z "$(grep ^ "$_SOURCELIST" /etc/apt/sources.list.d/* | grep stebbins)" ]]; then
+
+      # add PPA
+      echo "#• Adding PPA..." ; sleep 2
+      add-apt-repository ppa:stebbins/handbrake-releases -y | showProgress
+
+      # update cache after adding PPA
+      echo "#• Updating the cache..." ; sleep 1 ; updateSources
+    fi
+
+    # install handbrake
+    echo "#• Installing ${_FNAME}..." ; sleep 1
+    apt-get install handbrake-gtk handbrake-cli -y | showProgress ; checkInstall
+    echo "#✔ Installation completed." ; sleep 1
 else
   echo "#• Uninstalling ${_FNAME}..." ; sleep 1
-  apt-get remove --purge handbrake -y | showProgress ; checkRemoval
+  apt-get remove --purge handbrake-gtk handbrake-cli -y | showProgress ; checkRemoval
 
   echo "#• Removing ${_FNAME} launchers..." ; sleep 1
   for desktopuser in ${_ALLUSERS}; do
-    rm -f /home/${desktopuser}/Desktop/ghb.desktop
+    rm -f /home/${desktopuser}/Desktop/ghb.desktop /home/${desktopuser}/Desktop/fr.handbrake.ghb.desktop
   done 
+
+  echo "#• Removing PPA..." ; sleep 1
+  apt-add-repository --remove ppa:stebbins/handbrake-releases -y | showProgress
+
   echo "#✔ Uninstallation completed." ; sleep 1
 fi
 }
@@ -2255,7 +2273,7 @@ else _gthumbapp=(False "$_APPICONS/gthumb.png" "GTHUMBAPP" "gThumb" "Image Organ
 fi
 
 # check for handbrake
-if [[ -z "$(grep -F ' handbrake ' <<< ${DPKGCHECKS[@]})" ]]; then
+if [[ -z "$(grep -F ' handbrake-gtk ' <<< ${DPKGCHECKS[@]})" ]]; then
      _handbrakeapp=(False "$_APPICONS/handbrake.png" "HANDBREAKEAPP" "Handbrake" "Multimedia" "No" "Video transcoder to convert videos from nearly any format")
 else _handbrakeapp=(False "$_APPICONS/handbrake.png" "HANDBREAKEAPP" "Handbrake" "Multimedia" "<span foreground='green'>Select to Remove</span>" "Video transcoder to convert videos from nearly any format")
 fi
@@ -2525,5 +2543,3 @@ fi
 RUN
 done
 exit 0
-
-

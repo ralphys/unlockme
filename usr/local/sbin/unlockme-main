@@ -42,7 +42,7 @@ mintinfo="/etc/linuxmint/info"
 liteinfo="/etc/llver"
 ppminfo=$mintinfo
 
-# variable version
+ # linuxlite version
 lite_version=$(grep -F 'Lite' "$liteinfo" | cut -d \e -f2 | tr -d \.)
 
 # desktop environment file
