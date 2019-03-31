@@ -1207,7 +1207,7 @@ fi
 # check for open as root - Thunar custom action 
 if which Thunar > /dev/null; then
   # if linuxlite version is newer than 4.2 hide this tweak
-  if [[ "$LLDENV" = "Lite" ]] && [[ "$lite_version" -gt "42" ]]; then
+  if [[ "$LLDENV" = "Lite" ]] && [[ "$lite_version" -lt "40" ]]; then
     if [[ -n $(grep '<name>Open as' "$_CAFILE") && -n $(grep -i 'pkexec Thunar %F' "${_CAFILE}") ]]; then
       _openasroot_thunar=(FALSE "OPENASROOT_THUNAR" "pkexec Open as Root" "Custom Action" "User" "<span foreground='green'>Using pkexec to open folders in Thunar as Root (select to revert)</span>")
     else 
