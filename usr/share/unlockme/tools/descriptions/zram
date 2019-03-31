@@ -1,0 +1,37 @@
+zRAM:
+
+    A module of the Linux kernel, previously called "compcache". 
+    ZRAM increases performance by avoiding paging on disk and instead
+    uses a compressed block device in RAM in which paging takes place
+    until it is necessary to use the swap space on the hard disk drive. Since
+    using RAM is faster than using disks, zram allows Linux to make more
+    use of RAM when swapping/paging is required, especially on older 
+    computers with less RAM installed.
+
+Usage: 
+
+    Configure zram block device as a swap device to eliminate need for
+    physical swap device or swap file.
+
+Benefits:
+
+    Eliminates need for physical swap device. This beame popular when 
+    netbooks first showed up. Zram (then compcache) allowed users to
+    avoid swap shortening the lifespan of SSDs in these memory 
+    constrained systems.
+
+    A zram block device can be used for other applications other than swap,
+    anything you might use a block device for conceivably.
+
+Drawbacks:
+
+    Once a page is stored in zram it will remain there until paged in, or
+    invalidated. The first pages to be paged out will be the oldest pages 
+    (LRU list), these are 'cold' pages that are infrequently access. As the 
+    system continues to swap it will move on to pages that are warmer
+    (more frequently accessed), these may not be able to be stored because
+    of the swap slots consumed by the cold pages. What zram can not do 
+    (compcache had the option to configure a block backing device) is to 
+    evict pages out to physical disk. Ideally you want to age data out of the
+    in-kernel compressed swap space out to disk so that you can use kernel
+    memory for caching warm swap pages or free it for more productive use.

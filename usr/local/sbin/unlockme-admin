@@ -1534,6 +1534,7 @@ if grep -q 'N' "/sys/module/zswap/parameters/enabled"; then
 '# Begin ZSWAP UnlockMe - DO NOT EDIT
 lz4
 lz4_compress
+z3fold
 # ZSWAP UnlockMe' >> /etc/initramfs-tools/modules
 
     echo "#• Updating initramfs..." ; sleep 1

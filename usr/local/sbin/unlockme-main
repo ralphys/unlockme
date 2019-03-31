@@ -1374,6 +1374,8 @@ case $2 in
   SYSCACHEPR) echo -e "$(<${DETAILS}syscachepr)" > "$info_pipe" ;;
   SYSSWAP) echo -e "$(<${DETAILS}sysswap)" > "$info_pipe" ;;
   MGMTSAVESESSION) echo -e "$(<${DETAILS}mgmtsessions)" > "$info_pipe" ;;
+  ZRAM) echo -e "$(<${DETAILS}zram)" > "$info_pipe" ;;
+  ZSWAP) echo -e "$(<${DETAILS}zswap)" > "$info_pipe" ;;
   #*) echo "$(<${DETAILS}no_desc)" > "$info_pipe" ;;
   *) echo "$2" > "$info_pipe" ;;
   esac
