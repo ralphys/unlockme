@@ -42,7 +42,7 @@ mintinfo="/etc/linuxmint/info"
 liteinfo="/etc/llver"
 ppminfo=$mintinfo
 
- # linuxlite version
+# linuxlite numeric version
 lite_version=$(grep -F 'Lite' "$liteinfo" | cut -d \e -f2 | tr -d \.)
 
 # desktop environment file
@@ -1428,11 +1428,11 @@ fi
 # Create a key for the plug dialog
 unlockme_key="$(($RANDOM * $$))"
 
-export info_pipe="$(mktemp -u /tmp/UnLockmE_XXXXX).$RANDOM-$$"
+export info_pipe="$(mktemp -u /tmp/UnLockmE_XXXXXU).$RANDOM-$$"
 mkfifo -m 0600 "$info_pipe"
 
 # temp file to export selection
-export selection_temp="$(mktemp  /tmp/SeleXXXion_XXXXX_UnlockMe)"
+export selection_temp="$(mktemp  /tmp/SeleXXXion_XXXXXU_UnlockMe)"
 
 # Trap to remove temp files
 trap "rm -f $info_pipe $selection_temp" EXIT

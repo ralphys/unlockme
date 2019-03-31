@@ -1320,13 +1320,12 @@ else
   fi ; sleep 1
 
   echo "#• Uninstalling ${_FNAME}..." ; sleep 1
-  apt-get remove --purge lite-controlcenter -y | showProgress ; checkRemoval
 
   # remove desktop icon
-  echo "#• Removing ${_FNAME} launchers..."
   for desktopuser in ${_ALLUSERS}; do
     rm -f "/home/${desktopuser}/Desktop/lite-controlcenter.desktop"
-  done ; sleep 1
+  done
+  apt-get remove --purge lite-controlcenter -y | showProgress ; checkRemoval
 
   echo "#✔ Uninstallation completed." ; sleep 1
 fi 

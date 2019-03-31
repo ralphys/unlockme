@@ -1272,6 +1272,15 @@ SYSCACHEPR() {
 
 echo "# Configuring kernel cache pressure..." ; sleep .1
 
+# if zswap is installed display info
+if [[ "$VARZSWAP" == "Y" ]] || [[ -n "$(grep 'zswap.enabled=1' /etc/default/grub)" ]]; then
+
+    zenity --warning --width="360" --height="80" --title=" zSWAP detected" --window-icon="info" --icon-name="info" \
+             --text="\nzSWAP is currently enabled in your system and the Kernel Cache Pressure is already managed by zSWAP.\n\n\
+You must disable zSWAP to manually adjust the Kernel Cache Pressure." 2>/dev/null
+exit 0
+fi
+
 # the loop
 while (true); do
 
