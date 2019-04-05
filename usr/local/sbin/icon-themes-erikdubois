@@ -217,7 +217,7 @@ echo "#• ${FNAME} icons..." ; checkOnline
 
 FILELG="$INSTLOG/Sardi"
 export TMPDIR="/tmp/sardi"
-PKGVER=$(curl -s https://unlockforus.com/repository/downloads/icon-themes/sardi | grep 'sardi-icons-' | head -n1 | cut -d\> -f2 | cut -d\< -f1)
+PKGVER=$(curl -s https://unlockforus.com/repository/downloads/icon-themes/sardi/ | grep 'sardi-icons-' | head -n1 | cut -d\> -f2 | cut -d\< -f1)
 URLDL="https://unlockforus.com/repository/downloads/icon-themes/sardi/$PKGVER"
 FNAMEDL=$PKGVER
 
