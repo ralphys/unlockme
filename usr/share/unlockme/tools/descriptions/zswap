@@ -1,4 +1,4 @@
-zSWAP:
+zswap:
 
     A lightweight compressed cache for swap pages. It takes pages that are
     in the process of being swapped out and attempts to compress them into
@@ -7,9 +7,9 @@ zSWAP:
     in a significant performance improvement if reads from the compressed
     cache are faster than reads from a swap device.
 
-zswap
+Usage: 
 
-    Usage: Cache swap pages destined for regular swap devices (or swap files).
+    Cache swap pages destined for regular swap devices (or swap files).
 
 Benefits:
 
@@ -23,4 +23,4 @@ Benefits:
 
 Drawbacks:
 
-Needs a physical swap device (or swapfile).
+    Needs a physical swap device (or swapfile).

@@ -1019,7 +1019,7 @@ fi
 # Check if the google-chrome browser cache exists
 if [[ -d "${HOME}/.cache/google-chrome/" ]]; then
      GCCACHESIZE=$(du -sh "${HOME}/.cache/google-chrome/" | awk '{print $1"B"}')
-     chromecache=(FALSE "CHROMECACHE" "Chrome Cache" "Cleanup" "User" "You can remove $GCCACHESIZE from your Chrome browser cache")
+     chromecache=(FALSE "CHROMECACHE" "Chrome Cache" "Cleanup" "User" "You can remove $GCCACHESIZE from the browser cache")
 else chromecache=()
 fi
 
@@ -1032,7 +1032,7 @@ fi
 # Check for chromium browser cache
 if [[ -d "${HOME}/.cache/chromium/" && $(du -sb "${HOME}/.cache/chromium/" | cut -f1) -ge 1048576 ]]; then
      CHRCACHESIZE=$(du -sh "${HOME}/.cache/chromium/" | awk '{print $1"B"}')
-     chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from your Chromium browser cache")
+     chromiumcache=(FALSE "CHROMIUMCACHE" "Chromium Cache" "Cleanup" "User" "You can remove $CHRCACHESIZE from the browser cache")
 else chromiumcache=()
 fi
 
@@ -1143,22 +1143,22 @@ if [[ "$LLDENV" = "Lite" ]] && [[ "lsb_rel" = "xenial" ]]; then
 fi
 
 # Check if  midori browser cache exists
-if [[ -d  "${HOME}/.cache/midori/" ]]; then
-     MDCACHESIZE=$(du -sh "${HOME}/.cache/midori/" | awk '{print $1"B"}')
-     _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from your Midori browser cache")
-else _midoricache=()
-fi
+#if [[ -d  "${HOME}/.cache/midori/" ]]; then
+#     MDCACHESIZE=$(du -sh "${HOME}/.cache/midori/" | awk '{print $1"B"}')
+#     _midoricache=(FALSE "MIDORICACHE" "Midori Cache" "Cleanup" "User" "You can remove $MDCACHESIZE from the browser cache")
+#else _midoricache=()
+#fi
 
 # Check if midori browser profile exists
-if [[ -d "${HOME}/.config/midori/" ]]; then
-     _midoriprofile=(FALSE "MIDORIPROFILE" " -- Midori Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Midori browser profile</span>")
-else _midoriprofile=()
-fi
+#if [[ -d "${HOME}/.config/midori/" ]]; then
+#     _midoriprofile=(FALSE "MIDORIPROFILE" " -- Midori Profile" "Cleanup" "User" "<span foreground='chocolate'>Remove Midori browser profile</span>")
+#else _midoriprofile=()
+#fi
 
 # Check if  opera browser cache exists
 if [[ -d "${HOME}/.cache/opera/Cache/" ]]; then
      OPCACHESIZE=$(du -sh "${HOME}/.cache/opera/Cache/" | awk '{print $1"B"}')
-     _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from your Opera browser cache")
+     _operacache=(FALSE "OPERACACHE" "Opera Cache" "Cleanup" "User" "You can remove $OPCACHESIZE from the browser cache")
 else _operacache=()
 fi
 
@@ -1171,7 +1171,7 @@ fi
 # Check if  Pale Moon browser cache exists
 if [[ -d "${HOME}/.cache/moonchild productions/pale moon/" ]]; then
      PMCACHESIZE=$(du -sh "${HOME}/.cache/moonchild productions/pale moon/" | awk '{print $1"B"}')
-     _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from your Pale Moon browser cache")
+     _palemooncache=(FALSE "PALEMOONCACHE" "Pale Moon Cache" "Cleanup" "User" "You can remove $PMCACHESIZE from the browser cache")
 else _palemooncache=()
 fi
 
@@ -1200,7 +1200,7 @@ fi
 # Check if any thumbnails exist
 if [[ $(du -sk "${HOME}/.cache/thumbnails/" | awk '{print $1}') > 100 ]]; then
      THUMBCACHESIZE=$(du -sh "${HOME}"/.cache/thumbnails/ | awk '{print $1"B"}')
-     _thumbn=(FALSE "THUMBNAILS" "Thumbnail Cache" "Cleanup" "User" "You can remove $THUMBCACHESIZE from your thumbnail cache")
+     _thumbn=(FALSE "THUMBNAILS" "Thumbnail Cache" "Cleanup" "User" "You can remove $THUMBCACHESIZE from the thumbnail cache")
 else _thumbn=()
 fi
 
@@ -1255,7 +1255,7 @@ fi
 # Check if the seamonkey browser cache exists
 if [[ -d "${HOME}/.cache/mozilla/seamonkey/" ]]; then
      SMCACHESIZE=$(du -sh "${HOME}/.cache/mozilla/seamonkey/" | awk '{print $1"B"}')
-     _seamonkeycache=(FALSE "SEAMONKEYCACHE" "SeaMonkey Cache" "Cleanup" "User" "You can remove $SMCACHESIZE from your SeaMonkey browser cache")
+     _seamonkeycache=(FALSE "SEAMONKEYCACHE" "SeaMonkey Cache" "Cleanup" "User" "You can remove $SMCACHESIZE from the browser cache")
 else _seamonkeycache=()
 fi
 
@@ -1275,7 +1275,7 @@ fi
 # Check vivaldi-stable cache
 if [[ -d "${HOME}/.cache/vivaldi/" ]]; then
      VCSIZE=$(du -sh "${HOME}/.cache/vivaldi/" | awk '{print $1"B"}')
-     _vivaldicache=(FALSE "VIVALDICACHE" "Vivaldi Cache" "Cleanup" "User" "You can remove $VCSIZE from your Vivaldi browser cache")
+     _vivaldicache=(FALSE "VIVALDICACHE" "Vivaldi Cache" "Cleanup" "User" "You can remove $VCSIZE from the browser cache")
 else _vivaldicache=()
 fi
 
@@ -1326,7 +1326,7 @@ fi
 # Check if waterfox browser cache exists
 if [[ -d "${HOME}/.cache/waterfox/" ]]; then
      WFCACHESIZE=$(du -sh "${HOME}/.cache/waterfox/"| awk '{print $1"B"}')
-     _waterfoxcache=(FALSE "WATERFOXCACHE" "Waterfox Cache" "Cleanup" "User" "You can remove $WFCACHESIZE from your Waterfox browser cache")
+     _waterfoxcache=(FALSE "WATERFOXCACHE" "Waterfox Cache" "Cleanup" "User" "You can remove $WFCACHESIZE from the browser cache")
 else _waterfoxcache=()
 fi
 
@@ -1366,16 +1366,29 @@ case $2 in
   AUTOREMOVE) echo -e "$(<${DETAILS}autoremove)" > "$info_pipe" ;;
   BLOCKHOSTS) echo -e "$(<${DETAILS}blockhosts)" > "$info_pipe" ;;
   COMPTONWC) echo -e "$(<${DETAILS}comptonwc)" > "$info_pipe" ;;
+  CHROMECACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  CHROMEPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
+  CHROMIUMCACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  CHROMIUMPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
   DNSCACHE) echo -e "$(<${DETAILS}dnscache)" > "$info_pipe" ;;
   FIREFOXCACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  FFOXPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
   ICONTHEMESERIK) echo -e "$(<${DETAILS}iconthemeserik)" > "$info_pipe" ;;
   IPV6) echo -e "$(<${DETAILS}ipv6)" > "$info_pipe" ;;
   CHNAMEHOST) echo -e "$(<${DETAILS}chnamehost)" > "$info_pipe" ;;
+  OPERACACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  OPERAPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
+  SEAMONKEYCACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  SEAMONKEYPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
   SYSCACHEPR) echo -e "$(<${DETAILS}syscachepr)" > "$info_pipe" ;;
   SYSSWAP) echo -e "$(<${DETAILS}sysswap)" > "$info_pipe" ;;
   MGMTSAVESESSION) echo -e "$(<${DETAILS}mgmtsessions)" > "$info_pipe" ;;
   ZRAM) echo -e "$(<${DETAILS}zram)" > "$info_pipe" ;;
   ZSWAP) echo -e "$(<${DETAILS}zswap)" > "$info_pipe" ;;
+  VIVALDICACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  VIVALDIPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
+  WATERFOXCACHE) echo -e "$(<${DETAILS}browsercache)" > "$info_pipe" ;;
+  WATERFOXPROFILE) echo -e "$(<${DETAILS}browserprofile)" > "$info_pipe" ;;
   #*) echo "$(<${DETAILS}no_desc)" > "$info_pipe" ;;
   *) echo "$2" > "$info_pipe" ;;
   esac
@@ -1467,7 +1480,6 @@ yad --plug="$unlockme_key" \
 "${_logarchives[@]}" \
 "${_lxtermwinsize[@]}" \
 "${_mgmtsavesession[@]}" \
-"${_midoricache[@]}" \
 "${_operacache[@]}" \
 "${_palemooncache[@]}" \
 "${_packagecache[@]}" \
@@ -1487,7 +1499,6 @@ yad --plug="$unlockme_key" \
 "${_chromeprofile[@]}" \
 "${_chromiumprofile[@]}" \
 "${_ffoxprofile[@]}" \
-"${_midoriprofile[@]}" \
 "${_operaprofile[@]}" \
 "${_palemoonprofile[@]}" \
 "${_seamonkeyprofile[@]}" \

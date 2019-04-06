@@ -1,4 +1,4 @@
-zRAM:
+zram:
 
     A module of the Linux kernel, previously called "compcache". 
     ZRAM increases performance by avoiding paging on disk and instead

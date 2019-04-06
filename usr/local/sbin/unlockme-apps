@@ -1377,32 +1377,32 @@ else
 fi
 }
 
-MIDORIWB() {
+# MIDORIWB() {
 
 # variables
-_FNAME="Midori"
+#_FNAME="Midori"
 
-if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
-  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
+#if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
+#  echo "#• Downloading and installing ${_FNAME}..." ; sleep 1 ; checkOnline
 
-  apt-get install midori -y | showProgress ; checkInstall
-  echo "#✔ Installation completed." ; sleep 1
-else
-  echo "#• Terminating any ${_FNAME} instances..."
-  if [[ ! -z "$(pgrep midori)" ]]; then killall -9 midori; fi ; sleep 1
+#  apt-get install midori -y | showProgress ; checkInstall
+#  echo "#✔ Installation completed." ; sleep 1
+#else
+#  echo "#• Terminating any ${_FNAME} instances..."
+#  if [[ ! -z "$(pgrep midori)" ]]; then killall -9 midori; fi ; sleep 1
 
-  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
-  apt-get remove midori -y | showProgress ; checkRemoval
+#  echo "#• Uninstalling ${_FNAME}..." ; sleep 1
+#  apt-get remove midori -y | showProgress ; checkRemoval
 
-  echo "#• Removing ${_FNAME} cache..."
-  for desktopuser in ${_ALLUSERS}; do
-    rm -rf /home/${desktopuser}/.cache/midori
-    rm -f /home/${desktopuser}/Desktop/midori.desktop
-    rm -f /home/${desktopuser}/Desktop/midori-private.desktop
-  done
-  echo "#✔ Uninstallation completed." ; sleep 1
-fi
-}
+#  echo "#• Removing ${_FNAME} cache..."
+#  for desktopuser in ${_ALLUSERS}; do
+#    rm -rf /home/${desktopuser}/.cache/midori
+#    rm -f /home/${desktopuser}/Desktop/midori.desktop
+#    rm -f /home/${desktopuser}/Desktop/midori-private.desktop
+#  done
+#  echo "#✔ Uninstallation completed." ; sleep 1
+#fi
+#}
 
 MINTSTICKAPP() {
 
@@ -2304,10 +2304,10 @@ else _messengerapp=(False "$_APPICONS/messengerfd.png" "MESSENGERAPP" "Facebook 
 fi
 
 # check for midori browser
-if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
-     _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "No" "A lightweight, fast, and free web browser")
-else _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A lightweight, fast, and free web browser")
-fi
+#if [[ -z "$(grep -F ' midori ' <<< ${DPKGCHECKS[@]})" ]]; then
+#     _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "No" "A lightweight, fast, and free web browser")
+#else _midoriwb=(False "$_APPICONS/midori.png" "MIDORIWB" "Midori" "Web Browser" "<span foreground='green'>Select to Remove</span>" "A lightweight, fast, and free web browser")
+#fi
 
 # check for mintstick
 if [[ "$LLDENV" = "Lite" ]]; then
@@ -2509,7 +2509,6 @@ selection=$(yad --list --checklist --width="900" --height="640" --image="$DLGICO
 "${_keepassxcapp[@]}" \
 "${_liteccapp[@]}" \
 "${_messengerapp[@]}" \
-"${_midoriwb[@]}" \
 "${_mintstickapp[@]}" \
 "${_mintupdateapp[@]}" \
 "${_neofetchapp[@]}" \
